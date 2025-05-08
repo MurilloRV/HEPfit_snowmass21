@@ -11,18 +11,21 @@ BPB_Names=("BPB_"{0..18})
 # BP_others="BP_lambda1"
 
 
-modify_all_ewpos="false"
-LoopHd6NoSubleading="false"
-noLoopH3d6Quad="false"
-LoopHd6noWFR="false"
-no_1L_BSM_sqrt_s="false"
-no_1L_BSM="false"
-no_quad="false"
-smeft_formula="false"
-smeft_formula_sqrt="false"
-smeft_formula_no_cross="false"
-smeft_formula_external_leg="false"
-WFR_kala2_input="true"
+# Default behavior: all flags set to false
+modify_all_ewpos="false" # Modify also the EWPO central values for *current* observables, not just future ones
+LoopHd6NoSubleading="false" # Do not include the subleading corrections (resummation) in kappa_lambda NLO effects. That is, Sets dZH1 = dZH2 = dZH
+noLoopH3d6Quad="false" # Do not include quadratic modifications in the SM loops in Higgs observables due to the dim 6 interactions that contribute to the trilinear Higgs coupling. That is, sets cLH3d62 = 0.0
+LoopHd6noWFR="false" # Completely remove the wavefunction renormalization contribution to the kappa_lambda NLO effects. That is, sets dZH1 = dZH2 = 0.0
+no_1L_BSM_sqrt_s="false" # Excludes the momentum dependence of the BSM k_Zh coupling
+no_1L_BSM="false" # Excludes the full BSM contribution to the k_Zh coupling
+no_quad="false" # Excludes the quadratic term in the scaling of the Zh cross-section coming from the 1L BSM contribution
+smeft_formula="false" # Using the HEPfit SMEFT expression for sigma_Zh, along with dkappaf
+smeft_formula_sqrt="false" # Using the HEPfit SMEFT expression for sigma_Zh, including dkappaf**2 inside of the square root (not correct)
+smeft_formula_no_cross="false" # Using the HEPfit SMEFT expression for sigma_Zh, removing cross terms
+smeft_formula_external_leg="false" # Using the HEPfit SMEFT expression for sigma_Zh, without the external-leg correction (dkappaf)
+WFR_kala2_input="true" # Include the WFR contribution, proportional to kappa_lambda**2, into the IDM ZH cross-section prediction
+
+
 
 # BP_Names_Total=("${BP_Names[@]}" "${BPO_Names[@]}" "${BPB_Names[@]}" "${BP_New_Names[@]}")
 BP_Names_Total=("${BPO_Names[@]}" "${BPB_Names[@]}")
@@ -153,7 +156,10 @@ for BP_Name in "${BP_Names_Total[@]}"; do
 
             cd $TARGET_PATH
 
+            python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name}
+            python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name} --realistic
             python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name} --realistic --ewpos_all
+            # Running the script also without the flag, so that the main fits (i.e. the ones with the flag set to false) are also set up properly
 
 
 
@@ -174,14 +180,6 @@ for BP_Name in "${BP_Names_Total[@]}"; do
             fi
 
             FLAG_ARRAY=("no_1L_BSM_sqrt_s" "no_1L_BSM" "no_quad" "smeft_formula" "smeft_formula_sqrt" "smeft_formula_no_cross" "smeft_formula_external_leg" "WFR_kala2_input")
-            # no_1L_BSM_sqrt_s: Excludes the momentum dependence of the BSM k_Zh coupling
-            # no_1L_BSM: Excluding the full BSM contribution to the k_Zh coupling
-            # no_quad: Excludes the quadratic kappa_lambda dependence of the ZH cross-section
-            # smeft_formula: Using the HEPfit SMEFT expression for sigma_Zh
-            # smeft_formula_sqrt: Using the HEPfit SMEFT expression for sigma_Zh, including dkappaf**2 inside of the square root
-            # smeft_formula_no_cross: Using the HEPfit SMEFT expression for sigma_Zh, removing cross terms
-            # smeft_formula_external_leg: Using the HEPfit SMEFT expression for sigma_Zh, without the external-leg correction
-            # WFR_kala2_input: Include the WFR contribution, proportional to kappa_lambda**2, into the IDM ZH cross-section prediction
 
             for FLAG in "${FLAG_ARRAY[@]}"; do
                 if [ "${!FLAG}" == "true" ]; then
@@ -214,6 +212,7 @@ for BP_Name in "${BP_Names_Total[@]}"; do
                     python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name}
                     python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name} --realistic
                     python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name} --realistic ${PYTHON_ARG}
+                    # Running the script also without the flag, so that the main fits (i.e. the ones with the flag set to false) are also set up properly
 
                 fi
             done

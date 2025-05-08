@@ -1768,11 +1768,6 @@ final_text = "#\n" + \
              "#\n" + \
              "# IDM Benchmark Point:\n"
 
-# for coup, kaps in kappas2.items():
-#     if coup=="lam":
-#         final_text = final_text + f"# kappas[{coup}] = {kappas[coup]}\n"
-#     else:
-#         final_text = final_text + f"# kappas2[{coup}] = {kaps}\n"
 
 for coup, kaps in kappas.items():
     final_text = final_text + f"# kappas[{coup}] = {kaps}\n"
