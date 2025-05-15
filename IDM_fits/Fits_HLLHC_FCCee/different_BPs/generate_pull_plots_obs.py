@@ -1,3 +1,6 @@
+### IMPORTANT!! 
+### Flags not correctly implemented. See the "_compare" script.
+
 import numpy as np
 import matplotlib
 from matplotlib import pyplot as plt
@@ -195,23 +198,26 @@ scenario_titles = [
     rf"FCC-ee$_{{240}}$ + FCC-ee$_{{365}}$ + $\kappa_{{\lambda}}$ at HL-LHC",
 ]
 
-model_spec = "fits"
-# model_spec = {
-#     "IDM_FCCee240" : "fits_realistic_HL_LHC_all_EW_mods_long",
-#     "IDM_FCCee240_FCCee365" : "fits_realistic_HL_LHC_all_EW_mods_long",
-#     "IDM_FCCee240_FCCee365_HLLHClambda" : "fits_realistic_HL_LHC_all_EW_mods_long",
-# }
-
 model_spec = {
     "IDM_FCCee240" : "fits",
     "IDM_FCCee240_FCCee365" : "fits",
     "IDM_FCCee240_FCCee365_HLLHClambda" : "fits_realistic_HL_LHC_realistic_HL_LHC_long",
 }
 
+# spec = "fits_realistic_HL_LHC_smeft_formula_no_cross_small_priors_long"
+# # spec = "fits_realistic_HL_LHC_WFR_kala2_input_small_priors_long"
+# model_spec = {
+#     # "IDM_FCCee240" : spec,
+#     "IDM_FCCee240_FCCee365" : spec,
+#     # "IDM_FCCee240_FCCee365_HLLHClambda" : spec,
+# }
+
+# results_dir = spec
 results_dir = "final"
 # results_dir = model_spec["IDM_FCCee240"]
-output_suffix = ""
 
+# Do not plot the following observables
+skip_obs = ["Mw_C", "GammaZ_C"]
 
 # plot_title = [rf"IDM Central values ({BP}), FCC-ee$_{{240}}$ + FCC-ee$_{{365}}$" for BP in BPs]
 # plot_title = [rf"IDM ({BP}), FCC-ee$_{{240}}$ + FCC-ee$_{{365}}$" for BP in BP_Names]
@@ -339,7 +345,12 @@ for BP in BPs:
                         and columns[6]=="MCMC" and columns[7]=="weight":
 
                         observable = columns[1]
+
+                        # 
+                        if skip_obs is not None and observable in skip_obs:
+                            continue
                         observables[BP][scenario].append(observable)
+
                         try:
                             observable_tex_label = find_tex_label_obs(observable)
                         except KeyError:

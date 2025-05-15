@@ -122,6 +122,7 @@ for BP_Name in "${BP_Names_Total[@]}"; do
             NEW_HIGGS_CONF="IncludeFile ../../ObservablesHiggs_scaled_realistic_HL_LHC.conf"
             sed -i "\/IncludeFile ..\/..\/ObservablesHiggs.conf/c\\$NEW_HIGGS_CONF" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
             sed -i "\/IncludeFile ..\/..\/ObservablesHiggs.conf/c\\$NEW_HIGGS_CONF" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
+            cp ObservablesHiggs.conf ObservablesHiggs_scaled_realistic_HL_LHC.conf
         fi
 
         if [ "$noLoopH3d6Quad" == "true" ]; then

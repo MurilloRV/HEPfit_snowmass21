@@ -39,8 +39,21 @@ smeft_formula_no_cross = args.smeft_formula_no_cross
 smeft_formula_external_leg = args.smeft_formula_external_leg
 WFR_kala2_input = args.WFR_kala2_input
 
+
 if sum([no_1L_BSM_sqrt_s, no_1L_BSM, smeft_formula, smeft_formula_sqrt, smeft_formula_no_cross, smeft_formula_external_leg, WFR_kala2_input]) > 1:
     raise ValueError("You can only use one of the following options: --no_1L_BSM_sqrt_s, --no_1L_BSM, --smeft_formula, --smeft_formula_sqrt, --smeft_formula_no_cross, --smeft_formula_external_leg, --WFR_kala2_input")
+
+
+# Use of these flags is not currently possible without use of the realistic HL-LHC kappa_lambda uncertainties
+if (no_1L_BSM_sqrt_s or \
+    no_1L_BSM or \
+    no_quad or \
+    smeft_formula or \
+    smeft_formula_sqrt or \
+    smeft_formula_no_cross or \
+    smeft_formula_external_leg or \
+    WFR_kala2_input) and not realistic_HL_LHC_k_lambda_uncertainties:
+    raise ValueError("You can only use the --no_1L_BSM_sqrt_s, --no_1L_BSM, --smeft_formula, --smeft_formula_sqrt, --smeft_formula_no_cross, --smeft_formula_external_leg, --WFR_kala2_input options if you also use the --realistic option")
 
 
 # file_dir = "/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/Fits_HLLHC_ILC_250/Z2SSM_BenchmarkPoint_fits_HLLHC_ILC_250"
@@ -2205,13 +2218,31 @@ def uncertanties_low(lmbd):
     sigma = (lmbd - curve_low(lmbd))/2.
     return sigma
 
+# Overwrites the main Higgs config file. Implies that the file must already exist!
 if scenario == "IDM_FCCee240_FCCee365_HLLHClambda":
-    # Open the e+e- collider input file in read mode and output file in write mode
-    input_file =  file_dir + "ObservablesHiggs.conf"
     if not realistic_HL_LHC_k_lambda_uncertainties:
-        output_file = file_dir + "ObservablesHiggs_scaled.conf"
+        input_file = file_dir + "ObservablesHiggs"
     else:
-        output_file = file_dir + "ObservablesHiggs_scaled_realistic_HL_LHC.conf"
+        input_file = file_dir + "ObservablesHiggs_scaled_realistic_HL_LHC"
+
+    flag_map = {
+        no_1L_BSM_sqrt_s: "_no_1L_BSM_sqrt_s",
+        no_1L_BSM: "_no_1L_BSM",
+        no_quad: "_no_quad",
+        smeft_formula: "_smeft_formula",
+        smeft_formula_sqrt: "_smeft_formula_sqrt",
+        smeft_formula_no_cross: "_smeft_formula_no_cross",
+        smeft_formula_external_leg: "_smeft_formula_external_leg",
+        WFR_kala2_input: "_WFR_kala2_input",
+    }
+
+    for condition, flag in flag_map.items():
+        if condition:
+            input_file = input_file + flag
+            break
+
+    output_file = input_file + "_temp.conf"
+    input_file  = input_file  + ".conf"
     
 
     with open(input_file, 'r') as infile, open(output_file, 'w') as outfile:
@@ -2245,8 +2276,7 @@ if scenario == "IDM_FCCee240_FCCee365_HLLHClambda":
 
     print(f"Modified content saved to {output_file}.")
 
-    if not realistic_HL_LHC_k_lambda_uncertainties:
-        subprocess.run(["mv", output_file, input_file])
+    subprocess.run(["mv", output_file, input_file])
 
 
 
@@ -2296,37 +2326,3 @@ for input_file, output_file in zip(input_files, output_files):
         outfile.write(final_text)
 
     print(f"Modified content saved to {output_file}.")
-
-
-
-
-
-
-# if fast:
-
-#     input_file =  file_dir + "MonteCarlo.conf"
-#     output_file = file_dir + "MonteCarlo_fast.conf"
-
-#     with open(input_file, 'r') as infile, open(output_file, 'w') as outfile:
-#         for line in infile:
-#             if line.startswith("Iterations"):
-#                 columns = line.split()
-#                 columns[1] = str(50000)
-#                 outfile.write(" ".join(columns) + "\n")
-
-#             elif line.startswith("RValueForConvergence"):
-#                 columns = line.split()
-#                 columns[1] = str(1.03)
-#                 outfile.write(" ".join(columns) + "\n")
-
-#             else:
-#                 # Write unmodified lines to the output file
-#                 outfile.write(line)
-
-#     with open(output_file, 'a') as outfile:
-#         outfile.write(final_text)
-
-#     print(f"Modified content saved to {output_file}.")
-
-#     subprocess.run(["mv", output_file, input_file])
-

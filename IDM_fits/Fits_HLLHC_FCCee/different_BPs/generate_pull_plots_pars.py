@@ -141,17 +141,12 @@ plt.rcParams.update({
 })
 
 
-# model_spec = "fits"
-# model_spec = "fits_realistic_HL_LHC_all_EW_mods_long"
-
-# model_spec = {}
 
 # Open the input file in read mode and output file in write mode
 working_dir = "./"
 
 
 # BPs = [f"BP_{i}" for i in range(8)]
-
 num_BPOs = 2
 num_BPBs = 17
 BPs = [f"BPO_{i}" for i in range(num_BPOs)]
@@ -163,7 +158,6 @@ print(BPs)
 
 
 # plot_labels = [f"BP {i}" for i in range(8)]
-
 plot_labels = [f"BPO {i}" for i in range(num_BPOs)]
 plot_labels = plot_labels + [f"BPB {i}" for i in range(num_BPBs)]
 
@@ -175,30 +169,33 @@ n_BPs = len(BPs)
 # scenarios = ["IDM_FCCee240_FCCee365" for i in range(num_BPOs + num_BPBs)]
 
 scenarios = [
-    "IDM_FCCee240",
+    # "IDM_FCCee240",
     "IDM_FCCee240_FCCee365",
-    "IDM_FCCee240_FCCee365_HLLHClambda",
+    # "IDM_FCCee240_FCCee365_HLLHClambda",
 ]
 
-model_spec = {
-    "IDM_FCCee240" : "fits",
-    "IDM_FCCee240_FCCee365" : "fits",
-    "IDM_FCCee240_FCCee365_HLLHClambda" : "fits_realistic_HL_LHC_realistic_HL_LHC_long",
-}
-
 # model_spec = {
-#     "IDM_FCCee240" : "fits_realistic_HL_LHC_all_EW_mods_long",
-#     "IDM_FCCee240_FCCee365" : "fits_realistic_HL_LHC_all_EW_mods_long",
-#     "IDM_FCCee240_FCCee365_HLLHClambda" : "fits_realistic_HL_LHC_all_EW_mods_long",
+#     "IDM_FCCee240" : "fits",
+#     "IDM_FCCee240_FCCee365" : "fits",
+#     "IDM_FCCee240_FCCee365_HLLHClambda" : "fits_realistic_HL_LHC_realistic_HL_LHC_long",
 # }
 
-results_dir = "final"
+# spec = "fits_realistic_HL_LHC_smeft_formula_no_cross_small_priors_long"
+spec = "fits_realistic_HL_LHC_WFR_kala2_input_small_priors_long"
+model_spec = {
+    # "IDM_FCCee240" : spec,
+    "IDM_FCCee240_FCCee365" : spec,
+    # "IDM_FCCee240_FCCee365_HLLHClambda" : spec,
+}
+
+results_dir = spec
+# results_dir = "final"
 # results_dir = model_spec["IDM_FCCee240"]
 
 scenario_titles = [
-    rf"FCC-ee$_{{240}}$",
+    # rf"FCC-ee$_{{240}}$",
     rf"FCC-ee$_{{240}}$ + FCC-ee$_{{365}}$",
-    rf"FCC-ee$_{{240}}$ + FCC-ee$_{{365}}$ + $\kappa_{{\lambda}}$ at HL-LHC",
+    # rf"FCC-ee$_{{240}}$ + FCC-ee$_{{365}}$ + $\kappa_{{\lambda}}$ at HL-LHC",
 ]
 
 plot_title = {}
