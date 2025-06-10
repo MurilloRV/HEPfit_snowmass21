@@ -20,7 +20,9 @@ parser.add_argument("--smeft_formula", help = "Use the HEPfit SMEFT expression f
 parser.add_argument("--smeft_formula_sqrt", help = "Use the HEPfit SMEFT expression for the Zh cross-section, with dkappaf**2 inside the square root", action="store_true")
 parser.add_argument("--smeft_formula_no_cross", help = "Use the HEPfit SMEFT expression for the Zh cross-section, without cross terms", action="store_true")
 parser.add_argument("--smeft_formula_external_leg", help = "Use the HEPfit SMEFT expression for the Zh cross-section, without vertex corrections", action="store_true")
+parser.add_argument("--smeft_formula_all", help = "Use the HEPfit SMEFT expression for all XS and BR, including 2*dkappaf in the square root to stand in for C_Hbox (as \"_no_cross\")", action="store_true")
 parser.add_argument("--WFR_kala2_input", help = "Include the WFR contribution, proportional to kappa_lambda**2, into the IDM ZH cross-section prediction", action="store_true")
+parser.add_argument("--WFR_kala2_input_all", help = "Include the WFR contribution, proportional to kappa_lambda**2, into the IDM predictions for all the XS and BR", action="store_true")
 
 
 args = parser.parse_args()
@@ -37,23 +39,56 @@ smeft_formula = args.smeft_formula
 smeft_formula_sqrt = args.smeft_formula_sqrt
 smeft_formula_no_cross = args.smeft_formula_no_cross
 smeft_formula_external_leg = args.smeft_formula_external_leg
+smeft_formula_all = args.smeft_formula_all
 WFR_kala2_input = args.WFR_kala2_input
+WFR_kala2_input_all = args.WFR_kala2_input_all
 
 
-if sum([no_1L_BSM_sqrt_s, no_1L_BSM, smeft_formula, smeft_formula_sqrt, smeft_formula_no_cross, smeft_formula_external_leg, WFR_kala2_input]) > 1:
-    raise ValueError("You can only use one of the following options: --no_1L_BSM_sqrt_s, --no_1L_BSM, --smeft_formula, --smeft_formula_sqrt, --smeft_formula_no_cross, --smeft_formula_external_leg, --WFR_kala2_input")
+exclusive_flag_count = sum([
+    modify_all_ewpos,
+    no_1L_BSM_sqrt_s, 
+    no_1L_BSM, smeft_formula, 
+    no_quad,
+    smeft_formula_sqrt, 
+    smeft_formula_no_cross, 
+    smeft_formula_external_leg, 
+    smeft_formula_all, 
+    WFR_kala2_input,
+    WFR_kala2_input_all,
+])
 
+# These flags are mutually exclusive, and can only be used one at a time
+if exclusive_flag_count > 1:
+    raise ValueError("""You can only use at most one of the following options:
+        --ewpos_all,
+        --no_1L_BSM_sqrt_s,
+        --no_1L_BSM,
+        --no_quad,
+        --smeft_formula,
+        --smeft_formula_sqrt,
+        --smeft_formula_no_cross,
+        --smeft_formula_external_leg,
+        --smeft_formula_all,
+        --WFR_kala2_input
+        --WFR_kala2_input_all
+        """)
 
 # Use of these flags is not currently possible without use of the realistic HL-LHC kappa_lambda uncertainties
-if (no_1L_BSM_sqrt_s or \
-    no_1L_BSM or \
-    no_quad or \
-    smeft_formula or \
-    smeft_formula_sqrt or \
-    smeft_formula_no_cross or \
-    smeft_formula_external_leg or \
-    WFR_kala2_input) and not realistic_HL_LHC_k_lambda_uncertainties:
-    raise ValueError("You can only use the --no_1L_BSM_sqrt_s, --no_1L_BSM, --smeft_formula, --smeft_formula_sqrt, --smeft_formula_no_cross, --smeft_formula_external_leg, --WFR_kala2_input options if you also use the --realistic option")
+elif exclusive_flag_count == 1 and not realistic_HL_LHC_k_lambda_uncertainties:
+    raise ValueError("""The following options are only be currently used along with the --realistic option:
+        --ewpos_all,
+        --no_1L_BSM_sqrt_s,
+        --no_1L_BSM,
+        --no_quad,
+        --smeft_formula,
+        --smeft_formula_sqrt,
+        --smeft_formula_no_cross,
+        --smeft_formula_external_leg,
+        --smeft_formula_all,
+        --WFR_kala2_input
+        --WFR_kala2_input_all
+        """)
+
 
 
 # file_dir = "/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/Fits_HLLHC_ILC_250/Z2SSM_BenchmarkPoint_fits_HLLHC_ILC_250"
@@ -1599,28 +1634,52 @@ GF = 1.1663787e-5
 mHl = 125.1
 sqrt = np.sqrt
 
-def smeft_sigma_Zh(lmbd, sqrt_s):
-    mu = 1
 
-    if sqrt_s == 240:
+# Expression for the Higgs self-energy diagram
+dZH = -(9.0/16.0)*( GF*mHl*mHl/sqrt(2.0)/M_PI/M_PI )*( 2.0*M_PI/3.0/sqrt(3.0) - 1.0 )
+
+# Resummations
+dZH1 = dZH / (1.0 - dZH)
+dZH2 = dZH * (1 + 3.0 * dZH) / (1.0 - dZH) / (1.0 - dZH)
+
+# HEPfit flags
+cLHd6 = 1
+cLH3d62 = 1
+
+
+
+# e+e- cross-sections
+def smeft_mueeZH(lmbd, sqrt_s):
+    mu = 1.0
+
+    if sqrt_s == 0.240:
         C1 = 0.017
-    elif sqrt_s == 365:
+    elif sqrt_s == 0.365:
         C1 = 0.0057
-    elif sqrt_s == 500:
+    elif sqrt_s == 0.500:
         C1 = 0.00099
     else:
-        raise ValueError("sqrt_s must be 240, 365, or 500 GeV")
+        raise ValueError("sqrt_s for the e+e- collider must be 240, 365, or 500 GeV")
 
-    # Expression for the Higgs self-energy diagram
-    dZH = -(9.0/16.0)*( GF*mHl*mHl/sqrt(2.0)/M_PI/M_PI )*( 2.0*M_PI/3.0/sqrt(3.0) - 1.0 )
+    deltaG_hhhRatio = lmbd - 1
+
+    mu = mu + cLHd6*(C1 + 2.0*dZH1)*deltaG_hhhRatio
     
-    # Resummations
-    dZH1 = dZH / (1.0 - dZH)
-    dZH2 = dZH * (1 + 3.0 * dZH) / (1.0 - dZH) / (1.0 - dZH)
+    mu = mu + cLHd6*cLH3d62*dZH2*deltaG_hhhRatio*deltaG_hhhRatio
 
-    # HEPfit flags
-    cLHd6 = 1
-    cLH3d62 = 1
+    return mu
+
+def smeft_mueeHvv(lmbd, sqrt_s):
+    mu = 1.0
+
+    if sqrt_s == 0.240:
+        C1 = 0.0064
+    elif sqrt_s == 0.365:
+        C1 = 0.0062
+    elif sqrt_s == 0.500:
+        C1 = 0.0061
+    else:
+        raise ValueError("sqrt_s for the e+e- collider must be 240, 365, or 500 GeV")
 
     deltaG_hhhRatio = lmbd - 1
 
@@ -1630,47 +1689,359 @@ def smeft_sigma_Zh(lmbd, sqrt_s):
 
     return mu
 
+# pp cross-sections
+def smeft_muggH(lmbd, sqrt_s):
+    mu = 1.0
+
+    C1 = 0.0066 # It seems to be independent of energy 
+
+    deltaG_hhhRatio = lmbd - 1
+
+    mu = mu + cLHd6*(C1 + 2.0*dZH1)*deltaG_hhhRatio
+
+    mu = mu + cLHd6*cLH3d62*dZH2*deltaG_hhhRatio*deltaG_hhhRatio
+
+    return mu
+
+def smeft_muVBF(lmbd, sqrt_s):
+    mu = 1.0
+
+    if sqrt_s == 7.0:
+        C1 = 0.0065
+    elif sqrt_s == 8.0:
+        C1 = 0.0065
+    elif sqrt_s == 13.0:
+        C1 = 0.0064
+    elif sqrt_s == 14.0:
+        C1 = 0.0064
+    else:
+        raise ValueError("sqrt_s for pp collider must be 7, 8, 13 or 14 TeV")
+
+    deltaG_hhhRatio = lmbd - 1
+
+    mu = mu + cLHd6*(C1 + 2.0*dZH1)*deltaG_hhhRatio
+
+    mu = mu + cLHd6*cLH3d62*dZH2*deltaG_hhhRatio*deltaG_hhhRatio
+
+    return mu
+
+def smeft_muZH(lmbd, sqrt_s):
+    mu = 1.0
+
+    if sqrt_s == 7.0:
+        C1 = 0.0123
+    elif sqrt_s == 8.0:
+        C1 = 0.0122
+    elif sqrt_s == 13.0:
+        C1 = 0.0119
+    elif sqrt_s == 14.0:
+        C1 = 0.0118
+    else:
+        raise ValueError("sqrt_s for pp collider must be 7, 8, 13 or 14 TeV")
+
+    deltaG_hhhRatio = lmbd - 1
+
+    mu = mu + cLHd6*(C1 + 2.0*dZH1)*deltaG_hhhRatio
+
+    mu = mu + cLHd6*cLH3d62*dZH2*deltaG_hhhRatio*deltaG_hhhRatio
+
+    return mu
+
+def smeft_muWH(lmbd, sqrt_s):
+    mu = 1.0
+
+    if sqrt_s == 7.0:
+        C1 = 0.0106
+    elif sqrt_s == 8.0:
+        C1 = 0.0105
+    elif sqrt_s == 13.0:
+        C1 = 0.0103
+    elif sqrt_s == 14.0:
+        C1 = 0.0103
+    else:
+        raise ValueError("sqrt_s for pp collider must be 7, 8, 13 or 14 TeV")
+
+    deltaG_hhhRatio = lmbd - 1
+
+    mu = mu + cLHd6*(C1 + 2.0*dZH1)*deltaG_hhhRatio
+
+    mu = mu + cLHd6*cLH3d62*dZH2*deltaG_hhhRatio*deltaG_hhhRatio
+
+    return mu
+
+def smeft_muttH(lmbd, sqrt_s):
+    mu = 1.0
+
+    if sqrt_s == 7.0:
+        C1 = 0.0387
+    elif sqrt_s == 8.0:
+        C1 = 0.0378
+    elif sqrt_s == 13.0:
+        C1 = 0.0351
+    elif sqrt_s == 14.0:
+        C1 = 0.0347
+    else:
+        raise ValueError("sqrt_s for pp collider must be 7, 8, 13 or 14 TeV")
+
+    deltaG_hhhRatio = lmbd - 1
+
+    mu = mu + cLHd6*(C1 + 2.0*dZH1)*deltaG_hhhRatio
+
+    mu = mu + cLHd6*cLH3d62*dZH2*deltaG_hhhRatio*deltaG_hhhRatio
+
+    return mu
+
+
+# Higgs branching ratios
+def smeft_deltaGammaHgagaRatio(lmbd):
+    dwidth = 0.0
+
+    C1 = 0.0049
+
+    deltaG_hhhRatio = lmbd - 1
+
+    dwidth = dwidth + cLHd6*(C1 + 2.0*dZH1)*deltaG_hhhRatio
+
+    dwidth = dwidth + cLHd6*cLH3d62*dZH2*deltaG_hhhRatio*deltaG_hhhRatio
+
+    return dwidth
+
+def smeft_deltaGammaHZgaRatio(lmbd):
+    dwidth = 0.0
+
+    C1 = 0.0
+
+    deltaG_hhhRatio = lmbd - 1
+
+    dwidth = dwidth + cLHd6*(C1 + 2.0*dZH1)*deltaG_hhhRatio
+
+    dwidth = dwidth + cLHd6*cLH3d62*dZH2*deltaG_hhhRatio*deltaG_hhhRatio
+
+    return dwidth
+
+def smeft_deltaGammaHZZ4lRatio(lmbd):
+    dwidth = 0.0
+
+    C1 = 0.0083
+
+    deltaG_hhhRatio = lmbd - 1
+
+    dwidth = dwidth + cLHd6*(C1 + 2.0*dZH1)*deltaG_hhhRatio
+
+    dwidth = dwidth + cLHd6*cLH3d62*dZH2*deltaG_hhhRatio*deltaG_hhhRatio
+
+    return dwidth
+
+def smeft_deltaGammaHZZ4fRatio(lmbd):
+    dwidth = 0.0
+
+    C1 = 0.0083
+
+    deltaG_hhhRatio = lmbd - 1
+
+    dwidth = dwidth + cLHd6*(C1 + 2.0*dZH1)*deltaG_hhhRatio
+
+    dwidth = dwidth + cLHd6*cLH3d62*dZH2*deltaG_hhhRatio*deltaG_hhhRatio
+
+    return dwidth
+
+def smeft_deltaGammaHZZRatio(lmbd):
+    return smeft_deltaGammaHZZ4fRatio(lmbd)
+
+def smeft_deltaGammaHWW2l2vRatio(lmbd):
+    dwidth = 0.0
+
+    C1 = 0.0073
+
+    deltaG_hhhRatio = lmbd - 1
+
+    dwidth = dwidth + cLHd6*(C1 + 2.0*dZH1)*deltaG_hhhRatio
+
+    dwidth = dwidth + cLHd6*cLH3d62*dZH2*deltaG_hhhRatio*deltaG_hhhRatio
+
+    return dwidth
+
+def smeft_deltaGammaHWW4fRatio(lmbd):
+    dwidth = 0.0
+
+    C1 = 0.0073
+
+    deltaG_hhhRatio = lmbd - 1
+
+    dwidth = dwidth + cLHd6*(C1 + 2.0*dZH1)*deltaG_hhhRatio
+
+    dwidth = dwidth + cLHd6*cLH3d62*dZH2*deltaG_hhhRatio*deltaG_hhhRatio
+
+    return dwidth
+
+def smeft_deltaGammaHWWRatio(lmbd):
+    return smeft_deltaGammaHWW4fRatio(lmbd)
+
+def smeft_deltaGammaHmumuRatio(lmbd):
+    dwidth = 0.0
+
+    C1 = 0.0
+
+    deltaG_hhhRatio = lmbd - 1
+
+    dwidth = dwidth + cLHd6*(C1 + 2.0*dZH1)*deltaG_hhhRatio
+
+    dwidth = dwidth + cLHd6*cLH3d62*dZH2*deltaG_hhhRatio*deltaG_hhhRatio
+
+    return dwidth
+
+def smeft_deltaGammaHtautauRatio(lmbd):
+    dwidth = 0.0
+
+    C1 = 0.0
+
+    deltaG_hhhRatio = lmbd - 1
+
+    dwidth = dwidth + cLHd6*(C1 + 2.0*dZH1)*deltaG_hhhRatio
+
+    dwidth = dwidth + cLHd6*cLH3d62*dZH2*deltaG_hhhRatio*deltaG_hhhRatio
+
+    return dwidth
+
+def smeft_deltaGammaHbbRatio(lmbd):
+    dwidth = 0.0
+
+    C1 = 0.0
+
+    deltaG_hhhRatio = lmbd - 1
+
+    dwidth = dwidth + cLHd6*(C1 + 2.0*dZH1)*deltaG_hhhRatio
+
+    dwidth = dwidth + cLHd6*cLH3d62*dZH2*deltaG_hhhRatio*deltaG_hhhRatio
+
+    return dwidth
+
+def smeft_deltaGammaHccRatio(lmbd):
+    dwidth = 0.0
+
+    C1 = 0.0
+
+    deltaG_hhhRatio = lmbd - 1
+
+    dwidth = dwidth + cLHd6*(C1 + 2.0*dZH1)*deltaG_hhhRatio
+
+    dwidth = dwidth + cLHd6*cLH3d62*dZH2*deltaG_hhhRatio*deltaG_hhhRatio
+
+    return dwidth
+
+def smeft_deltaGammaHggRatio(lmbd):
+    dwidth = 0.0
+
+    C1 = 0.0066
+
+    deltaG_hhhRatio = lmbd - 1
+
+    dwidth = dwidth + cLHd6*(C1 + 2.0*dZH1)*deltaG_hhhRatio
+
+    dwidth = dwidth + cLHd6*cLH3d62*dZH2*deltaG_hhhRatio*deltaG_hhhRatio
+
+    return dwidth
+
+# Obs: all ZZ branching ratios have the same C1 value. Same with WW
+# Todo: ask Henning what to do with the other couplings (WW, ZZ, Zga, gaga)
+# Todo: check if all couplings are correctly assigned to the XS and BR
+
 if smeft_formula:
     # Implements the Zh cross-section using the kappa_lambda dependent expression from HEPfit,
-    # plus the external-leg correction (C_HD), taken from the coupling modifier to fermions.
+    # plus the external-leg correction (~C_Hbox), taken from the coupling modifier to fermions.
     # No BSM contributions to the ZH cross-section are included.
-    kappas['ZZ_240'] = sqrt(smeft_sigma_Zh(lmbd=kappas["lam"], sqrt_s=240)) + (kappas["uu"]-1)
-    kappas['ZZ_365'] = sqrt(smeft_sigma_Zh(lmbd=kappas["lam"], sqrt_s=365)) + (kappas["uu"]-1)
-    kappas['ZZ_500'] = sqrt(smeft_sigma_Zh(lmbd=kappas["lam"], sqrt_s=500)) + (kappas["uu"]-1)
+    kappas['ZZ_240'] = sqrt(smeft_mueeZH(lmbd=kappas["lam"], sqrt_s=0.240)) + (kappas["uu"]-1)
+    kappas['ZZ_365'] = sqrt(smeft_mueeZH(lmbd=kappas["lam"], sqrt_s=0.365)) + (kappas["uu"]-1)
+    kappas['ZZ_500'] = sqrt(smeft_mueeZH(lmbd=kappas["lam"], sqrt_s=0.500)) + (kappas["uu"]-1)
     
     kappas['ZZ_0'] = kappas["ZZ"]
 
 if smeft_formula_sqrt:
     # Implements the Zh cross-section using the kappa_lambda dependent expression from HEPfit,
-    # plus the external-leg correction (C_HD), taken from the coupling modifier to fermions.
+    # plus the external-leg correction (~C_Hbox), taken from the coupling modifier to fermions.
     # No BSM contributions to the ZH cross-section are included.
     # Cross terms are removed by including dkappaf**2 inside of the square root
-    kappas['ZZ_240'] = sqrt(smeft_sigma_Zh(lmbd=kappas["lam"], sqrt_s=240) + (kappas["uu"]-1)**2)
-    kappas['ZZ_365'] = sqrt(smeft_sigma_Zh(lmbd=kappas["lam"], sqrt_s=365) + (kappas["uu"]-1)**2)
-    kappas['ZZ_500'] = sqrt(smeft_sigma_Zh(lmbd=kappas["lam"], sqrt_s=500) + (kappas["uu"]-1)**2)
+    kappas['ZZ_240'] = sqrt(smeft_mueeZH(lmbd=kappas["lam"], sqrt_s=0.240) + (kappas["uu"]-1)**2)
+    kappas['ZZ_365'] = sqrt(smeft_mueeZH(lmbd=kappas["lam"], sqrt_s=0.365) + (kappas["uu"]-1)**2)
+    kappas['ZZ_500'] = sqrt(smeft_mueeZH(lmbd=kappas["lam"], sqrt_s=0.500) + (kappas["uu"]-1)**2)
     
     kappas['ZZ_0'] = kappas["ZZ"]
 
 if smeft_formula_no_cross:
     # Implements the Zh cross-section using the kappa_lambda dependent expression from HEPfit,
-    # plus the external-leg correction (C_HD), taken from the coupling modifier to fermions.
+    # plus the external-leg correction (~C_Hbox), taken from the coupling modifier to fermions.
     # No BSM contributions to the ZH cross-section are included.
     # Cross terms are removed by including 2*dkappaf inside of the square root
-    kappas['ZZ_240'] = sqrt(smeft_sigma_Zh(lmbd=kappas["lam"], sqrt_s=240) + 2*(kappas["uu"]-1))
-    kappas['ZZ_365'] = sqrt(smeft_sigma_Zh(lmbd=kappas["lam"], sqrt_s=365) + 2*(kappas["uu"]-1))
-    kappas['ZZ_500'] = sqrt(smeft_sigma_Zh(lmbd=kappas["lam"], sqrt_s=500) + 2*(kappas["uu"]-1))
+    kappas['ZZ_240'] = sqrt(smeft_mueeZH(lmbd=kappas["lam"], sqrt_s=0.240) + 2*(kappas["uu"]-1))
+    kappas['ZZ_365'] = sqrt(smeft_mueeZH(lmbd=kappas["lam"], sqrt_s=0.365) + 2*(kappas["uu"]-1))
+    kappas['ZZ_500'] = sqrt(smeft_mueeZH(lmbd=kappas["lam"], sqrt_s=0.500) + 2*(kappas["uu"]-1))
     
     kappas['ZZ_0'] = kappas["ZZ"]
 
 if smeft_formula_external_leg:
     # Implements the Zh cross-section using the kappa_lambda dependent expression from HEPfit,
     # No BSM contributions to the ZH cross-section are included.
-    kappas['ZZ_240'] = sqrt(smeft_sigma_Zh(lmbd=kappas["lam"], sqrt_s=240))
-    kappas['ZZ_365'] = sqrt(smeft_sigma_Zh(lmbd=kappas["lam"], sqrt_s=365))
-    kappas['ZZ_500'] = sqrt(smeft_sigma_Zh(lmbd=kappas["lam"], sqrt_s=500))
+    kappas['ZZ_240'] = sqrt(smeft_mueeZH(lmbd=kappas["lam"], sqrt_s=0.240))
+    kappas['ZZ_365'] = sqrt(smeft_mueeZH(lmbd=kappas["lam"], sqrt_s=0.365))
+    kappas['ZZ_500'] = sqrt(smeft_mueeZH(lmbd=kappas["lam"], sqrt_s=0.500))
     
     kappas['ZZ_0'] = kappas["ZZ"]
 
+### Still to be checked
+if smeft_formula_all:
+    # Implements all XS and BR using the kappa_lambda dependent expression from HEPfit,
+    # plus the external-leg correction (~C_Hbox), taken from the coupling modifier to fermions.
+    # No BSM contributions to the ZH cross-section are included.
+    # Cross terms are removed by including dkappaf**2 inside of the square root
+    kappas['ZZ_240'] = sqrt( smeft_mueeZH(lmbd=kappas["lam"], sqrt_s=0.240) + 2*(kappas["uu"]-1) )
+    kappas['ZZ_365'] = sqrt( smeft_mueeZH(lmbd=kappas["lam"], sqrt_s=0.365) + 2*(kappas["uu"]-1) )
+    kappas['ZZ_500'] = sqrt( smeft_mueeZH(lmbd=kappas["lam"], sqrt_s=0.500) + 2*(kappas["uu"]-1) )
+
+    kappas['WW_240'] = sqrt( smeft_mueeHvv(lmbd=kappas["lam"], sqrt_s=0.240) + 2*(kappas["uu"]-1) )
+    kappas['WW_365'] = sqrt( smeft_mueeHvv(lmbd=kappas["lam"], sqrt_s=0.365) + 2*(kappas["uu"]-1) )
+    kappas['WW_500'] = sqrt( smeft_mueeHvv(lmbd=kappas["lam"], sqrt_s=0.500) + 2*(kappas["uu"]-1) )
+
+    kappas['bb']     = sqrt( 1.0 + smeft_deltaGammaHbbRatio(lmbd=kappas["lam"])     + 2*(kappas["uu"]-1) )
+    kappas['cc']     = sqrt( 1.0 + smeft_deltaGammaHccRatio(lmbd=kappas["lam"])     + 2*(kappas["uu"]-1) )
+    kappas['gg']     = sqrt( 1.0 + smeft_deltaGammaHggRatio(lmbd=kappas["lam"])     + 2*(kappas["uu"]-1) )
+    kappas['WW']     = sqrt( 1.0 + smeft_deltaGammaHWWRatio(lmbd=kappas["lam"])     + 2*(kappas["uu"]-1) )
+    kappas['ZZ']     = sqrt( 1.0 + smeft_deltaGammaHZZRatio(lmbd=kappas["lam"])     + 2*(kappas["uu"]-1) )
+    kappas['tautau'] = sqrt( 1.0 + smeft_deltaGammaHtautauRatio(lmbd=kappas["lam"]) + 2*(kappas["uu"]-1) )
+    kappas['mumu']   = sqrt( 1.0 + smeft_deltaGammaHmumuRatio(lmbd=kappas["lam"])   + 2*(kappas["uu"]-1) )
+    kappas['gamgam'] = sqrt( 1.0 + smeft_deltaGammaHgagaRatio(lmbd=kappas["lam"])   + 2*(kappas["uu"]-1) )
+    kappas['Zgam']   = sqrt( 1.0 + smeft_deltaGammaHZgaRatio(lmbd=kappas["lam"])    + 2*(kappas["uu"]-1) )
+    
+    kappas['ZZ_0'] = kappas["ZZ"]
+    kappas['ss'] = kappas['cc'] # No information from HEPfit, but C1=0 just as for cc and bb
+    kappas['dd'] = kappas['cc'] 
+    kappas['uu'] = kappas['cc'] 
+    kappas['ee'] = kappas['cc'] 
+
+    kappas["ggH_HLLHC"] = sqrt( smeft_muggH(lmbd=kappas["lam"], sqrt_s=14.0) + 2*(kappas["uu"]-1) )
+    kappas["VBF_HLLHC"] = sqrt( smeft_muVBF(lmbd=kappas["lam"], sqrt_s=14.0) + 2*(kappas["uu"]-1) )
+    kappas["ZH_HLLHC"]  = sqrt( smeft_muZH (lmbd=kappas["lam"], sqrt_s=14.0) + 2*(kappas["uu"]-1) )
+    kappas["WH_HLLHC"]  = sqrt( smeft_muWH (lmbd=kappas["lam"], sqrt_s=14.0) + 2*(kappas["uu"]-1) )
+    kappas["ttH_HLLHC"] = sqrt( smeft_muttH(lmbd=kappas["lam"], sqrt_s=14.0) + 2*(kappas["uu"]-1) )
+
+else:
+    # Need to weigh the kappas to get the scaling factor for VBF
+    wgt_W_VBF = 10.
+    wgt_Z_VBF = 1.
+    kappas["VBF"]     = sqrt( (wgt_W_VBF*kappas["WW"]**2 + wgt_Z_VBF*kappas["ZZ"]**2    ) / (wgt_W_VBF + wgt_Z_VBF) )
+    kappas["VBF_0"]   = sqrt( (wgt_W_VBF*kappas["WW"]**2 + wgt_Z_VBF*kappas["ZZ_0"]**2  ) / (wgt_W_VBF + wgt_Z_VBF) )
+    # kappas["VBF_125"] = sqrt( (wgt_W_VBF*kappas["WW"]**2 + wgt_Z_VBF*kappas["ZZ_125"]**2) / (wgt_W_VBF + wgt_Z_VBF) )
+    kappas["VBF_240"] = sqrt( (wgt_W_VBF*kappas["WW"]**2 + wgt_Z_VBF*kappas["ZZ_240"]**2) / (wgt_W_VBF + wgt_Z_VBF) )
+    kappas["VBF_365"] = sqrt( (wgt_W_VBF*kappas["WW"]**2 + wgt_Z_VBF*kappas["ZZ_365"]**2) / (wgt_W_VBF + wgt_Z_VBF) )
+
+    kappas["WW_240"] = kappas["WW"]
+    kappas["WW_365"] = kappas["WW"]
+    kappas["WW_500"] = kappas["WW"]
+
+    kappas["ggH_HLLHC"] = kappas["gg"]
+    kappas["VBF_HLLHC"] = kappas["VBF"]
+    kappas["ZH_HLLHC"]  = kappas["ZZ_0"]
+    kappas["WH_HLLHC"]  = kappas["WW"]
+    kappas["ttH_HLLHC"] = kappas["tt"]
 
 # Johannes' formula
 Mh = 125.1
@@ -1687,31 +2058,19 @@ if WFR_kala2_input:
     kappas['ZZ_365'] = sqrt( kappas['ZZ_365']**2 + ZZh_hextleg( kappas["lam"] ) )
     kappas['ZZ_500'] = sqrt( kappas['ZZ_500']**2 + ZZh_hextleg( kappas["lam"] ) )
 
+if WFR_kala2_input_all:
+    # Adds the external-leg correction (the contribution proportional to kappa_lambda**2) to 
+    # the all Higgs cross-sections and decay rates
+    coupling_list = [
+        'ZZ_0', 'ZZ_240', 'ZZ_365', 'ZZ_500', 'ZZ_550',
+        'WW_240', 'WW_365', 'WW_500',
+        'tt', 'bb', 'cc', 'ss', 'dd', 'uu', 'tautau', 'mumu', 'ee',
+        'gg', 'WW', 'ZZ', 'gamgam', 'Zgam',
+        'VBF_HLLHC', 'ZH_HLLHC', 'WH_HLLHC', 'ttH_HLLHC', "ggH_HLLHC", 
+    ]
+    for coup in coupling_list:
+        kappas[coup] = sqrt( kappas[coup]**2 + ZZh_hextleg( kappas["lam"] ) )
 
-
-# kappas['uu'] = 0.9948241544051786
-# kappas['dd'] = 0.9948241544051786
-# kappas['ss'] = 0.9948241544051786
-# kappas['cc'] = 0.9948241544051786
-# kappas['bb'] = 0.9948241544051786
-# kappas['tt'] = 0.9948241544051786
-# kappas['ee'] = 0.9948241544051786
-# kappas['mumu'] = 0.9948241544051786
-# kappas['tautau'] = 0.9948241544051786
-# kappas['ZZ_0'] = 0.9997204701950672
-# kappas['ZZ_125'] = 1.0005352707783095
-# kappas['ZZ_240'] = 1.0043116051768355
-# kappas['ZZ_365'] = 0.9995913581314864
-# kappas['ZZ_500'] = 0.9979970835336927
-# kappas['ZZ_550'] = 0.9976923094513526
-# kappas['ZZ'] = 1.0043116051768355
-# kappas['WW'] = 0.9997204701950672
-# kappas['lam'] = 1.854610413951624
-# kappas['gamgam'] = 0.9855492351284755
-# kappas['Zgam'] = 0.9946503745655421
-# Mw = 80.38279456975643
-# sin2thetaEff = 0.2313859052844633
-# GammaZ = 2.49575972859559
 
 BrHinv = 0.
 BrHexo = 0.
@@ -1726,14 +2085,7 @@ if no_quad:
         # Only linear correction to the Z->ZH cross sections are included
 
 
-# Need to weigh the kappas to get the scaling factor for VBF
-wgt_W_VBF = 10.
-wgt_Z_VBF = 1.
-kappas2["VBF"] = (wgt_W_VBF*kappas2["WW"] + wgt_Z_VBF*kappas2["ZZ"]) / (wgt_W_VBF + wgt_Z_VBF)
-kappas2["VBF_0"] = (wgt_W_VBF*kappas2["WW"] + wgt_Z_VBF*kappas2["ZZ_0"]) / (wgt_W_VBF + wgt_Z_VBF)
-# kappas2["VBF_125"] = (wgt_W_VBF*kappas2["WW"] + wgt_Z_VBF*kappas2["ZZ_125"]) / (wgt_W_VBF + wgt_Z_VBF)
-kappas2["VBF_240"] = (wgt_W_VBF*kappas2["WW"] + wgt_Z_VBF*kappas2["ZZ_240"]) / (wgt_W_VBF + wgt_Z_VBF)
-kappas2["VBF_365"] = (wgt_W_VBF*kappas2["WW"] + wgt_Z_VBF*kappas2["ZZ_365"]) / (wgt_W_VBF + wgt_Z_VBF)
+
 
 # From HiggsTools, based on LHCHWG
 BR_H_to_gg     = 0.08171987918280119
@@ -1807,7 +2159,9 @@ output_file_flag_map = {
     smeft_formula_sqrt: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_smeft_formula_sqrt.conf",
     smeft_formula_no_cross: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_smeft_formula_no_cross.conf",
     smeft_formula_external_leg: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_smeft_formula_external_leg.conf",
+    smeft_formula_all: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_smeft_formula_all.conf",
     WFR_kala2_input: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_WFR_kala2_input.conf",
+    WFR_kala2_input_all: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_WFR_kala2_input_all.conf",
 }
 
 for condition, filename in output_file_flag_map.items():
@@ -1831,8 +2185,8 @@ with open(input_file_FCCee240, 'r') as infile, open(output_file_FCCee240, 'w') a
                 columns[9] = str(kappas2["ZZ_240"]*kappas2["bb"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("eeHvvbb_")):
-                columns[8] = str(kappas2["WW"]*kappas2["bb"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["WW"]*kappas2["bb"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["WW_240"]*kappas2["bb"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["WW_240"]*kappas2["bb"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("eeZHcc_")):
                 columns[8] = str(kappas2["ZZ_240"]*kappas2["cc"]*float(columns[8])/kappas2["H"])
@@ -1903,7 +2257,9 @@ if (scenario == "IDM_FCCee240_FCCee365"
         smeft_formula_sqrt: "ObservablesHiggs_FCCee_365_kappa_scaled_smeft_formula_sqrt.conf",
         smeft_formula_no_cross: "ObservablesHiggs_FCCee_365_kappa_scaled_smeft_formula_no_cross.conf",
         smeft_formula_external_leg: "ObservablesHiggs_FCCee_365_kappa_scaled_smeft_formula_external_leg.conf",
+        smeft_formula_all: "ObservablesHiggs_FCCee_365_kappa_scaled_smeft_formula_all.conf",
         WFR_kala2_input: "ObservablesHiggs_FCCee_365_kappa_scaled_WFR_kala2_input.conf",
+        WFR_kala2_input_all: "ObservablesHiggs_FCCee_365_kappa_scaled_WFR_kala2_input_all.conf",
     }
 
     for condition, filename in output_file_flag_map.items():
@@ -1928,8 +2284,8 @@ if (scenario == "IDM_FCCee240_FCCee365"
                     columns[9] = str(kappas2["ZZ_365"]*kappas2["bb"]*float(columns[9])/kappas2["H"])
 
                 elif (columns[1].startswith("eeHvvbb_")):
-                    columns[8] = str(kappas2["WW"]*kappas2["bb"]*float(columns[8])/kappas2["H"])
-                    columns[9] = str(kappas2["WW"]*kappas2["bb"]*float(columns[9])/kappas2["H"])
+                    columns[8] = str(kappas2["WW_365"]*kappas2["bb"]*float(columns[8])/kappas2["H"])
+                    columns[9] = str(kappas2["WW_365"]*kappas2["bb"]*float(columns[9])/kappas2["H"])
 
 
                 elif (columns[1].startswith("eeZHcc_")):
@@ -1937,8 +2293,8 @@ if (scenario == "IDM_FCCee240_FCCee365"
                     columns[9] = str(kappas2["ZZ_365"]*kappas2["cc"]*float(columns[9])/kappas2["H"])
 
                 elif (columns[1].startswith("eeHvvcc_")):
-                    columns[8] = str(kappas2["WW"]*kappas2["cc"]*float(columns[8])/kappas2["H"])
-                    columns[9] = str(kappas2["WW"]*kappas2["cc"]*float(columns[9])/kappas2["H"])
+                    columns[8] = str(kappas2["WW_365"]*kappas2["cc"]*float(columns[8])/kappas2["H"])
+                    columns[9] = str(kappas2["WW_365"]*kappas2["cc"]*float(columns[9])/kappas2["H"])
 
 
                 elif (columns[1].startswith("eeZHgg_")):
@@ -1946,8 +2302,8 @@ if (scenario == "IDM_FCCee240_FCCee365"
                     columns[9] = str(kappas2["ZZ_365"]*kappas2["gg"]*float(columns[9])/kappas2["H"])
 
                 elif (columns[1].startswith("eeHvvgg_")):
-                    columns[8] = str(kappas2["WW"]*kappas2["gg"]*float(columns[8])/kappas2["H"])
-                    columns[9] = str(kappas2["WW"]*kappas2["gg"]*float(columns[9])/kappas2["H"])
+                    columns[8] = str(kappas2["WW_365"]*kappas2["gg"]*float(columns[8])/kappas2["H"])
+                    columns[9] = str(kappas2["WW_365"]*kappas2["gg"]*float(columns[9])/kappas2["H"])
 
 
                 elif (columns[1].startswith("eeZHWW_")):
@@ -1955,8 +2311,8 @@ if (scenario == "IDM_FCCee240_FCCee365"
                     columns[9] = str(kappas2["ZZ_365"]*kappas2["WW"]*float(columns[9])/kappas2["H"])
 
                 elif (columns[1].startswith("eeHvvWW_")):
-                    columns[8] = str(kappas2["WW"]*kappas2["WW"]*float(columns[8])/kappas2["H"])
-                    columns[9] = str(kappas2["WW"]*kappas2["WW"]*float(columns[9])/kappas2["H"])
+                    columns[8] = str(kappas2["WW_365"]*kappas2["WW"]*float(columns[8])/kappas2["H"])
+                    columns[9] = str(kappas2["WW_365"]*kappas2["WW"]*float(columns[9])/kappas2["H"])
 
 
                 elif (columns[1].startswith("eeZHZZ_")):
@@ -1964,8 +2320,8 @@ if (scenario == "IDM_FCCee240_FCCee365"
                     columns[9] = str(kappas2["ZZ_365"]*kappas2["ZZ"]*float(columns[9])/kappas2["H"])
 
                 elif (columns[1].startswith("eeHvvZZ_")):
-                    columns[8] = str(kappas2["WW"]*kappas2["ZZ"]*float(columns[8])/kappas2["H"])
-                    columns[9] = str(kappas2["WW"]*kappas2["ZZ"]*float(columns[9])/kappas2["H"])
+                    columns[8] = str(kappas2["WW_365"]*kappas2["ZZ"]*float(columns[8])/kappas2["H"])
+                    columns[9] = str(kappas2["WW_365"]*kappas2["ZZ"]*float(columns[9])/kappas2["H"])
 
 
                 elif (columns[1].startswith("eeZHtautau_")):
@@ -1973,8 +2329,8 @@ if (scenario == "IDM_FCCee240_FCCee365"
                     columns[9] = str(kappas2["ZZ_365"]*kappas2["tautau"]*float(columns[9])/kappas2["H"])
 
                 elif (columns[1].startswith("eeHvvtautau_")):
-                    columns[8] = str(kappas2["WW"]*kappas2["tautau"]*float(columns[8])/kappas2["H"])
-                    columns[9] = str(kappas2["WW"]*kappas2["tautau"]*float(columns[9])/kappas2["H"])
+                    columns[8] = str(kappas2["WW_365"]*kappas2["tautau"]*float(columns[8])/kappas2["H"])
+                    columns[9] = str(kappas2["WW_365"]*kappas2["tautau"]*float(columns[9])/kappas2["H"])
 
 
                 elif (columns[1].startswith("eeZHgaga_")):
@@ -1982,8 +2338,8 @@ if (scenario == "IDM_FCCee240_FCCee365"
                     columns[9] = str(kappas2["ZZ_365"]*kappas2["gamgam"]*float(columns[9])/kappas2["H"])
 
                 elif (columns[1].startswith("eeHvvgaga_")):
-                    columns[8] = str(kappas2["WW"]*kappas2["gamgam"]*float(columns[8])/kappas2["H"])
-                    columns[9] = str(kappas2["WW"]*kappas2["gamgam"]*float(columns[9])/kappas2["H"])
+                    columns[8] = str(kappas2["WW_365"]*kappas2["gamgam"]*float(columns[8])/kappas2["H"])
+                    columns[9] = str(kappas2["WW_365"]*kappas2["gamgam"]*float(columns[9])/kappas2["H"])
 
 
                 elif (columns[1].startswith("eeZHmumu_")):
@@ -2026,7 +2382,9 @@ output_file_flag_map = {
     smeft_formula_sqrt: "ObservablesHiggs_HLLHC_SM_kappa_scaled_smeft_formula_sqrt.conf",
     smeft_formula_no_cross: "ObservablesHiggs_HLLHC_SM_kappa_scaled_smeft_formula_no_cross.conf",
     smeft_formula_external_leg: "ObservablesHiggs_HLLHC_SM_kappa_scaled_smeft_formula_external_leg.conf",
+    smeft_formula_all: "ObservablesHiggs_HLLHC_SM_kappa_scaled_smeft_formula_all.conf",
     WFR_kala2_input: "ObservablesHiggs_HLLHC_SM_kappa_scaled_WFR_kala2_input.conf",
+    WFR_kala2_input_all: "ObservablesHiggs_HLLHC_SM_kappa_scaled_WFR_kala2_input_all.conf",
 }
 
 for condition, filename in output_file_flag_map.items():
@@ -2043,121 +2401,121 @@ with open(input_file_HLLHC, 'r') as infile, open(output_file_HLLHC, 'w') as outf
 
             # ggF
             if (columns[1].startswith("muggHgagaHL")):
-                columns[8] = str(kappas2["gg"]*kappas2["gamgam"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["gg"]*kappas2["gamgam"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["ggH_HLLHC"]*kappas2["gamgam"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["ggH_HLLHC"]*kappas2["gamgam"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muggHZZ4lHL")):
-                columns[8] = str(kappas2["gg"]*kappas2["ZZ"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["gg"]*kappas2["ZZ"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["ggH_HLLHC"]*kappas2["ZZ"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["ggH_HLLHC"]*kappas2["ZZ"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muggHWW2l2vHL")):
-                columns[8] = str(kappas2["gg"]*kappas2["WW"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["gg"]*kappas2["WW"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["ggH_HLLHC"]*kappas2["WW"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["ggH_HLLHC"]*kappas2["WW"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muggHtautauHL")):
-                columns[8] = str(kappas2["gg"]*kappas2["tautau"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["gg"]*kappas2["tautau"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["ggH_HLLHC"]*kappas2["tautau"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["ggH_HLLHC"]*kappas2["tautau"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muggHbbHL")):
-                columns[8] = str(kappas2["gg"]*kappas2["bb"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["gg"]*kappas2["bb"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["ggH_HLLHC"]*kappas2["bb"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["ggH_HLLHC"]*kappas2["bb"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muggHmumuHL")):
-                columns[8] = str(kappas2["gg"]*kappas2["mumu"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["gg"]*kappas2["mumu"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["ggH_HLLHC"]*kappas2["mumu"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["ggH_HLLHC"]*kappas2["mumu"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muggHZgaHL")):
-                columns[8] = str(kappas2["gg"]*kappas2["Zgam"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["gg"]*kappas2["Zgam"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["ggH_HLLHC"]*kappas2["Zgam"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["ggH_HLLHC"]*kappas2["Zgam"]*float(columns[9])/kappas2["H"])
 
 
             # VBF
             elif (columns[1].startswith("muVBFgagaHL")):
-                columns[8] = str(kappas2["VBF"]*kappas2["gamgam"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["VBF"]*kappas2["gamgam"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["VBF_HLLHC"]*kappas2["gamgam"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["VBF_HLLHC"]*kappas2["gamgam"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muVBFZZ4lHL")):
-                columns[8] = str(kappas2["VBF"]*kappas2["ZZ"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["VBF"]*kappas2["ZZ"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["VBF_HLLHC"]*kappas2["ZZ"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["VBF_HLLHC"]*kappas2["ZZ"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muVBFWW2l2vHL")):
-                columns[8] = str(kappas2["VBF"]*kappas2["WW"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["VBF"]*kappas2["WW"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["VBF_HLLHC"]*kappas2["WW"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["VBF_HLLHC"]*kappas2["WW"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muVBFtautauHL")):
-                columns[8] = str(kappas2["VBF"]*kappas2["tautau"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["VBF"]*kappas2["tautau"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["VBF_HLLHC"]*kappas2["tautau"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["VBF_HLLHC"]*kappas2["tautau"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muVBFmumuHL")):
-                columns[8] = str(kappas2["VBF"]*kappas2["mumu"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["VBF"]*kappas2["mumu"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["VBF_HLLHC"]*kappas2["mumu"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["VBF_HLLHC"]*kappas2["mumu"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muVBFZgaHL")):
-                columns[8] = str(kappas2["VBF"]*kappas2["Zgam"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["VBF"]*kappas2["Zgam"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["VBF_HLLHC"]*kappas2["Zgam"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["VBF_HLLHC"]*kappas2["Zgam"]*float(columns[9])/kappas2["H"])
 
 
 
             # WH
             elif (columns[1].startswith("muWHgagaHL")):
-                columns[8] = str(kappas2["WW"]*kappas2["gamgam"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["WW"]*kappas2["gamgam"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["WH_HLLHC"]*kappas2["gamgam"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["WH_HLLHC"]*kappas2["gamgam"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muWHZZ4lHL")):
-                columns[8] = str(kappas2["WW"]*kappas2["ZZ"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["WW"]*kappas2["ZZ"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["WH_HLLHC"]*kappas2["ZZ"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["WH_HLLHC"]*kappas2["ZZ"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muWHWW2l2vHL")):
-                columns[8] = str(kappas2["WW"]*kappas2["WW"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["WW"]*kappas2["WW"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["WH_HLLHC"]*kappas2["WW"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["WH_HLLHC"]*kappas2["WW"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muWHbbHL")):
-                columns[8] = str(kappas2["WW"]*kappas2["bb"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["WW"]*kappas2["bb"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["WH_HLLHC"]*kappas2["bb"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["WH_HLLHC"]*kappas2["bb"]*float(columns[9])/kappas2["H"])
 
 
 
 
             # ZH
             elif (columns[1].startswith("muZHgagaHL")):
-                columns[8] = str(kappas2["ZZ_0"]*kappas2["gamgam"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["ZZ_0"]*kappas2["gamgam"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["ZH_HLLHC"]*kappas2["gamgam"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["ZH_HLLHC"]*kappas2["gamgam"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muZHZZ4lHL")):
-                columns[8] = str(kappas2["ZZ_0"]*kappas2["ZZ"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["ZZ_0"]*kappas2["ZZ"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["ZH_HLLHC"]*kappas2["ZZ"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["ZH_HLLHC"]*kappas2["ZZ"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muZHWW2l2vHL")):
-                columns[8] = str(kappas2["ZZ_0"]*kappas2["WW"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["ZZ_0"]*kappas2["WW"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["ZH_HLLHC"]*kappas2["WW"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["ZH_HLLHC"]*kappas2["WW"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muZHbbHL")):
-                columns[8] = str(kappas2["ZZ_0"]*kappas2["bb"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["ZZ_0"]*kappas2["bb"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["ZH_HLLHC"]*kappas2["bb"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["ZH_HLLHC"]*kappas2["bb"]*float(columns[9])/kappas2["H"])
 
 
 
 
             # ttH
             elif (columns[1].startswith("muttHgaga")):
-                columns[8] = str(kappas2["tt"]*kappas2["gamgam"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["tt"]*kappas2["gamgam"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["ttH_HLLHC"]*kappas2["gamgam"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["ttH_HLLHC"]*kappas2["gamgam"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muttHZZ4lHL")):
-                columns[8] = str(kappas2["tt"]*kappas2["ZZ"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["tt"]*kappas2["ZZ"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["ttH_HLLHC"]*kappas2["ZZ"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["ttH_HLLHC"]*kappas2["ZZ"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muttHWW2l2vHL")):
-                columns[8] = str(kappas2["tt"]*kappas2["WW"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["tt"]*kappas2["WW"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["ttH_HLLHC"]*kappas2["WW"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["ttH_HLLHC"]*kappas2["WW"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muttHbbHL")):
-                columns[8] = str(kappas2["tt"]*kappas2["bb"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["tt"]*kappas2["bb"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["ttH_HLLHC"]*kappas2["bb"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["ttH_HLLHC"]*kappas2["bb"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muttHtautauHL")):
-                columns[8] = str(kappas2["tt"]*kappas2["tautau"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["tt"]*kappas2["tautau"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["ttH_HLLHC"]*kappas2["tautau"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["ttH_HLLHC"]*kappas2["tautau"]*float(columns[9])/kappas2["H"])
 
             # Rejoin the columns and write to the output file
             outfile.write(" ".join(columns) + "\n")
@@ -2233,7 +2591,9 @@ if scenario == "IDM_FCCee240_FCCee365_HLLHClambda":
         smeft_formula_sqrt: "_smeft_formula_sqrt",
         smeft_formula_no_cross: "_smeft_formula_no_cross",
         smeft_formula_external_leg: "_smeft_formula_external_leg",
+        smeft_formula_all: "_smeft_formula_all",
         WFR_kala2_input: "_WFR_kala2_input",
+        WFR_kala2_input_all: "_WFR_kala2_input_all",
     }
 
     for condition, flag in flag_map.items():

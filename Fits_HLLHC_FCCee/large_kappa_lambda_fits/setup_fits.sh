@@ -29,7 +29,7 @@ for lamb in "${INDIVIDUAL_LAMBDAS[@]}"; do
     WITH_LAMBDA+=('no' '')
 
 
-    CH_value=$(echo "scale=12; ($lamb - 1) * (-2.1332885478)" | bc)
+    CH_value=$(echo "scale=12; ($lamb - 1) * (-2.1290888208276963)" | bc)
     CH+=("$CH_value" "$CH_value")
 done
 

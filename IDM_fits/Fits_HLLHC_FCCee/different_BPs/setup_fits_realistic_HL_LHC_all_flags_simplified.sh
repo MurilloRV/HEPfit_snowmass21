@@ -19,15 +19,18 @@ no_1L_BSM="false" # Excludes the full BSM contribution to the k_Zh coupling
 no_quad="false" # Excludes the quadratic term in the scaling of the Zh cross-section coming from the 1L BSM contribution
 smeft_formula="false" # Using the HEPfit SMEFT expression for sigma_Zh, along with dkappaf
 smeft_formula_sqrt="false" # Using the HEPfit SMEFT expression for sigma_Zh, including dkappaf**2 inside of the square root (not correct)
-smeft_formula_no_cross="true" # Using the HEPfit SMEFT expression for sigma_Zh, removing cross terms
+smeft_formula_no_cross="false" # Using the HEPfit SMEFT expression for sigma_Zh, removing cross terms
 smeft_formula_external_leg="false" # Using the HEPfit SMEFT expression for sigma_Zh, without the external-leg correction (dkappaf)
+smeft_formula_all="true" # Using the HEPfit SMEFT expression for all XS and BR, including 2*dkappaf in the square root to stand in for C_Hbox  (as "_no_cross")
 WFR_kala2_input="false" # Include the WFR contribution, proportional to kappa_lambda**2, into the IDM ZH cross-section prediction
+WFR_kala2_input_all="false" # Include the WFR contribution, proportional to kappa_lambda**2, into the IDM predictions for all the XS and BR
 
 LoopHd6NoSubleading="false" # Do not include the subleading corrections (resummation) in kappa_lambda NLO effects. That is, Sets dZH1 = dZH2 = dZH
 noLoopH3d6Quad="false" # Do not include quadratic modifications in the SM loops in Higgs observables due to the dim 6 interactions that contribute to the trilinear Higgs coupling. That is, sets cLH3d62 = 0.0
 LoopHd6noWFR="false" # Completely remove the wavefunction renormalization contribution to the kappa_lambda NLO effects. That is, sets dZH1 = dZH2 = 0.0
-no_C_HG="true" # Exclude the C_HG operator from the fit
+no_C_HG="false" # Exclude the C_HG operator from the fit
 no_HLLHC_Higgs="false" # Exclude the HL-LHC Higgs observables from the fit
+LoopH3d6Full="false" # Use the full expansion of the ZH cross-section in terms of C1 and dZH
 
 
 # Check if more than one exclusive flag is set to "true"
@@ -40,7 +43,9 @@ EXCLUSIVE_FLAGS=(
     "$smeft_formula_sqrt"
     "$smeft_formula_no_cross"
     "$smeft_formula_external_leg"
+    "$smeft_formula_all"
     "$WFR_kala2_input"
+    "$WFR_kala2_input_all"
 )
 
 # Count how many flags are set to "true"
@@ -79,13 +84,16 @@ for BP_Name in "${BP_Names_Total[@]}"; do
         if [ "$smeft_formula_sqrt" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_smeft_formula_sqrt"; fi
         if [ "$smeft_formula_no_cross" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_smeft_formula_no_cross"; fi
         if [ "$smeft_formula_external_leg" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_smeft_formula_external_leg"; fi
+        if [ "$smeft_formula_all" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_smeft_formula_all"; fi
         if [ "$WFR_kala2_input" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_WFR_kala2_input"; fi
+        if [ "$WFR_kala2_input_all" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_WFR_kala2_input_all"; fi
         
         if [ "$noLoopH3d6Quad" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_noLoopH3d6Quad"; fi
         if [ "$LoopHd6NoSubleading" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_LoopHd6NoSubleading"; fi
         if [ "$LoopHd6noWFR" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_LoopHd6noWFR"; fi
         if [ "$no_C_HG" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_no_C_HG"; fi
         if [ "$no_HLLHC_Higgs" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_no_HLLHC_Higgs"; fi
+        if [ "$LoopH3d6Full" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_LoopH3d6Full"; fi
 
         mkdir -p "${BP_Name}/${IDM_SCENARIOS[j]}/Globalfits/AllOps"
         cd "${BP_Name}/${IDM_SCENARIOS[j]}"
@@ -211,6 +219,12 @@ for BP_Name in "${BP_Names_Total[@]}"; do
 
         fi
 
+        if [ "$LoopH3d6Full" == "true" ]; then
+            NEW_FlagLoopH3d6Full="ModelFlag       LoopH3d6Full    true"
+            sed -i "/ModelFlag       LoopH3d6Quad    true/a #\n\\$NEW_FlagLoopH3d6Full" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
+            sed -i "/ModelFlag       LoopH3d6Quad    true/a #\n\\$NEW_FlagLoopH3d6Full" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
+        fi
+
         if [ "$modify_all_ewpos" == "true" ]; then
             cp ObservablesEW.conf ObservablesEW_all_mods.conf
             NEW_EW_CURRENT="IncludeFile ObservablesEW_Current_SM_noLFU_kappa_scaled.conf"
@@ -236,7 +250,9 @@ for BP_Name in "${BP_Names_Total[@]}"; do
                 "$smeft_formula_sqrt" == "true" || 
                 "$smeft_formula_no_cross" == "true" || 
                 "$smeft_formula_external_leg" == "true" || 
-                "$WFR_kala2_input" == "true" ]];
+                "$smeft_formula_all" == "true" || 
+                "$WFR_kala2_input" == "true" ||
+                "$WFR_kala2_input_all" == "true" ]];
         then
 
             # if [[ "${IDM_SCENARIOS[j]}" == "IDM_FCCee240_FCCee365_HLLHClambda" ]]; then
@@ -245,7 +261,16 @@ for BP_Name in "${BP_Names_Total[@]}"; do
             #     HIGGS_CONF="ObservablesHiggs"
             # fi
 
-            FLAG_ARRAY=("no_1L_BSM_sqrt_s" "no_1L_BSM" "no_quad" "smeft_formula" "smeft_formula_sqrt" "smeft_formula_no_cross" "smeft_formula_external_leg" "WFR_kala2_input")
+            FLAG_ARRAY=("no_1L_BSM_sqrt_s" 
+                        "no_1L_BSM" 
+                        "no_quad" 
+                        "smeft_formula" 
+                        "smeft_formula_sqrt" 
+                        "smeft_formula_no_cross" 
+                        "smeft_formula_external_leg" 
+                        "smeft_formula_all" 
+                        "WFR_kala2_input"
+                        "WFR_kala2_input_all")
 
             for FLAG in "${FLAG_ARRAY[@]}"; do
                 if [ "${!FLAG}" == "true" ]; then

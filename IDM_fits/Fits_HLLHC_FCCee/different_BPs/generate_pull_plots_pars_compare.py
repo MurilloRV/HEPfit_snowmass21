@@ -135,6 +135,42 @@ def find_tex_label_obs(obs):
     else: tex_label = "test"
     return tex_label
 
+def parameter_order(par):
+    order_dict = {
+        "CW":             1,
+        "CHG":            2,
+        "CHWB":           3,
+        "CHWHB_gaga":     4,
+        "CHWHB_gagaorth": 5,
+        "CHW":            6,
+        "CHB":            7,
+        "CH":             8,
+        "CHD":            9,
+        "CHbox":          10,
+        "CHL1_11":        11,
+        "CHL1_22":        12,
+        "CHL1_33":        13,
+        "CHL3_11":        14,
+        "CHL3_22":        15,
+        "CHL3_33":        16,
+        "CHe_11":         17,
+        "CHe_22":         18,
+        "CHe_33":         19,
+        "CHQ1_11":        20,
+        "CHQ1_33":        21,
+        "CHQ3_11":        22,
+        "CHu_11":         23,
+        "CHd_11":         24,
+        "CHd_33":         25,
+        "CeH_22r":        26,
+        "CeH_33r":        27,
+        "CuH_22r":        28,
+        "CuH_33r":        29,
+        "CdH_33r":        30,
+        "CLL_1221":       31,
+    }
+    return order_dict.get(par, 9999)  # Return a large number for unknown parameters
+
 plt.rcParams.update({
 #   "text.usetex": True,
   'text.latex.preamble': r'\usepackage{txfonts}',
@@ -176,7 +212,13 @@ scenarios = [
 
 
 # spec = "fits_realistic_HL_LHC_smeft_formula_no_cross_small_priors_long"
-spec = "fits_realistic_HL_LHC_WFR_kala2_input_small_priors_long"
+# spec = "fits_realistic_HL_LHC_smeft_formula_no_cross_no_HLLHC_Higgs_small_priors_long"
+spec = "fits_realistic_HL_LHC_smeft_formula_no_cross_no_C_HG_small_priors_long"
+# spec = "fits_realistic_HL_LHC_WFR_kala2_input_small_priors_long"
+# spec = "fits_realistic_HL_LHC_WFR_kala2_input_no_HLLHC_Higgs_small_priors_long"
+# spec = "fits_realistic_HL_LHC_WFR_kala2_input_no_C_HG_small_priors_long"
+
+# Todo: fix the plots for fits without certain WC, like C_HG
 
 model_specs = {
     # "IDM_FCCee240" : [spec, "fits"],
@@ -184,8 +226,8 @@ model_specs = {
     # "IDM_FCCee240_FCCee365_HLLHClambda" : [spec, "fits_realistic_HL_LHC_realistic_HL_LHC_long"],
 }
 
-# labels = ["HEPfit formula", "Original"]
-labels = ["w/ h External-leg", "Original"]
+labels = ["HEPfit formula", "Original"]
+# labels = ["w/ h External-leg", "Original"]
 model_specs_labels = {
     # "IDM_FCCee240" : labels,
     "IDM_FCCee240_FCCee365" : labels,
@@ -238,16 +280,20 @@ for BP in BPs:
     parameters_tex[BP] = {}
     for scenario in scenarios:
 
+        parameters[BP][scenario] = {}
+        parameters_tex[BP][scenario] = {}
         results[BP][scenario] = {}
         for model_spec in model_specs[scenario]:
+
+            line_nrs = []
+            parameters[BP][scenario][model_spec] = []
+            parameters_tex[BP][scenario][model_spec] = []
 
             file_path = files[BP][scenario][model_spec]
             with open(file_path, 'r') as file:
                 lines = file.readlines()
                 
-                line_nrs = []
-                parameters[BP][scenario] = []
-                parameters_tex[BP][scenario] = []
+                
                 for n, line in enumerate(lines):
                     columns = line.split()
                     if len(columns) < 2:
@@ -257,34 +303,36 @@ for BP in BPs:
                     columns[2].startswith("\"C") and \
                     columns[2].endswith("corr\":"):
                         parameter = columns[2][1:-7]
-                        parameters[BP][scenario].append(parameter)
+                        parameters[BP][scenario][model_spec].append(parameter)
                         parameter_tex_label = find_tex_label_par(parameter)
-                        parameters_tex[BP][scenario].append(parameter_tex_label)
+                        parameters_tex[BP][scenario][model_spec].append(parameter_tex_label)
                         line_nrs.append(n)
 
-                nobs = len(parameters[BP][scenario])
+                nobs = len(parameters[BP][scenario][model_spec])
 
                 results[BP][scenario][model_spec] = []
-                print(BP)
-                for line_nr, par in zip(line_nrs, parameters[BP][scenario]):
+                print(f"Reading results for {BP}, scenario: {scenario}, model spec: {model_spec}")
+                for line_nr, par in zip(line_nrs, parameters[BP][scenario][model_spec]):
                 
                     columns = lines[line_nr + 1].split()
                     means_uncertainties = [float(columns[3]),    # Mean
-                                        float(columns[5]),]  # Uncertainty
-                    means_uncertainties[0] = means_uncertainties[0]/means_uncertainties[1]
-                    means_uncertainties[1] = means_uncertainties[1]/means_uncertainties[1]
+                                           float(columns[5]),]   # Uncertainty
+                    if means_uncertainties[1] != 0:
+                        means_uncertainties[0] = means_uncertainties[0]/means_uncertainties[1]
+                        means_uncertainties[1] = means_uncertainties[1]/means_uncertainties[1]
+                    else:
+                        means_uncertainties[0] = np.nan
+                        means_uncertainties[1] = np.nan
 
                     results[BP][scenario][model_spec].append(means_uncertainties)
 
             results[BP][scenario][model_spec] = np.array(results[BP][scenario][model_spec])
-            # print(f"{scenario}")
-            # print(f"{model_spec}")
-            # print(f"{results[BP][scenario]}")
 
-print(parameters)
+
+print(f"\nParameter dictionary: \n{parameters}")
 
 # parameters_tex = [find_tex_label_par(par) for par in parameters]
-print(parameters_tex)
+print(f"\nParameter latex dictionary: \n{parameters_tex}")
 
 # w = 1.0
 # dimw = w / 2
@@ -299,22 +347,61 @@ y_shift = [-0.15, 0.15]
 
 
 
+# Align parameters across model_specs
+aligned_parameters = {}
+aligned_parameters_tex = {}
+
+for BP in BPs:
+    aligned_parameters[BP] = {}
+    aligned_parameters_tex[BP] = {}
+
+    for scenario in scenarios:
+        # Collect all unique parameters across model_specs
+        all_parameters = set()
+        for model_spec in model_specs[scenario]:
+            all_parameters.update(parameters[BP][scenario][model_spec])
+
+        aligned_parameters[BP][scenario] = sorted(all_parameters, key=parameter_order)
+        aligned_parameters_tex[BP][scenario] = [
+            find_tex_label_par(par) for par in aligned_parameters[BP][scenario]
+        ]
+
+        # Align results for each model_spec
+        for model_spec in model_specs[scenario]:
+            aligned_results = []
+            for par in aligned_parameters[BP][scenario]:
+                if par in parameters[BP][scenario][model_spec]:
+                    idx = parameters[BP][scenario][model_spec].index(par)
+                    aligned_results.append(results[BP][scenario][model_spec][idx])
+                else:
+                    # Handle missing parameters (e.g., assign NaN)
+                    aligned_results.append([np.nan, np.nan])
+
+            results[BP][scenario][model_spec] = np.array(aligned_results)
+
+print(f"\n\n\n")
+print(f"Aligned Parameters: {aligned_parameters[BP][scenario]}")
+print(f"Aligned Parameters latex: {aligned_parameters_tex[BP][scenario]}")
+print(f"Results Shape: {results[BP][scenario][model_spec].shape}")
+
 #print(param_breaks)
+print(f"\n\n\n")
 num_fig = 0
 for i, BP in enumerate(BPs):
     for scenario in scenarios:
 
         nvar_per_plot = 15
-        param_breaks = np.arange(0, len(parameters[BP][scenario]), nvar_per_plot)
-        # param_breaks = np.array([0,5,10,15,20,25,29,33,37,41,46])
-        if len(param_breaks)==1 or param_breaks[-1] != len(parameters[BP][scenario]):
-            param_breaks = np.append(param_breaks, [len(parameters[BP][scenario])])
+        param_breaks = np.arange(0, len(aligned_parameters[BP][scenario]), nvar_per_plot)
 
-        print(len(parameters[BP][scenario]))
-        print(param_breaks)
+        if len(param_breaks)==1 or param_breaks[-1] != len(aligned_parameters[BP][scenario]):
+            param_breaks = np.append(param_breaks, [len(aligned_parameters[BP][scenario])])
 
-        labels = parameters_tex[BP][scenario][:]
-        for j, par in enumerate(parameters_tex[BP][scenario]):
+        print(f"\nProducing plots for {BP}, scenario {scenario}")
+        print(f"Total number of parameters: {len(aligned_parameters[BP][scenario])}")
+        print(f"Parameter breaks: {param_breaks}")
+
+        labels = aligned_parameters_tex[BP][scenario][:]
+        for j, par in enumerate(aligned_parameters_tex[BP][scenario]):
             labels[j] = par
 
 
