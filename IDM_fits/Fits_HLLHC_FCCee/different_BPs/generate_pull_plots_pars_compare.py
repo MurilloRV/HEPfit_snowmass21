@@ -213,20 +213,24 @@ scenarios = [
 
 # spec = "fits_realistic_HL_LHC_smeft_formula_no_cross_small_priors_long"
 # spec = "fits_realistic_HL_LHC_smeft_formula_no_cross_no_HLLHC_Higgs_small_priors_long"
-spec = "fits_realistic_HL_LHC_smeft_formula_no_cross_no_C_HG_small_priors_long"
+# spec = "fits_realistic_HL_LHC_smeft_formula_no_cross_no_C_HG_small_priors_long"
 # spec = "fits_realistic_HL_LHC_WFR_kala2_input_small_priors_long"
+spec = "fits_realistic_HL_LHC_use_new_NPs_WFR_kala2_input_all_small_priors_long"
 # spec = "fits_realistic_HL_LHC_WFR_kala2_input_no_HLLHC_Higgs_small_priors_long"
 # spec = "fits_realistic_HL_LHC_WFR_kala2_input_no_C_HG_small_priors_long"
 
 # Todo: fix the plots for fits without certain WC, like C_HG
 
+# compare_spec = "fits"
+compare_spec = "fits_realistic_HL_LHC_WFR_kala2_input_all_small_priors_long"
+
 model_specs = {
     # "IDM_FCCee240" : [spec, "fits"],
-    "IDM_FCCee240_FCCee365" : [spec, "fits"],
+    "IDM_FCCee240_FCCee365" : [spec, compare_spec],
     # "IDM_FCCee240_FCCee365_HLLHClambda" : [spec, "fits_realistic_HL_LHC_realistic_HL_LHC_long"],
 }
 
-labels = ["HEPfit formula", "Original"]
+labels = ["With new NPs", "Original"]
 # labels = ["w/ h External-leg", "Original"]
 model_specs_labels = {
     # "IDM_FCCee240" : labels,

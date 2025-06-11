@@ -284,7 +284,8 @@ scenario_titles = [
 ]
 
 # Use SM predictions as the central values for the pulls. Default should be False
-compare_with_SM = True
+# compare_with_SM = True
+compare_with_SM = False
 
 def read_SM_predictions():
 
@@ -386,11 +387,12 @@ def read_SM_predictions():
 # spec = "fits_realistic_HL_LHC_smeft_formula_no_cross_no_C_HG_small_priors_long"
 # spec = "fits_realistic_HL_LHC_WFR_kala2_input_small_priors_long"
 # spec = "fits_realistic_HL_LHC_WFR_kala2_input_no_HLLHC_Higgs_small_priors_long"
-spec = "fits_realistic_HL_LHC_WFR_kala2_input_no_C_HG_small_priors_long"
+# spec = "fits_realistic_HL_LHC_WFR_kala2_input_no_C_HG_small_priors_long"
+spec = "fits_realistic_HL_LHC_use_new_NPs_WFR_kala2_input_all_small_priors_long"
 
 # spec_compare = "fits"
 # spec_compare = "fits_realistic_HL_LHC_smeft_formula_no_cross_small_priors_long"
-spec_compare = "fits_realistic_HL_LHC_WFR_kala2_input_small_priors_long"
+spec_compare = "fits_realistic_HL_LHC_WFR_kala2_input_all_small_priors_long"
 
 model_specs = {
     # "IDM_FCCee240" : [spec, "fits"],
@@ -400,7 +402,8 @@ model_specs = {
 
 # labels = ["HEPfit formula", "Original"]
 # labels = ["w/ h External-leg", "Original"]
-labels = [r"No $C_{HG}$", r"w/ $C_{HG}$"]
+# labels = [r"No $C_{HG}$", r"w/ $C_{HG}$"]
+labels = ["With new NPs", "Original"]
 model_specs_labels = {
     # "IDM_FCCee240" : labels,
     "IDM_FCCee240_FCCee365" : labels,
@@ -445,15 +448,22 @@ for BP in BPs:
 # Create the output directory
 subprocess.run(["mkdir", "-p", f"{working_dir}comparison_plots/results_{results_dir}"])
 
+HEPfit_flags = [
+    "",
+    "use_new_NPs_",
+]
+
 exclusive_flag_list = [
     "no_quad",
     "no_1L_BSM",
     "no_1L_BSM_sqrt_s",
     "smeft_formula", 
+    "smeft_formula_all", 
     "smeft_formula_sqrt", 
     "smeft_formula_no_cross", 
     "smeft_formula_external_leg", 
-    "WFR_kala2_input"
+    "WFR_kala2_input",
+    "WFR_kala2_input_all",
 ]
 additional_flag_list = [
     "",
@@ -513,31 +523,31 @@ for scenario in scenarios:
             conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesEW")] = "ObservablesEW_all_mods"
             conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesEW_Current_SM_noLFU")] = "ObservablesEW_Current_SM_noLFU_kappa_scaled"
 
-        
-        for exclusive_flag in exclusive_flag_list:
-            for additional_flag in additional_flag_list:
-                for priors_flag in priors_flag_list:
-                    for MC_flag in MC_flag_list:
-                        full_flag = exclusive_flag + additional_flag + priors_flag + MC_flag
-                        if model_spec == f"fits_realistic_HL_LHC_{full_flag}":
-                    
-                            print(f"Full fit flag: {full_flag}")
-                            # print(f"{conf_files[scenario][model_spec]}")
+        for hepfit_flag in HEPfit_flags:
+            for exclusive_flag in exclusive_flag_list:
+                for additional_flag in additional_flag_list:
+                    for priors_flag in priors_flag_list:
+                        for MC_flag in MC_flag_list:
+                            full_flag = hepfit_flag + exclusive_flag + additional_flag + priors_flag + MC_flag
+                            if model_spec == f"fits_realistic_HL_LHC_{full_flag}":
+                                print(f"Full fit flag: {full_flag}")
+                        
+                                # print(f"{conf_files[scenario][model_spec]}")
 
-                            Higgs_flag = exclusive_flag
-                            
-                            if not additional_flag == "_no_HLLHC_Higgs":
-                                conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_HLLHC_SM_kappa_scaled")] = f"ObservablesHiggs_HLLHC_SM_kappa_scaled_{Higgs_flag}"
-                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_FCCee_240_SM_kappa_scaled")] = f"ObservablesHiggs_FCCee_240_SM_kappa_scaled_{Higgs_flag}"
-                            if scenario == "IDM_FCCee240_FCCee365" or scenario == "IDM_FCCee240_FCCee365_HLLHClambda":
-                                conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_FCCee_365_kappa_scaled")] = f"ObservablesHiggs_FCCee_365_kappa_scaled_{Higgs_flag}"
+                                Higgs_flag = exclusive_flag
+                                
+                                if not additional_flag == "_no_HLLHC_Higgs":
+                                    conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_HLLHC_SM_kappa_scaled")] = f"ObservablesHiggs_HLLHC_SM_kappa_scaled_{Higgs_flag}"
+                                conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_FCCee_240_SM_kappa_scaled")] = f"ObservablesHiggs_FCCee_240_SM_kappa_scaled_{Higgs_flag}"
+                                if scenario == "IDM_FCCee240_FCCee365" or scenario == "IDM_FCCee240_FCCee365_HLLHClambda":
+                                    conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_FCCee_365_kappa_scaled")] = f"ObservablesHiggs_FCCee_365_kappa_scaled_{Higgs_flag}"
 
-                            if additional_flag == "_no_HLLHC_Higgs":
-                                Higgs_flag = "no_HLLHC_" + Higgs_flag
-                            if scenario == "IDM_FCCee240_FCCee365_HLLHClambda":
-                                conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_scaled_realistic_HL_LHC")] = f"ObservablesHiggs_scaled_realistic_HL_LHC_{Higgs_flag}"
-                            else:
-                                conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs")] = f"ObservablesHiggs_{Higgs_flag}"
+                                if additional_flag == "_no_HLLHC_Higgs":
+                                    Higgs_flag = "no_HLLHC_" + Higgs_flag
+                                if scenario == "IDM_FCCee240_FCCee365_HLLHClambda":
+                                    conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_scaled_realistic_HL_LHC")] = f"ObservablesHiggs_scaled_realistic_HL_LHC_{Higgs_flag}"
+                                else:
+                                    conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs")] = f"ObservablesHiggs_{Higgs_flag}"
 
 
 
@@ -627,7 +637,7 @@ for BP in BPs:
 # print(f"Central values: {central_values_obs}")
 
 
-
+print(f"Reading fit results")
 results = {}
 
 for BP in BPs:
@@ -639,6 +649,7 @@ for BP in BPs:
         for model_spec in model_specs[scenario]:
 
             file_path = files[BP][scenario][model_spec]
+            print(f"Reading file: {file_path}")
             with open(file_path, 'r') as file:
                 lines = file.readlines()
                 
