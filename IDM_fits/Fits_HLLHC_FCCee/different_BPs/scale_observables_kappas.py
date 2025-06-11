@@ -9,8 +9,6 @@ import numpy as np
 parser = argparse.ArgumentParser()
 parser.add_argument("-s", "--scenario", help = "Name of the scenario (e.g. IDM_FCCee240)", type=str)
 parser.add_argument("-b", "--bp", help = "Which benchmark point to use", type=str)
-# parser.add_argument("--noHLLHClambda", help = "No on-shell kappa_lambda constraint", action="store_true")
-# parser.add_argument("--fast", help = "Run faster, using less points and a looser criterium for convergence", action="store_true")
 parser.add_argument("--realistic", help = "Use realistic, asymmetric uncertainties for the on-shell kappa_lambda measurement at HL-LHC", action="store_true")
 parser.add_argument("--ewpos_all", help = "Modify also the EWPO central values for current observables", action="store_true")
 parser.add_argument("--no_1L_BSM_sqrt_s", help = "Do not include momentum dependent BSM 1L corrections to Z->ZH", action="store_true")
@@ -24,25 +22,25 @@ parser.add_argument("--smeft_formula_all", help = "Use the HEPfit SMEFT expressi
 parser.add_argument("--WFR_kala2_input", help = "Include the WFR contribution, proportional to kappa_lambda**2, into the IDM ZH cross-section prediction", action="store_true")
 parser.add_argument("--WFR_kala2_input_all", help = "Include the WFR contribution, proportional to kappa_lambda**2, into the IDM predictions for all the XS and BR", action="store_true")
 
+parser.add_argument("--higgsconf", help = "Name of the ObsevablesHiggs configuration file", type=str, default=None)
+
 
 args = parser.parse_args()
-scenario = args.scenario
-BP = args.bp
-# noHLLHClambda = args.noHLLHClambda
-# fast = args.fast
+scenario                                = args.scenario
+BP                                      = args.bp
 realistic_HL_LHC_k_lambda_uncertainties = args.realistic
-modify_all_ewpos = args.ewpos_all
-no_1L_BSM_sqrt_s = args.no_1L_BSM_sqrt_s
-no_1L_BSM = args.no_1L_BSM
-no_quad = args.no_quad
-smeft_formula = args.smeft_formula
-smeft_formula_sqrt = args.smeft_formula_sqrt
-smeft_formula_no_cross = args.smeft_formula_no_cross
-smeft_formula_external_leg = args.smeft_formula_external_leg
-smeft_formula_all = args.smeft_formula_all
-WFR_kala2_input = args.WFR_kala2_input
-WFR_kala2_input_all = args.WFR_kala2_input_all
-
+modify_all_ewpos                        = args.ewpos_all
+no_1L_BSM_sqrt_s                        = args.no_1L_BSM_sqrt_s
+no_1L_BSM                               = args.no_1L_BSM
+no_quad                                 = args.no_quad
+smeft_formula                           = args.smeft_formula
+smeft_formula_sqrt                      = args.smeft_formula_sqrt
+smeft_formula_no_cross                  = args.smeft_formula_no_cross
+smeft_formula_external_leg              = args.smeft_formula_external_leg
+smeft_formula_all                       = args.smeft_formula_all
+WFR_kala2_input                         = args.WFR_kala2_input
+WFR_kala2_input_all                     = args.WFR_kala2_input_all
+higgsconf                               = args.higgsconf
 
 exclusive_flag_count = sum([
     modify_all_ewpos,
@@ -2578,28 +2576,32 @@ def uncertanties_low(lmbd):
 
 # Overwrites the main Higgs config file. Implies that the file must already exist!
 if scenario == "IDM_FCCee240_FCCee365_HLLHClambda":
-    if not realistic_HL_LHC_k_lambda_uncertainties:
-        input_file = file_dir + "ObservablesHiggs"
+    if higgsconf is None:
+        if not realistic_HL_LHC_k_lambda_uncertainties:
+            input_file = file_dir + "ObservablesHiggs"
+        else:
+            input_file = file_dir + "ObservablesHiggs_scaled_realistic_HL_LHC"
+
+        flag_map = {
+            no_1L_BSM_sqrt_s: "_no_1L_BSM_sqrt_s",
+            no_1L_BSM: "_no_1L_BSM",
+            no_quad: "_no_quad",
+            smeft_formula: "_smeft_formula",
+            smeft_formula_sqrt: "_smeft_formula_sqrt",
+            smeft_formula_no_cross: "_smeft_formula_no_cross",
+            smeft_formula_external_leg: "_smeft_formula_external_leg",
+            smeft_formula_all: "_smeft_formula_all",
+            WFR_kala2_input: "_WFR_kala2_input",
+            WFR_kala2_input_all: "_WFR_kala2_input_all",
+        }
+
+        for condition, flag in flag_map.items():
+            if condition:
+                input_file = input_file + flag
+                break
+
     else:
-        input_file = file_dir + "ObservablesHiggs_scaled_realistic_HL_LHC"
-
-    flag_map = {
-        no_1L_BSM_sqrt_s: "_no_1L_BSM_sqrt_s",
-        no_1L_BSM: "_no_1L_BSM",
-        no_quad: "_no_quad",
-        smeft_formula: "_smeft_formula",
-        smeft_formula_sqrt: "_smeft_formula_sqrt",
-        smeft_formula_no_cross: "_smeft_formula_no_cross",
-        smeft_formula_external_leg: "_smeft_formula_external_leg",
-        smeft_formula_all: "_smeft_formula_all",
-        WFR_kala2_input: "_WFR_kala2_input",
-        WFR_kala2_input_all: "_WFR_kala2_input_all",
-    }
-
-    for condition, flag in flag_map.items():
-        if condition:
-            input_file = input_file + flag
-            break
+        input_file = file_dir + higgsconf
 
     output_file = input_file + "_temp.conf"
     input_file  = input_file  + ".conf"

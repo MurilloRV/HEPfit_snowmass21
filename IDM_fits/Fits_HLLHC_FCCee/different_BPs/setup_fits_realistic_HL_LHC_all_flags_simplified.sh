@@ -29,7 +29,7 @@ LoopHd6NoSubleading="false" # Do not include the subleading corrections (resumma
 noLoopH3d6Quad="false" # Do not include quadratic modifications in the SM loops in Higgs observables due to the dim 6 interactions that contribute to the trilinear Higgs coupling. That is, sets cLH3d62 = 0.0
 LoopHd6noWFR="false" # Completely remove the wavefunction renormalization contribution to the kappa_lambda NLO effects. That is, sets dZH1 = dZH2 = 0.0
 no_C_HG="false" # Exclude the C_HG operator from the fit
-no_HLLHC_Higgs="false" # Exclude the HL-LHC Higgs observables from the fit
+no_HLLHC_Higgs="true" # Exclude the HL-LHC Higgs observables from the fit
 LoopH3d6Full="false" # Use the full expansion of the ZH cross-section in terms of C1 and dZH
 
 use_new_NPs="true" # Use newly implementent theory nuisance parameters
@@ -265,7 +265,7 @@ for BP_Name in "${BP_Names_Total[@]}"; do
 
             python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name}
             python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name} --realistic
-            python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name} --realistic --ewpos_all
+            python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name} --realistic --ewpos_all --higgsconf ${HIGGS_CONF}
             # Running the script also without the flag, so that the main fits (i.e. the ones with the flag set to false) are also set up properly
 
 
@@ -281,12 +281,6 @@ for BP_Name in "${BP_Names_Total[@]}"; do
                 "$WFR_kala2_input" == "true" ||
                 "$WFR_kala2_input_all" == "true" ]];
         then
-
-            # if [[ "${IDM_SCENARIOS[j]}" == "IDM_FCCee240_FCCee365_HLLHClambda" ]]; then
-            #     HIGGS_CONF="ObservablesHiggs_scaled_realistic_HL_LHC"
-            # else
-            #     HIGGS_CONF="ObservablesHiggs"
-            # fi
 
             FLAG_ARRAY=("no_1L_BSM_sqrt_s" 
                         "no_1L_BSM" 
@@ -318,13 +312,6 @@ for BP_Name in "${BP_Names_Total[@]}"; do
 
                     NEW_MODEL_HIGGS="IncludeFile ../../${HIGGS_CONF}.conf "
 
-                    # if [[ "${IDM_SCENARIOS[j]}" == "IDM_FCCee240_FCCee365_HLLHClambda" ]]; then
-                    #     sed -i "\/IncludeFile ..\/..\/ObservablesHiggs_scaled_realistic_HL_LHC.conf/c\\$NEW_MODEL_HIGGS" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
-                    #     sed -i "\/IncludeFile ..\/..\/ObservablesHiggs_scaled_realistic_HL_LHC.conf/c\\$NEW_MODEL_HIGGS" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
-                    # else
-                    #     sed -i "\/IncludeFile ..\/..\/ObservablesHiggs.conf/c\\$NEW_MODEL_HIGGS" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
-                    #     sed -i "\/IncludeFile ..\/..\/ObservablesHiggs.conf/c\\$NEW_MODEL_HIGGS" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
-                    # fi
                     sed -i "\/IncludeFile ..\/..\/ObservablesHiggs.*/c\\$NEW_MODEL_HIGGS" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
                     sed -i "\/IncludeFile ..\/..\/ObservablesHiggs.*/c\\$NEW_MODEL_HIGGS" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
                     
@@ -334,7 +321,7 @@ for BP_Name in "${BP_Names_Total[@]}"; do
                     cd $TARGET_PATH
                     python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name}
                     python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name} --realistic
-                    python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name} --realistic ${PYTHON_ARG}
+                    python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name} --realistic ${PYTHON_ARG} --higgsconf ${HIGGS_CONF}
                     # Running the script also without the flag, so that the main fits (i.e. the ones with the flag set to false) are also set up properly
 
                 fi
@@ -345,7 +332,7 @@ for BP_Name in "${BP_Names_Total[@]}"; do
         else
             cd $TARGET_PATH
             python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name}
-            python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name} --realistic
+            python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name} --realistic  --higgsconf ${HIGGS_CONF}
         fi
 
     done
