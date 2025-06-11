@@ -32,7 +32,7 @@ no_C_HG="false" # Exclude the C_HG operator from the fit
 no_HLLHC_Higgs="true" # Exclude the HL-LHC Higgs observables from the fit
 LoopH3d6Full="false" # Use the full expansion of the ZH cross-section in terms of C1 and dZH
 
-use_new_NPs="true" # Use newly implementent theory nuisance parameters
+use_new_NPs="false" # Use newly implementent theory nuisance parameters
 
 # Check if more than one exclusive flag is set to "true"
 EXCLUSIVE_FLAGS=(
@@ -183,8 +183,8 @@ for BP_Name in "${BP_Names_Total[@]}"; do
             echo "ModelParameter  theoerr_FCCee240        0.  0.0023295620053664676  0." >> $NEW_NP_CONF
             echo "ModelParameter  theoerr_FCCee365        0.  0.0022585758048204183  0." >> $NEW_NP_CONF
             
-            echo "ModelParameter  NPmismtach_FCCee240        0.  0.006856788995512071  0." >> $NEW_NP_CONF
-            echo "ModelParameter  NPmismtach_FCCee365        0.  0.0034632124670086065  0." >> $NEW_NP_CONF
+            echo "ModelParameter  NPmismatch_FCCee240        0.  0.006856788995512071  0." >> $NEW_NP_CONF
+            echo "ModelParameter  NPmismatch_FCCee365        0.  0.0034632124670086065  0." >> $NEW_NP_CONF
             echo "#" >> $NEW_NP_CONF
 
         fi
