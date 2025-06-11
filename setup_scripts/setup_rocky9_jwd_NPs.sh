@@ -19,4 +19,7 @@ export PATH="/jwd/HEPfit/build/HEPfit/bin:$PATH"
 
 cd ${HEPfit_dir}
 
+git config --global user.name "Murillo Vellasco"
+git config --global user.email "murillovellasco@gmail.com"
+
 # add line "#include <Math/Util.h>" to BCIntegrate.cxx

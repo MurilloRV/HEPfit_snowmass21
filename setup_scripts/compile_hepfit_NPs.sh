@@ -14,3 +14,6 @@ cd /jwd
 tar czf ${HEPfit_dir}/code/HEPfit_snowmass_mod_NPs.tar.gz HEPfit
 
 cd $HEPfit_dir
+
+git config --global user.name "Murillo Vellasco"
+git config --global user.email "murillovellasco@gmail.com"

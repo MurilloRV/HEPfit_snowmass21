@@ -21,9 +21,9 @@ smeft_formula="false" # Using the HEPfit SMEFT expression for sigma_Zh, along wi
 smeft_formula_sqrt="false" # Using the HEPfit SMEFT expression for sigma_Zh, including dkappaf**2 inside of the square root (not correct)
 smeft_formula_no_cross="false" # Using the HEPfit SMEFT expression for sigma_Zh, removing cross terms
 smeft_formula_external_leg="false" # Using the HEPfit SMEFT expression for sigma_Zh, without the external-leg correction (dkappaf)
-smeft_formula_all="true" # Using the HEPfit SMEFT expression for all XS and BR, including 2*dkappaf in the square root to stand in for C_Hbox  (as "_no_cross")
+smeft_formula_all="false" # Using the HEPfit SMEFT expression for all XS and BR, including 2*dkappaf in the square root to stand in for C_Hbox  (as "_no_cross")
 WFR_kala2_input="false" # Include the WFR contribution, proportional to kappa_lambda**2, into the IDM ZH cross-section prediction
-WFR_kala2_input_all="false" # Include the WFR contribution, proportional to kappa_lambda**2, into the IDM predictions for all the XS and BR
+WFR_kala2_input_all="true" # Include the WFR contribution, proportional to kappa_lambda**2, into the IDM predictions for all the XS and BR
 
 LoopHd6NoSubleading="false" # Do not include the subleading corrections (resummation) in kappa_lambda NLO effects. That is, Sets dZH1 = dZH2 = dZH
 noLoopH3d6Quad="false" # Do not include quadratic modifications in the SM loops in Higgs observables due to the dim 6 interactions that contribute to the trilinear Higgs coupling. That is, sets cLH3d62 = 0.0
@@ -32,6 +32,7 @@ no_C_HG="false" # Exclude the C_HG operator from the fit
 no_HLLHC_Higgs="false" # Exclude the HL-LHC Higgs observables from the fit
 LoopH3d6Full="false" # Use the full expansion of the ZH cross-section in terms of C1 and dZH
 
+use_new_NPs="true" # Use newly implementent theory nuisance parameters
 
 # Check if more than one exclusive flag is set to "true"
 EXCLUSIVE_FLAGS=(
@@ -76,6 +77,9 @@ for BP_Name in "${BP_Names_Total[@]}"; do
     for ((j=0; j<${#IDM_SCENARIOS[@]}; j++)); do
 
         MODEL_CONF_FILE="model_fits_realistic_HL_LHC"
+
+        if [ "$use_new_NPs" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_use_new_NPs"; fi
+
         if [ "$modify_all_ewpos" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_all_EW_mods"; fi
         if [ "$no_1L_BSM_sqrt_s" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_no_1L_BSM_sqrt_s"; fi
         if [ "$no_1L_BSM" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_no_1L_BSM"; fi
@@ -161,6 +165,29 @@ for BP_Name in "${BP_Names_Total[@]}"; do
         sed -i "/PrerunMaxIter              10000000 /c PrerunMaxIter              5000000 " MonteCarlo_full.conf
         sed -i "/RValueForConvergence  .*/c RValueForConvergence    1.1 " MonteCarlo_full.conf
 
+
+        ####################################################################################
+        ################### SETUP CONFIG FILES FOR NEW NUISANCE PARAMETERS #################
+        ####################################################################################
+        if [[ "$use_new_NPs" == "true" ]]; then
+            NEW_NP_CONF="FCCee_new_NPs.conf"
+            NEW_NP_CONF_INCLUDE="IncludeFile ../../${NEW_NP_CONF}"
+            sed -i "\%IncludeFile ../../HiggsEW_Par_Corr.conf.*%a #\n$NEW_NP_CONF_INCLUDE" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
+            sed -i "\%IncludeFile ../../HiggsEW_Par_Corr.conf.*%a #\n$NEW_NP_CONF_INCLUDE" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
+             
+            echo "######################################################################" > $NEW_NP_CONF
+            echo "# New theory nuisance parameters for FCCee Higgs production" >> $NEW_NP_CONF
+            echo "# cross-sections" >> $NEW_NP_CONF
+            echo "######################################################################" >> $NEW_NP_CONF
+            echo "#" >> $NEW_NP_CONF
+            echo "ModelParameter  theoerr_FCCee240        0.  0.0023295620053664676  0." >> $NEW_NP_CONF
+            echo "ModelParameter  theoerr_FCCee365        0.  0.0022585758048204183  0." >> $NEW_NP_CONF
+            
+            echo "ModelParameter  NPmismtach_FCCee240        0.  0.006856788995512071  0." >> $NEW_NP_CONF
+            echo "ModelParameter  NPmismtach_FCCee365        0.  0.0034632124670086065  0." >> $NEW_NP_CONF
+            echo "#" >> $NEW_NP_CONF
+
+        fi
 
 
         if [[ "${IDM_SCENARIOS[j]}" == "IDM_FCCee240_FCCee365_HLLHClambda" ]]; then
