@@ -1,4 +1,6 @@
 #!/bin/bash
+source /etc/profile
+source $BUDDY/.bashrc_Rocky9
 
 setupATLAS
 lsetup "views LCG_105 x86_64-el9-gcc11-opt" 

@@ -24,9 +24,12 @@ all_scenarios = [
 # spec = "fits_realistic_HL_LHC_smeft_formula_no_cross_no_HLLHC_Higgs_small_priors_long"
 # spec = "fits_realistic_HL_LHC_smeft_formula_external_leg_small_priors_long"
 # spec = "fits_realistic_HL_LHC_WFR_kala2_input_small_priors_long"
-spec = "fits_realistic_HL_LHC_WFR_kala2_input_all_small_priors_long"
+# spec = "fits_realistic_HL_LHC_WFR_kala2_input_all_small_priors_long"
+# spec = "fits_realistic_HL_LHC_WFR_kala2_input_all_no_HLLHC_Higgs_small_priors_long"
 # spec = "fits_realistic_HL_LHC_WFR_kala2_input_no_C_HG_small_priors_long"
 # spec = "fits_realistic_HL_LHC_WFR_kala2_input_no_HLLHC_Higgs_small_priors_long"
+# spec = "fits_realistic_HL_LHC_use_new_NPs_WFR_kala2_input_all_small_priors_long"
+spec = "fits_realistic_HL_LHC_use_new_NPs_WFR_kala2_input_all_no_HLLHC_Higgs_small_priors_long"
 model_spec = {
     # "IDM_FCCee240" : spec,
     "IDM_FCCee240_FCCee365" : spec,

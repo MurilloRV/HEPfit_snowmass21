@@ -387,8 +387,10 @@ def read_SM_predictions():
 # spec = "fits_realistic_HL_LHC_smeft_formula_no_cross_no_C_HG_small_priors_long"
 # spec = "fits_realistic_HL_LHC_WFR_kala2_input_small_priors_long"
 # spec = "fits_realistic_HL_LHC_WFR_kala2_input_no_HLLHC_Higgs_small_priors_long"
+# spec = "fits_realistic_HL_LHC_WFR_kala2_input_all_no_HLLHC_Higgs_small_priors_long"
 # spec = "fits_realistic_HL_LHC_WFR_kala2_input_no_C_HG_small_priors_long"
-spec = "fits_realistic_HL_LHC_use_new_NPs_WFR_kala2_input_all_small_priors_long"
+# spec = "fits_realistic_HL_LHC_use_new_NPs_WFR_kala2_input_all_small_priors_long"
+spec = "fits_realistic_HL_LHC_use_new_NPs_WFR_kala2_input_all_no_HLLHC_Higgs_small_priors_long"
 
 # spec_compare = "fits"
 # spec_compare = "fits_realistic_HL_LHC_smeft_formula_no_cross_small_priors_long"
@@ -403,7 +405,9 @@ model_specs = {
 # labels = ["HEPfit formula", "Original"]
 # labels = ["w/ h External-leg", "Original"]
 # labels = [r"No $C_{HG}$", r"w/ $C_{HG}$"]
-labels = ["With new NPs", "Original"]
+# labels = ["No HL-LHC Higgs", "Original"]
+# labels = ["With new NPs", "Original"]
+labels = ["W/ NPs, no HL-LHC h", "Original"]
 model_specs_labels = {
     # "IDM_FCCee240" : labels,
     "IDM_FCCee240_FCCee365" : labels,
@@ -690,8 +694,8 @@ for BP in BPs:
 
             print(len(results[BP][scenario][model_spec][:, 0]), len(central_values_obs[BP][scenario][model_spec]))
 
-            index = observables[BP][scenario][model_spec].index("muttHWW2l2vHL")
-            print(f"muttHWW2l2vHL results = {results[BP][scenario][model_spec][index,:]}")
+            # index = observables[BP][scenario][model_spec].index("muttHWW2l2vHL")
+            # print(f"muttHWW2l2vHL results = {results[BP][scenario][model_spec][index,:]}")
 
 
 # Align observables across model_specs
@@ -830,4 +834,4 @@ for i, BP in enumerate(BPs):
                 plot_filename = plot_filename + "_with_SM"
             plt.savefig(working_dir + f'comparison_plots/results_{results_dir}/{plot_filename}_{k}.pdf')
 
-plt.show()
+# plt.show()
