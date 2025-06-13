@@ -418,8 +418,8 @@ results_dir = spec
 
 
 # Do not plot the following observables
-# skip_obs = ["Mw_C", "GammaZ_C"]
-skip_obs = ["Mw_C", "Mw_HLLHC", "Mw_FCCee", "GammaZ_C", "GammaZ_FCCee"]
+skip_obs = ["Mw_C", "GammaZ_C"]
+# skip_obs = ["Mw_C", "Mw_HLLHC", "Mw_FCCee", "GammaZ_C", "GammaZ_FCCee"]
 
 # plot_title = [rf"IDM Central values ({BP}), FCC-ee$_{{240}}$ + FCC-ee$_{{365}}$" for BP in BPs]
 # plot_title = [rf"IDM ({BP}), FCC-ee$_{{240}}$ + FCC-ee$_{{365}}$" for BP in BP_Names]
