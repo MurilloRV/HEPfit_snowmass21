@@ -37,6 +37,8 @@ no_HLLHC_Higgs="true" # Exclude the HL-LHC Higgs observables from the fit
 LoopH3d6Full="false" # Use the full expansion of the ZH cross-section in terms of C1 and dZH
 
 use_new_NPs="true" # Use newly implementent theory nuisance parameters
+scale_NPs=$(echo "scale=20.0; scl=2.295748928898636; scl=sqrt(scl); scl" | bc)
+# scale_NPs="1.0"  # default
 
 # Check if more than one exclusive flag is set to "true"
 EXCLUSIVE_FLAGS=(
@@ -81,7 +83,10 @@ for BP_Name in "${BP_Names_Total[@]}"; do
 
         MODEL_CONF_FILE="model_fits_realistic_HL_LHC"
 
+        
         if [ "$use_new_NPs" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_use_new_NPs"; fi
+        scale_NPs_formatted=$(printf "%.3g" "$scale_NPs")
+        if [ "$scale_NPs_formatted" != "1" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_scale${scale_NPs_formatted}"; fi
 
         if [ "$no_1L_BSM_sqrt_s" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_no_1L_BSM_sqrt_s"; fi
         if [ "$no_1L_BSM" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_no_1L_BSM"; fi
@@ -173,21 +178,29 @@ for BP_Name in "${BP_Names_Total[@]}"; do
         ################### SETUP CONFIG FILES FOR NEW NUISANCE PARAMETERS #################
         ####################################################################################
         if [[ "$use_new_NPs" == "true" ]]; then
-            NEW_NP_CONF="FCCee_new_NPs.conf"
+            NEW_NP_CONF="FCCee_new_NPs"
+            if [ "$scale_NPs_formatted" != "1" ]; then NEW_NP_CONF="${NEW_NP_CONF}_scale${scale_NPs_formatted}"; fi
+            NEW_NP_CONF="${NEW_NP_CONF}.conf"
+
             NEW_NP_CONF_INCLUDE="IncludeFile ../../${NEW_NP_CONF}"
             sed -i "\%IncludeFile ../../HiggsEW_Par_Corr.conf.*%a #\n$NEW_NP_CONF_INCLUDE" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
             sed -i "\%IncludeFile ../../HiggsEW_Par_Corr.conf.*%a #\n$NEW_NP_CONF_INCLUDE" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
-             
+            
+            theoerr_FCCee240=$(printf "%.20f" "$(echo "$scale_NPs * 0.0023295620053664676" | bc)" )
+            theoerr_FCCee365=$(printf "%.20f" "$(echo "$scale_NPs * 0.0022585758048204183" | bc)" )
+            NPmismatch_FCCee240=$(printf "%.20f" "$(echo "$scale_NPs * 0.006856788995512071" | bc)" )
+            NPmismatch_FCCee365=$(printf "%.20f" "$(echo "$scale_NPs * 0.0034632124670086065" | bc)" )
+
             echo "######################################################################" > $NEW_NP_CONF
             echo "# New theory nuisance parameters for FCCee Higgs production" >> $NEW_NP_CONF
             echo "# cross-sections" >> $NEW_NP_CONF
             echo "######################################################################" >> $NEW_NP_CONF
             echo "#" >> $NEW_NP_CONF
-            echo "ModelParameter  theoerr_FCCee240        0.  0.0023295620053664676  0." >> $NEW_NP_CONF
-            echo "ModelParameter  theoerr_FCCee365        0.  0.0022585758048204183  0." >> $NEW_NP_CONF
+            echo "ModelParameter  theoerr_FCCee240        0.  ${theoerr_FCCee240}  0." >> $NEW_NP_CONF
+            echo "ModelParameter  theoerr_FCCee365        0.  ${theoerr_FCCee365}  0." >> $NEW_NP_CONF
             
-            echo "ModelParameter  NPmismatch_FCCee240        0.  0.006856788995512071  0." >> $NEW_NP_CONF
-            echo "ModelParameter  NPmismatch_FCCee365        0.  0.0034632124670086065  0." >> $NEW_NP_CONF
+            echo "ModelParameter  NPmismatch_FCCee240        0.  ${NPmismatch_FCCee240}  0." >> $NEW_NP_CONF
+            echo "ModelParameter  NPmismatch_FCCee365        0.  ${NPmismatch_FCCee365}  0." >> $NEW_NP_CONF
             echo "#" >> $NEW_NP_CONF
 
         fi
