@@ -259,6 +259,18 @@ n_specs = len(model_specs["IDM_FCCee240_FCCee365"])
 y_shift = np.linspace(+dimw/2, -dimw/2, n_specs) 
 
 
+fig_klam_err_curves, ax_klam_err_curves = plt.subplots(figsize=(5.5,4), dpi=150)
+BP_colors = [
+    "tab:blue", 
+    "tab:red", 
+    "tab:green",
+]
+BP_labels = [
+    r"$\kappa_\lambda=2.39$",
+    r"$\kappa_\lambda=3.34$",
+    r"$\kappa_\lambda=4.33$",
+]
+
 fig_num = 0
 for i, BP in enumerate(BPs):
 
@@ -282,9 +294,9 @@ for i, BP in enumerate(BPs):
         
         for k in range(len(param_breaks) - 1):
 
-            fig= plt.figure(fig_num, figsize=(5.5,4), dpi=150)
+            fig, ax = plt.subplots(figsize=(5.5,4), dpi=150)
             fig_num = fig_num + 1
-            ax = plt.gca()
+            # ax = plt.gca()
 
             for spec_index, model_spec in enumerate(model_specs[scenario]):
 
@@ -336,6 +348,27 @@ for i, BP in enumerate(BPs):
             ax.set_title(plot_title[BP][scenario], fontsize=11)
             plt.tight_layout()   # Makes sure labels are not cut off
             plt.savefig(working_dir + f'comparison_plots/results_{results_dir}/{plot_filename}.pdf')
+
+            plot_theo_errs = [0.0] + [float(err) for err in theo_errs]
+            plot_klam_errs = [results[BP][scenario][model_spec][0,1] for model_spec in model_specs[scenario]]
+            plot_klam_errs = plot_klam_errs[-1:] + plot_klam_errs[:-1]
+            ax_klam_err_curves.plot(plot_theo_errs, plot_klam_errs, label=BP_labels[i], color=BP_colors[i])
+            ax_klam_err_curves.scatter(plot_theo_errs, plot_klam_errs, color=BP_colors[i])
+
+
+# Generate plots with curves for the klam uncertainty as function of the new theo NP,
+# one curve per BP/kappa_lambda
+# fig_klam_err_curves 
+# ax_klam_err_curves
+ax_klam_err_curves.grid(which='major', linestyle='--', linewidth=0.5, color="black")
+ax_klam_err_curves.grid(which='minor', linestyle='--', linewidth=0.5)
+ax_klam_err_curves.set_xlabel(r"$\epsilon^\text{theo}$", fontsize=15)
+ax_klam_err_curves.set_ylabel(r"$\kappa_{\lambda}$ absolute uncertainty", fontsize=13)
+ax_klam_err_curves.set_xscale('log')
+ax_klam_err_curves.legend(loc='best', fontsize=10,)
+fig_klam_err_curves.tight_layout()   # Makes sure labels are not cut off
+plot_filename = f"klam_error_curves_{scenario}"
+fig_klam_err_curves.savefig(working_dir + f'comparison_plots/results_{results_dir}/{plot_filename}.pdf')
 
 # plt.show()
 
