@@ -43,7 +43,6 @@ WFR_kala2_input_all                     = args.WFR_kala2_input_all
 higgsconf                               = args.higgsconf
 
 exclusive_flag_count = sum([
-    modify_all_ewpos,
     no_1L_BSM_sqrt_s, 
     no_1L_BSM, smeft_formula, 
     no_quad,
