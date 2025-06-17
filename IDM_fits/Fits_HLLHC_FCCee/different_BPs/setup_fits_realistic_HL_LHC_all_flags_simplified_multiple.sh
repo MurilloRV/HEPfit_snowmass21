@@ -262,6 +262,9 @@ for BP_Name in "${BP_Names_Total[@]}"; do
                 sed -i "\/IncludeFile ..\/..\/ObservablesHiggs.*/c\\$NEW_MODEL_HIGGS" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
                 sed -i "\/IncludeFile ..\/..\/ObservablesHiggs.*/c\\$NEW_MODEL_HIGGS" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
 
+                # Increase prior for CuH_33r to avoid cutoff. Lack of HL-LHC Higgs observables means that CuH_33r is not constrained by the fit
+                sed -i "/ModelParameter  CuH_33r  .*/c ModelParameter  CuH_33r   0.  0.  50.0" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
+                sed -i "/ModelParameter  CuH_33r  .*/c ModelParameter  CuH_33r                0.  0.  50.0" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
             fi
 
             if [ "$LoopH3d6Full" == "true" ]; then

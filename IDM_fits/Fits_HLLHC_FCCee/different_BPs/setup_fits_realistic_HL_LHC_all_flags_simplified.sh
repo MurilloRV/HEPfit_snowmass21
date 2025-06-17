@@ -36,9 +36,9 @@ no_C_HG="false" # Exclude the C_HG operator from the fit
 no_HLLHC_Higgs="true" # Exclude the HL-LHC Higgs observables from the fit
 LoopH3d6Full="false" # Use the full expansion of the ZH cross-section in terms of C1 and dZH
 
-use_new_NPs="true" # Use newly implementent theory nuisance parameters
-scale_NPs=$(echo "scale=20.0; scl=2.295748928898636; scl=sqrt(scl); scl" | bc)
-# scale_NPs="1.0"  # default
+use_new_NPs="false" # Use newly implementent theory nuisance parameters
+# scale_NPs=$(echo "scale=20.0; scl=2.295748928898636; scl=sqrt(scl); scl" | bc)
+scale_NPs="1.0"  # default
 
 # Check if more than one exclusive flag is set to "true"
 EXCLUSIVE_FLAGS=(
@@ -84,9 +84,11 @@ for BP_Name in "${BP_Names_Total[@]}"; do
         MODEL_CONF_FILE="model_fits_realistic_HL_LHC"
 
         
-        if [ "$use_new_NPs" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_use_new_NPs"; fi
-        scale_NPs_formatted=$(printf "%.3g" "$scale_NPs")
-        if [ "$scale_NPs_formatted" != "1" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_scale${scale_NPs_formatted}"; fi
+        if [ "$use_new_NPs" == "true" ]; then 
+            MODEL_CONF_FILE="${MODEL_CONF_FILE}_use_new_NPs"
+            scale_NPs_formatted=$(printf "%.3g" "$scale_NPs")
+            if [ "$scale_NPs_formatted" != "1" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_scale${scale_NPs_formatted}"; fi
+        fi
 
         if [ "$no_1L_BSM_sqrt_s" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_no_1L_BSM_sqrt_s"; fi
         if [ "$no_1L_BSM" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_no_1L_BSM"; fi
@@ -260,6 +262,9 @@ for BP_Name in "${BP_Names_Total[@]}"; do
             sed -i "\/IncludeFile ..\/..\/ObservablesHiggs.*/c\\$NEW_MODEL_HIGGS" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
             sed -i "\/IncludeFile ..\/..\/ObservablesHiggs.*/c\\$NEW_MODEL_HIGGS" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
 
+            # Increase prior for CuH_33r to avoid cutoff. Lack of HL-LHC Higgs observables means that CuH_33r is not constrained by the fit
+            sed -i "/ModelParameter  CuH_33r  .*/c ModelParameter  CuH_33r   0.  0.  50.0" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
+            sed -i "/ModelParameter  CuH_33r  .*/c ModelParameter  CuH_33r                0.  0.  50.0" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
         fi
 
         if [ "$LoopH3d6Full" == "true" ]; then
