@@ -33,12 +33,12 @@ LoopHd6NoSubleading="false" # Do not include the subleading corrections (resumma
 noLoopH3d6Quad="false" # Do not include quadratic modifications in the SM loops in Higgs observables due to the dim 6 interactions that contribute to the trilinear Higgs coupling. That is, sets cLH3d62 = 0.0
 LoopHd6noWFR="false" # Completely remove the wavefunction renormalization contribution to the kappa_lambda NLO effects. That is, sets dZH1 = dZH2 = 0.0
 no_C_HG="false" # Exclude the C_HG operator from the fit
-no_HLLHC_Higgs="true" # Exclude the HL-LHC Higgs observables from the fit
+no_HLLHC_Higgs="false" # Exclude the HL-LHC Higgs observables from the fit
 LoopH3d6Full="false" # Use the full expansion of the ZH cross-section in terms of C1 and dZH
 
-use_new_NPs="false" # Use newly implementent theory nuisance parameters
-# scale_NPs=$(echo "scale=20.0; scl=2.295748928898636; scl=sqrt(scl); scl" | bc)
-scale_NPs="1.0"  # default
+use_new_NPs="true" # Use newly implementent theory nuisance parameters
+scale_NPs=$(echo "scale=20.0; scl=2.295748928898636; scl=sqrt(scl); scl" | bc)
+# scale_NPs="1.0"  # default
 
 # Check if more than one exclusive flag is set to "true"
 EXCLUSIVE_FLAGS=(
@@ -262,9 +262,11 @@ for BP_Name in "${BP_Names_Total[@]}"; do
             sed -i "\/IncludeFile ..\/..\/ObservablesHiggs.*/c\\$NEW_MODEL_HIGGS" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
             sed -i "\/IncludeFile ..\/..\/ObservablesHiggs.*/c\\$NEW_MODEL_HIGGS" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
 
-            # Increase prior for CuH_33r to avoid cutoff. Lack of HL-LHC Higgs observables means that CuH_33r is not constrained by the fit
+            # Increase prior for CuH_33r, CHG, to avoid cutoff. Lack of HL-LHC Higgs observables means that CuH_33r is not constrained by the fit
             sed -i "/ModelParameter  CuH_33r  .*/c ModelParameter  CuH_33r   0.  0.  50.0" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
             sed -i "/ModelParameter  CuH_33r  .*/c ModelParameter  CuH_33r                0.  0.  50.0" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
+            sed -i "/ModelParameter  CHG  .*/c ModelParameter  CHG   0.  0.  2.0" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
+            sed -i "/ModelParameter  CHG  .*/c ModelParameter  CHG                    0.  0.  2.0" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
         fi
 
         if [ "$LoopH3d6Full" == "true" ]; then
