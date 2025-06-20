@@ -70,8 +70,8 @@ int main()
     // std::string model_spec = "fits_realistic_HL_LHC_WFR_kala2_input_no_C_HG_small_priors_long";
     // std::string model_spec = "fits_realistic_HL_LHC_WFR_kala2_input_no_HLLHC_Higgs_small_priors_long";
     // std::string model_spec = "fits_realistic_HL_LHC_WFR_kala2_input_all_small_priors_long";
-    // std::string model_spec = "fits_realistic_HL_LHC_WFR_kala2_input_all_all_EW_mods_small_priors_long";
-    std::string model_spec = "fits_realistic_HL_LHC_WFR_kala2_input_all_no_HLLHC_Higgs_small_priors_long";
+    std::string model_spec = "fits_realistic_HL_LHC_WFR_kala2_input_all_all_EW_mods_small_priors_long";
+    // std::string model_spec = "fits_realistic_HL_LHC_WFR_kala2_input_all_no_HLLHC_Higgs_small_priors_long";
     // std::string model_spec = "fits_realistic_HL_LHC_WFR_kala2_input_all_all_EW_mods_no_HLLHC_Higgs_small_priors_long";
     // std::string model_spec = "fits_long";
     // std::string model_spec = "fits_full";
@@ -86,11 +86,13 @@ int main()
     // std::string model_spec = "fits_realistic_HL_LHC_use_new_NPs_WFR_kala2_input_all_all_EW_mods_small_priors_long";
     // std::string model_spec = "fits_realistic_HL_LHC_use_new_NPs_WFR_kala2_input_all_all_EW_mods_no_HLLHC_Higgs_small_priors_long";
     // std::string model_spec = "fits_realistic_HL_LHC_use_new_NPs_scale1.52_WFR_kala2_input_all_all_EW_mods_small_priors_long";
+    // std::string model_spec = "fits_realistic_HL_LHC_use_new_NPs_scale1.52_WFR_kala2_input_all_all_EW_mods_small_priors_strict";
     // std::string model_spec = "fits_realistic_HL_LHC_use_new_NPs_scale1.52_WFR_kala2_input_all_all_EW_mods_no_HLLHC_Higgs_small_priors_long";
     
 
 
-    std::string working_dir = "../Fits_HLLHC_FCCee/different_BPs/";
+    // std::string working_dir = "../Fits_HLLHC_FCCee/different_BPs/";
+    std::string working_dir = "../Self_consistent_IDM_fits/";
     // std::string working_dir = "../Fits_HLLHC_ILC_250_350_500_1000/different_BPs/";
 
 
