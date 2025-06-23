@@ -15,7 +15,6 @@ BPB_Names=("BPB_2" "BPB_4" "BPB_6")
 # Using realistic HL-LHC observables
 
 # Default behavior: all flags set to false
-modify_all_ewpos="false" # Modify also the EWPO central values for *current* observables, not just future ones
 no_1L_BSM_sqrt_s="false" # Excludes the momentum dependence of the BSM k_Zh coupling
 no_1L_BSM="false" # Excludes the full BSM contribution to the k_Zh coupling
 no_quad="false" # Excludes the quadratic term in the scaling of the Zh cross-section coming from the 1L BSM contribution
@@ -27,18 +26,20 @@ smeft_formula_all="false" # Using the HEPfit SMEFT expression for all XS and BR,
 WFR_kala2_input="false" # Include the WFR contribution, proportional to kappa_lambda**2, into the IDM ZH cross-section prediction
 WFR_kala2_input_all="true" # Include the WFR contribution, proportional to kappa_lambda**2, into the IDM predictions for all the XS and BR
 
+modify_all_ewpos="true" # Modify also the EWPO central values for *current* observables, not just future ones
 LoopHd6NoSubleading="false" # Do not include the subleading corrections (resummation) in kappa_lambda NLO effects. That is, Sets dZH1 = dZH2 = dZH
 noLoopH3d6Quad="false" # Do not include quadratic modifications in the SM loops in Higgs observables due to the dim 6 interactions that contribute to the trilinear Higgs coupling. That is, sets cLH3d62 = 0.0
 LoopHd6noWFR="false" # Completely remove the wavefunction renormalization contribution to the kappa_lambda NLO effects. That is, sets dZH1 = dZH2 = 0.0
 no_C_HG="false" # Exclude the C_HG operator from the fit
-no_HLLHC_Higgs="true" # Exclude the HL-LHC Higgs observables from the fit
+no_HLLHC_Higgs="false" # Exclude the HL-LHC Higgs observables from the fit
 LoopH3d6Full="false" # Use the full expansion of the ZH cross-section in terms of C1 and dZH
 
 use_new_NPs="true" # Use newly implementent theory nuisance parameters
+scale_NPs=$(echo "scale=20.0; scl=2.295748928898636; scl=sqrt(scl); scl" | bc)
+# scale_NPs="1.0"  # default
 
 # Check if more than one exclusive flag is set to "true"
 EXCLUSIVE_FLAGS=(
-    "$modify_all_ewpos"
     "$no_1L_BSM_sqrt_s"
     "$no_1L_BSM"
     "$no_quad"
@@ -67,13 +68,13 @@ fi
 
 theoerr_FCCee240_values=("0.0010" "0.0020" "0.0050" "0.0075" "0.010" "0.015" "0.020" "0.030" "0.050" "0.100")
 theoerr_FCCee365_values=("${theoerr_FCCee240_values[@]}")
-NPmismatch_FCCee240=("${theoerr_FCCee240_values[@]}")
-NPmismatch_FCCee365=("${theoerr_FCCee240_values[@]}")
+NPmismatch_FCCee240_values=("${theoerr_FCCee240_values[@]}")
+NPmismatch_FCCee365_values=("${theoerr_FCCee240_values[@]}")
 
 echo "FCCee240 theoretical uncertainties: ${theoerr_FCCee240_values[@]}"
 echo "FCCee365 theoretical uncertainties: ${theoerr_FCCee365_values[@]}"
-echo "FCCee240 New Physics mismatch: ${NPmismatch_FCCee240[@]}"
-echo "FCCee365 New Physics mismatch: ${NPmismatch_FCCee365[@]}"
+echo "FCCee240 New Physics mismatch: ${NPmismatch_FCCee240_values[@]}"
+echo "FCCee365 New Physics mismatch: ${NPmismatch_FCCee365_values[@]}"
 
 # BP_Names_Total=("${BP_Names[@]}" "${BPO_Names[@]}" "${BPB_Names[@]}" "${BP_New_Names[@]}")
 BP_Names_Total=("${BPO_Names[@]}" "${BPB_Names[@]}")
@@ -92,9 +93,12 @@ for BP_Name in "${BP_Names_Total[@]}"; do
 
             MODEL_CONF_FILE="model_fits_realistic_HL_LHC"
 
-            if [ "$use_new_NPs" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_use_new_NPs"; fi
+            if [ "$use_new_NPs" == "true" ]; then 
+                MODEL_CONF_FILE="${MODEL_CONF_FILE}_use_new_NPs"
+                scale_NPs_formatted=$(printf "%.3g" "$scale_NPs")
+                if [ "$scale_NPs_formatted" != "1" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_scale${scale_NPs_formatted}"; fi
+            fi
 
-            if [ "$modify_all_ewpos" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_all_EW_mods"; fi
             if [ "$no_1L_BSM_sqrt_s" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_no_1L_BSM_sqrt_s"; fi
             if [ "$no_1L_BSM" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_no_1L_BSM"; fi
             if [ "$no_quad" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_no_quad"; fi
@@ -106,6 +110,7 @@ for BP_Name in "${BP_Names_Total[@]}"; do
             if [ "$WFR_kala2_input" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_WFR_kala2_input"; fi
             if [ "$WFR_kala2_input_all" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_WFR_kala2_input_all"; fi
             
+            if [ "$modify_all_ewpos" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_all_EW_mods"; fi
             if [ "$noLoopH3d6Quad" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_noLoopH3d6Quad"; fi
             if [ "$LoopHd6NoSubleading" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_LoopHd6NoSubleading"; fi
             if [ "$LoopHd6noWFR" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_LoopHd6noWFR"; fi
@@ -171,6 +176,7 @@ for BP_Name in "${BP_Names_Total[@]}"; do
             cp MonteCarlo.conf MonteCarlo_short.conf
             cp MonteCarlo.conf MonteCarlo_long.conf
             cp MonteCarlo.conf MonteCarlo_full.conf
+            cp MonteCarlo.conf MonteCarlo_strict.conf
 
             sed -i "/PrerunMaxIter              10000000 /c PrerunMaxIter              100000 " MonteCarlo_short.conf
             sed -i "/Iterations                 1000000 /c Iterations                 50000 " MonteCarlo_short.conf
@@ -183,27 +189,52 @@ for BP_Name in "${BP_Names_Total[@]}"; do
             sed -i "/PrerunMaxIter              10000000 /c PrerunMaxIter              5000000 " MonteCarlo_full.conf
             sed -i "/RValueForConvergence  .*/c RValueForConvergence    1.1 " MonteCarlo_full.conf
 
+            sed -i "/PrerunMaxIter              10000000 /c PrerunMaxIter              2000000 " MonteCarlo_strict.conf
+            sed -i "/RValueForConvergence  .*/c RValueForConvergence    1.01 " MonteCarlo_strict.conf
 
             ####################################################################################
             ################### SETUP CONFIG FILES FOR NEW NUISANCE PARAMETERS #################
             ####################################################################################
             if [[ "$use_new_NPs" == "true" ]]; then
-                NEW_NP_CONF="FCCee_new_NPs_err${theoerr_FCCee240_values[k]}.conf"
+                NEW_NP_CONF="FCCee_new_NPs_err${theoerr_FCCee240_values[k]}"
+                if [ "$scale_NPs_formatted" != "1" ]; then NEW_NP_CONF="${NEW_NP_CONF}_scale${scale_NPs_formatted}"; fi
+                NEW_NP_CONF="${NEW_NP_CONF}.conf"
+
+    
+
                 NEW_NP_CONF_INCLUDE="IncludeFile ../../${NEW_NP_CONF}"
                 sed -i "\%IncludeFile ../../HiggsEW_Par_Corr.conf.*%a #\n$NEW_NP_CONF_INCLUDE" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
                 sed -i "\%IncludeFile ../../HiggsEW_Par_Corr.conf.*%a #\n$NEW_NP_CONF_INCLUDE" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
-                
+
+                theoerr_FCCee240=$(printf "%.20f" "$(echo "$scale_NPs * ${theoerr_FCCee240_values[k]}" | bc)" )
+                theoerr_FCCee365=$(printf "%.20f" "$(echo "$scale_NPs * ${theoerr_FCCee365_values[k]}" | bc)" )
+                NPmismatch_FCCee240=$(printf "%.20f" "$(echo "$scale_NPs * ${NPmismatch_FCCee240_values[k]}" | bc)" )
+                NPmismatch_FCCee365=$(printf "%.20f" "$(echo "$scale_NPs * ${NPmismatch_FCCee365_values[k]}" | bc)" )
+
                 echo "######################################################################" > $NEW_NP_CONF
                 echo "# New theory nuisance parameters for FCCee Higgs production" >> $NEW_NP_CONF
                 echo "# cross-sections" >> $NEW_NP_CONF
                 echo "######################################################################" >> $NEW_NP_CONF
                 echo "#" >> $NEW_NP_CONF
-                echo "ModelParameter  theoerr_FCCee240        0.  ${theoerr_FCCee240_values[k]}  0." >> $NEW_NP_CONF
-                echo "ModelParameter  theoerr_FCCee365        0.  ${theoerr_FCCee365_values[k]}  0." >> $NEW_NP_CONF
+                echo "ModelParameter  theoerr_FCCee240        0.  ${theoerr_FCCee240}  0." >> $NEW_NP_CONF
+                echo "ModelParameter  theoerr_FCCee365        0.  ${theoerr_FCCee365}  0." >> $NEW_NP_CONF
                 
-                echo "ModelParameter  NPmismatch_FCCee240        0.  ${NPmismatch_FCCee240[k]}  0." >> $NEW_NP_CONF
-                echo "ModelParameter  NPmismatch_FCCee365        0.  ${NPmismatch_FCCee365[k]}  0." >> $NEW_NP_CONF
+                echo "ModelParameter  NPmismatch_FCCee240        0.  ${NPmismatch_FCCee240}  0." >> $NEW_NP_CONF
+                echo "ModelParameter  NPmismatch_FCCee365        0.  ${NPmismatch_FCCee365}  0." >> $NEW_NP_CONF
                 echo "#" >> $NEW_NP_CONF
+
+
+                # echo "######################################################################" > $NEW_NP_CONF
+                # echo "# New theory nuisance parameters for FCCee Higgs production" >> $NEW_NP_CONF
+                # echo "# cross-sections" >> $NEW_NP_CONF
+                # echo "######################################################################" >> $NEW_NP_CONF
+                # echo "#" >> $NEW_NP_CONF
+                # echo "ModelParameter  theoerr_FCCee240        0.  ${theoerr_FCCee240_values[k]}  0." >> $NEW_NP_CONF
+                # echo "ModelParameter  theoerr_FCCee365        0.  ${theoerr_FCCee365_values[k]}  0." >> $NEW_NP_CONF
+                
+                # echo "ModelParameter  NPmismatch_FCCee240        0.  ${NPmismatch_FCCee240[k]}  0." >> $NEW_NP_CONF
+                # echo "ModelParameter  NPmismatch_FCCee365        0.  ${NPmismatch_FCCee365[k]}  0." >> $NEW_NP_CONF
+                # echo "#" >> $NEW_NP_CONF
 
             fi
 
@@ -284,16 +315,13 @@ for BP_Name in "${BP_Names_Total[@]}"; do
                 sed -i "\/IncludeFile ..\/..\/ObservablesEW.conf /c\\$NEW_MODEL_EWS" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
                 sed -i "\/IncludeFile ..\/..\/ObservablesEW.conf /c\\$NEW_MODEL_EWS" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
 
-                cd $TARGET_PATH
-
-                python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name}
-                python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name} --realistic
-                python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name} --realistic --ewpos_all --higgsconf ${HIGGS_CONF}
-                # Running the script also without the flag, so that the main fits (i.e. the ones with the flag set to false) are also set up properly
+                EWPO_FLAG="--ewpos_all"
+            else
+                EWPO_FLAG=""
+            fi
 
 
-
-            elif [[ "$no_1L_BSM_sqrt_s" == "true" || 
+            if [[ "$no_1L_BSM_sqrt_s" == "true" || 
                     "$no_1L_BSM" == "true" || 
                     "$no_quad" == "true" || 
                     "$smeft_formula" == "true" || 
@@ -344,7 +372,7 @@ for BP_Name in "${BP_Names_Total[@]}"; do
                         cd $TARGET_PATH
                         python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name}
                         python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name} --realistic
-                        python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name} --realistic ${PYTHON_ARG} --higgsconf ${HIGGS_CONF}
+                        python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name} --realistic ${PYTHON_ARG} --higgsconf ${HIGGS_CONF} ${EWPO_FLAG}
                         # Running the script also without the flag, so that the main fits (i.e. the ones with the flag set to false) are also set up properly
 
                     fi
@@ -355,7 +383,8 @@ for BP_Name in "${BP_Names_Total[@]}"; do
             else
                 cd $TARGET_PATH
                 python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name}
-                python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name} --realistic  --higgsconf ${HIGGS_CONF}
+                python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name} --realistic
+                python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name} --realistic  --higgsconf ${HIGGS_CONF} ${EWPO_FLAG}
             fi
 
         done
