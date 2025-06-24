@@ -72,9 +72,11 @@ scenario_titles = [
 
 
 theo_errs = ["0.0010", "0.0020", "0.0050", "0.0075", "0.010", "0.015", "0.020", "0.030", "0.050", "0.100",]
-specs = [ f"fits_realistic_HL_LHC_use_new_NPs_WFR_kala2_input_all_no_HLLHC_Higgs_err{err}_small_priors_long" for err in theo_errs]
+# specs = [ f"fits_realistic_HL_LHC_use_new_NPs_WFR_kala2_input_all_no_HLLHC_Higgs_err{err}_small_priors_long" for err in theo_errs]
+specs = [ f"fits_realistic_HL_LHC_use_new_NPs_scale1.52_WFR_kala2_input_all_all_EW_mods_err{err}_small_priors_strict" for err in theo_errs]
 
-spec_compare = "fits_realistic_HL_LHC_WFR_kala2_input_all_no_HLLHC_Higgs_small_priors_long"
+# spec_compare = "fits_realistic_HL_LHC_WFR_kala2_input_all_no_HLLHC_Higgs_small_priors_long"
+spec_compare = "fits_realistic_HL_LHC_WFR_kala2_input_all_all_EW_mods_small_priors_long"
 model_specs = {
     # "IDM_FCCee240" : [spec, "fits"],
     "IDM_FCCee240_FCCee365" : [*specs, spec_compare],
@@ -89,7 +91,7 @@ model_specs_labels = {
 }
 
 # results_dir = spec
-results_dir = "klam_results_new_NPs_comparison"
+results_dir = "klam_results_new_NPs_scale1.52_comparison"
 
 # Create the output directory
 subprocess.run(["mkdir", "-p", f"{working_dir}comparison_plots/results_{results_dir}"])
