@@ -317,7 +317,13 @@ table_text = " & ".join(headers) + "\\\\\n"
 table_text += "\\hline"
 for idx, (column, BP) in enumerate(zip(columns, BPs)):
     table_text += "\\hline\n"
-    table_text += f"{column} & {BP_lambdas[idx]:.3g} & " + f" & ".join([rf"${results[BP][scenario][model_spec][0,0]:.2f}\pm{results[BP][scenario][model_spec][0,1]:.2f}$" for model_spec in model_specs[scenario]]) + "\\\\"
+    table_text += f"{column} & {BP_lambdas[idx]:.3g}"
+    for model_spec in model_specs[scenario]:
+        klam = results[BP][scenario][model_spec][0,0]
+        klam_err_abs = results[BP][scenario][model_spec][0,1]
+        klam_err_rel = klam_err_abs / klam
+        table_text += rf" & ${klam:.2f}\pm{klam_err_abs:.2f}\;[\textcolor{{violet}}{{{100*klam_err_rel:.2g}\%}}]$"
+    table_text += "\\\\"
 
 with open(table_tex_output_file, "w") as out_file:
     print("\\begin{tabular}{c||c|c|c}", file=out_file)
