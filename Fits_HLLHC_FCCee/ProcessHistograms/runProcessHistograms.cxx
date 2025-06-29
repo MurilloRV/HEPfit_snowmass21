@@ -52,9 +52,9 @@ int main()
     // bool printLogo = false;
     bool drawGlobalModes = false;
 
-    // std::string model_spec = "fits";
+    std::string model_spec = "fits";
     // std::string model_spec = "fits_long";
-    std::string model_spec = "fits_small_priors_long";
+    // std::string model_spec = "fits_small_priors_long";
     // std::string model_spec = "fits_realistic_HL_LHC_realistic_HL_LHC_full";
     // std::string model_spec = "fits_realistic_HL_LHC_all_EW_mods_long";
     // std::string model_spec = "fits_realistic_HL_LHC_no_1L_BSM_sqrt_s_long";
@@ -62,8 +62,8 @@ int main()
 
     // std::string working_dir = "../large_kappa_lambda_fits_noLoopH3d6Quad/";
     // std::string working_dir = "../large_kappa_lambda_fits_HalfmueeZH/";
-    std::string working_dir = "../large_kappa_lambda_fits_kappa_framework/";
-    // std::string working_dir = "../large_kappa_lambda_fits/";
+    // std::string working_dir = "../large_kappa_lambda_fits_kappa_framework/";
+    std::string working_dir = "../large_kappa_lambda_fits/";
 
 
     std::vector<std::string> scenarios;
@@ -91,16 +91,23 @@ int main()
     //     "IDM central values, FCC-ee_{240+365} + #kappa_{#lambda} at HL-LHC",
     // };
 
-    const std::string base_titles[] = {
-        "C_{H} fits, FCC-ee_{240+365}",
-        // "C_{H} fits, FCC-ee_{240+365} + #kappa_{#lambda} at HL-LHC",
-    };
+    // const std::string base_titles[] = {
+    //     "C_{H} fits, FCC-ee_{240} + FCC-ee_{365}",
+    //     // "C_{H} fits, FCC-ee_{240+365} + #kappa_{#lambda} at HL-LHC",
+    // };
+
+    // std::string plot_titles[] = {"#kappa_{#lambda} = 2 Cross-check (C_{H} #approx -2.13), ILC_{250}", 
 
 
     for (int lmbd = -5; lmbd < 11; ++lmbd) {
         for (int i=0; i<n_scenarios_base; ++i) {
             scenarios.push_back("Lambda" + std::to_string(lmbd) + "_" + base_paths[i]);
-            plot_titles.push_back(base_titles[i]);
+            // plot_titles.push_back(base_titles[i]);
+
+            std::stringstream ss;
+            ss << std::fixed << std::setprecision(2) << (lmbd-1)*(-2.1290888208276963);
+            std::string ch = ss.str();
+            plot_titles.push_back("#kappa_{#lambda} = "+ std::to_string(lmbd) +" Cross-check (C_{H} #approx "+ ch +"), FCC-ee_{240} + FCC-ee_{365}");
             KappaLambdas.push_back(lmbd);
         }
     }
