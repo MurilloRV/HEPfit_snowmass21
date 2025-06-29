@@ -181,7 +181,8 @@ scenarios = [
 # }
 
 # spec = "fits_realistic_HL_LHC_smeft_formula_no_cross_small_priors_long"
-spec = "fits_realistic_HL_LHC_WFR_kala2_input_small_priors_long"
+spec = "fits_realistic_HL_LHC_use_new_NPs_scale1.52_WFR_kala2_input_all_all_EW_mods_small_priors_strict"
+# spec = "fits_realistic_HL_LHC_WFR_kala2_input_all_all_EW_mods_small_priors_long"
 model_spec = {
     # "IDM_FCCee240" : spec,
     "IDM_FCCee240_FCCee365" : spec,
