@@ -86,7 +86,7 @@ def find_tex_label_par(par):
 
 def find_tex_label_obs(obs):
     ### FCC-ee_240
-    if obs == "eeZH_FCCee240":         tex_label = r"$\sigma_{ZH}$(FCC-ee$_{240}$)"
+    if obs == "eeZH_FCCee240":         tex_label = r"$\mu_{ZH}$(FCC-ee$_{240}$)"
     elif obs == "eeZHbb_FCCee240":     tex_label = r"$\mu_{ZH,bb}$(FCC-ee$_{240}$)"
     elif obs == "eeHvvbb_FCCee240":    tex_label = r"$\mu_{\nu\nu H,bb}$(FCC-ee$_{240}$)"
     elif obs == "eeZHcc_FCCee240":     tex_label = r"$\mu_{ZH,cc}$(FCC-ee$_{240}$)"
@@ -99,7 +99,7 @@ def find_tex_label_obs(obs):
     elif obs == "eeZHZga_FCCee240":    tex_label = r"$\mu_{ZH,Z\gamma}$(FCC-ee$_{240}$)"
 
     ### FCC-ee_365
-    elif obs == "eeZH_FCCee365":        tex_label = r"$\sigma_{ZH}$(FCC-ee$_{365}$)"
+    elif obs == "eeZH_FCCee365":        tex_label = r"$\mu_{ZH}$(FCC-ee$_{365}$)"
     elif obs == "eeZHbb_FCCee365":      tex_label = r"$\mu_{ZH,bb}$(FCC-ee$_{365}$)"
     elif obs == "eeHvvbb_FCCee365":     tex_label = r"$\mu_{\nu\nu H,bb}$(FCC-ee$_{365}$)"
     elif obs == "eeZHcc_FCCee365":      tex_label = r"$\mu_{ZH,cc}$(FCC-ee$_{365}$)"
@@ -260,11 +260,11 @@ num_BPOs = 2
 num_BPBs = 17
 BPs = [f"BPO_{i}" for i in range(num_BPOs)]
 BPs = BPs + [f"BPB_{i}" for i in range(num_BPBs)]
-BPs = ["BPB_2", "BPB_4", "BPB_6"]
-# BPs = ["BPB_2",]
+# BPs = ["BPB_2", "BPB_4", "BPB_6"]
+BPs = ["BP_lambda1",]
 # BP_Names = ["BPB 2", "BPB 4", "BPB 6",]
-BP_Names = ["BP 1", "BP 2", "BP 3"]
-# BP_Names = ["BPB 2",]
+# BP_Names = ["BP 1", "BP 2", "BP 3"]
+BP_Names = ["BP 0",]
 print(f"BPs: {BPs}")
 
 
@@ -389,12 +389,15 @@ def read_SM_predictions():
 # spec = "fits_realistic_HL_LHC_WFR_kala2_input_no_HLLHC_Higgs_small_priors_long"
 # spec = "fits_realistic_HL_LHC_WFR_kala2_input_all_no_HLLHC_Higgs_small_priors_long"
 # spec = "fits_realistic_HL_LHC_WFR_kala2_input_no_C_HG_small_priors_long"
+# spec = "fits_realistic_HL_LHC_WFR_kala2_input_all_all_EW_mods_small_priors_strict"
 # spec = "fits_realistic_HL_LHC_use_new_NPs_WFR_kala2_input_all_small_priors_long"
-spec = "fits_realistic_HL_LHC_use_new_NPs_WFR_kala2_input_all_no_HLLHC_Higgs_small_priors_long"
+# spec = "fits_realistic_HL_LHC_use_new_NPs_WFR_kala2_input_all_no_HLLHC_Higgs_small_priors_long"
+spec = "fits_realistic_HL_LHC_use_new_NPs_scale1.52_WFR_kala2_input_all_all_EW_mods_small_priors_strict"
 
 # spec_compare = "fits"
 # spec_compare = "fits_realistic_HL_LHC_smeft_formula_no_cross_small_priors_long"
-spec_compare = "fits_realistic_HL_LHC_WFR_kala2_input_all_small_priors_long"
+# spec_compare = "fits_realistic_HL_LHC_WFR_kala2_input_all_all_EW_mods_small_priors_long"
+spec_compare = "fits_realistic_HL_LHC_WFR_kala2_input_all_all_EW_mods_small_priors_strict"
 
 model_specs = {
     # "IDM_FCCee240" : [spec, "fits"],
@@ -406,8 +409,8 @@ model_specs = {
 # labels = ["w/ h External-leg", "Original"]
 # labels = [r"No $C_{HG}$", r"w/ $C_{HG}$"]
 # labels = ["No HL-LHC Higgs", "Original"]
-# labels = ["With new NPs", "Original"]
-labels = ["W/ NPs, no HL-LHC h", "Original"]
+labels = ["With new NPs", "Original"]
+# labels = ["W/ NPs, no HL-LHC h", "Original"]
 model_specs_labels = {
     # "IDM_FCCee240" : labels,
     "IDM_FCCee240_FCCee365" : labels,
@@ -419,6 +422,7 @@ results_dir = spec
 
 # Do not plot the following observables
 skip_obs = ["Mw_C", "GammaZ_C"]
+only_higgs_fccee_obs = True
 # skip_obs = ["Mw_C", "Mw_HLLHC", "Mw_FCCee", "GammaZ_C", "GammaZ_FCCee"]
 
 # plot_title = [rf"IDM Central values ({BP}), FCC-ee$_{{240}}$ + FCC-ee$_{{365}}$" for BP in BPs]
@@ -455,6 +459,7 @@ subprocess.run(["mkdir", "-p", f"{working_dir}comparison_plots/results_{results_
 HEPfit_flags = [
     "",
     "use_new_NPs_",
+    "use_new_NPs_scale1.52_",
 ]
 
 exclusive_flag_list = [
@@ -473,6 +478,7 @@ additional_flag_list = [
     "",
     "_no_HLLHC_Higgs",
     "_no_C_HG",
+    "_all_EW_mods",
 ]
 priors_flag_list = [
     "",
@@ -483,6 +489,7 @@ MC_flag_list = [
     "_short",
     "_long",
     "_full",
+    "_strict",
 ]
 
 conf_files = {}
@@ -523,10 +530,6 @@ for scenario in scenarios:
             conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs")] = f"ObservablesHiggs_scaled_realistic_HL_LHC"
 
 
-        if model_spec == "fits_realistic_HL_LHC_all_EW_mods_long":
-            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesEW")] = "ObservablesEW_all_mods"
-            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesEW_Current_SM_noLFU")] = "ObservablesEW_Current_SM_noLFU_kappa_scaled"
-
         for hepfit_flag in HEPfit_flags:
             for exclusive_flag in exclusive_flag_list:
                 for additional_flag in additional_flag_list:
@@ -552,6 +555,10 @@ for scenario in scenarios:
                                     conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_scaled_realistic_HL_LHC")] = f"ObservablesHiggs_scaled_realistic_HL_LHC_{Higgs_flag}"
                                 else:
                                     conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs")] = f"ObservablesHiggs_{Higgs_flag}"
+
+                                if additional_flag == "_all_EW_mods":
+                                    conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesEW")] = "ObservablesEW_all_mods"
+                                    conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesEW_Current_SM_noLFU")] = "ObservablesEW_Current_SM_noLFU_kappa_scaled"
 
 
 
@@ -603,6 +610,8 @@ for BP in BPs:
                             observable = columns[1]
 
                             if skip_obs is not None and observable in skip_obs:
+                                continue
+                            if only_higgs_fccee_obs and not observable.startswith("eeZH") and not observable.startswith("eeHvv"):
                                 continue
                             observables[BP][scenario][model_spec].append(observable)
 
@@ -783,7 +792,10 @@ for i, BP in enumerate(BPs):
         
         for k in range(len(param_breaks) - 1):
 
-            fig= plt.figure(fig_num, figsize=(4,10), dpi=150)
+            if only_higgs_fccee_obs:
+                fig= plt.figure(fig_num, figsize=(6,10), dpi=150)
+            else:
+                fig= plt.figure(fig_num, figsize=(4,10), dpi=150)
             fig_num = fig_num + 1
             ax = plt.gca()
 
@@ -814,7 +826,11 @@ for i, BP in enumerate(BPs):
 
             # ax.set_yticks(-y-dimw/2.)
             ax.set_yticks(-y)
-            ax.set_yticklabels(labels[param_breaks[k]:param_breaks[k+1]],fontsize=8)
+            if only_higgs_fccee_obs:
+                fontsize = 12
+            else:
+                fontsize = 8
+            ax.set_yticklabels(labels[param_breaks[k]:param_breaks[k+1]],fontsize=fontsize)
             x_limits = [plt.xlim()[0], plt.xlim()[1]]
             y_limits = [plt.ylim()[0] +1.0, plt.ylim()[1] -1.0]
             ax.hlines(y=-y, xmin=x_limits[0], xmax=x_limits[1], color="black", linestyle="--", linewidth=0.5)
@@ -827,11 +843,16 @@ for i, BP in enumerate(BPs):
             else:
                 ax.set_xlabel(r'Pulls', fontsize=15)
             ax.legend(loc='best', fontsize=8)
-            ax.set_title(plot_title[BP][scenario], fontsize=9)
+            if only_higgs_fccee_obs:
+                ax.set_title(plot_title[BP][scenario], fontsize=16)
+            else:
+                ax.set_title(plot_title[BP][scenario], fontsize=9)
             plt.tight_layout()   # Makes sure labels are not cut off
             plot_filename = f"pull_obs_{BP}_{scenario}_compare"
             if compare_with_SM: 
                 plot_filename = plot_filename + "_with_SM"
+            if only_higgs_fccee_obs:
+                plot_filename = plot_filename + "_only_higgs_fccee_obs"
             plt.savefig(working_dir + f'comparison_plots/results_{results_dir}/{plot_filename}_{k}.pdf')
 
 # plt.show()

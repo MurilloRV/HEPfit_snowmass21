@@ -53,13 +53,14 @@ results_dir = "comparison_NPs_scaled"
 # BPs = [f"BPO_{i}" for i in range(num_BPOs)]
 # BPs = BPs + [f"BPB_{i}" for i in range(num_BPBs)]
 
-BPs = ["BPB_2", "BPB_4", "BPB_6", ]
-BP_names = ["BP 1", "BP 2", "BP 3", ]
+BPs = ["BP_lambda1", "BPB_2", "BPB_4", "BPB_6", ]
+BP_names = ["BP 0", "BP 1", "BP 2", "BP 3", ]
 # colors = ["tab:blue", "tab:orange"]
 colors = ["tab:red", "tab:blue"]
 colors_rgb_list = [ matplotlib.colors.to_rgb(c) for c in colors ]
 print(colors_rgb_list)
-BP_lambdas = [        
+BP_lambdas = [       
+    1.1000242642433875, # BP_lambda1 
     2.3867362274064843, # BPB_2
     3.3446699219962595, # BPB_4
     4.332584967850238, # BPB_6
@@ -84,7 +85,10 @@ for scenario in all_scenarios:
         for spec, label, color, color_rgb in zip(model_specs[scenario], spec_labels, colors, colors_rgb_list):
 
             # Open the ROOT file
-            file_path = f"{working_dir}/{BP}/{scenario}/results_{spec}/MCout.root"
+            if BP == "BP_lambda1" and spec == "fits_realistic_HL_LHC_WFR_kala2_input_all_all_EW_mods_small_priors_long":
+                file_path = f"{working_dir}/{BP}/{scenario}/results_{spec[:-5]}_strict/MCout.root"
+            else:
+                file_path = f"{working_dir}/{BP}/{scenario}/results_{spec}/MCout.root"
             with uproot.open(file_path) as file:
 
                 hist_lmbd_y, hist_lmbd_x = file["deltalHHH_HLLHC"].to_numpy()
@@ -136,21 +140,22 @@ working_dir = "./"
 
 # BPs = [f"BP_{i}" for i in range(8)]
 
-num_BPOs = 2
-num_BPBs = 17
-BPs = [f"BPO_{i}" for i in range(num_BPOs)]
-BPs = BPs + [f"BPB_{i}" for i in range(num_BPBs)]
-BPs = ["BPB_2", "BPB_4", "BPB_6"]
-# BPs = ["BPB_2",]
-# BP_Names = ["BPB 2", "BPB 4", "BPB 6",]
-BP_Names = ["BP 1", "BP 2", "BP 3"]
-# BP_Names = ["BPB 2",]
-print(f"BPs: {BPs}")
+# num_BPOs = 2
+# num_BPBs = 17
+# BPs = [f"BPO_{i}" for i in range(num_BPOs)]
+# BPs = BPs + [f"BPB_{i}" for i in range(num_BPBs)]
+# BPs = ["BPB_2", "BPB_4", "BPB_6"]
+# # BPs = ["BPB_2",]
+# # BP_Names = ["BPB 2", "BPB 4", "BPB 6",]
+# BP_Names = ["BP 1", "BP 2", "BP 3"]
+# # BP_Names = ["BPB 2",]
+# print(f"BPs: {BPs}")
 
 
 obs_list = ["deltalHHH_HLLHC",]
 obs_tex_list = [r"$\kappa_{\lambda}$",]
 true_kappas = {
+    "BP_lambda1": 1.1000242642433875,
     "BPB_2": 2.3867362274064843,
     "BPB_4": 3.3446699219962595,
     "BPB_6": 4.332584967850238,
@@ -180,7 +185,10 @@ for BP in BPs:
     for scenario in scenarios:
         files[BP][scenario] = {}
         for model_spec in model_specs[scenario]:
-            files[BP][scenario][model_spec] = f"{working_dir}{BP}/{scenario}/results_{model_spec}/Observables/Statistics.txt"
+            if BP == "BP_lambda1" and model_spec == "fits_realistic_HL_LHC_WFR_kala2_input_all_all_EW_mods_small_priors_long":
+                files[BP][scenario][model_spec] = f"{working_dir}{BP}/{scenario}/results_{model_spec[:-5]}_strict/Observables/Statistics.txt"
+            else:
+                files[BP][scenario][model_spec] = f"{working_dir}{BP}/{scenario}/results_{model_spec}/Observables/Statistics.txt"
 
 
 print(f"Reading fit results")
@@ -311,7 +319,7 @@ print(f"results shape: {results[BP][scenario][model_spec].shape}")
 
 table_tex_output_file = working_dir + f'comparison_plots/results_{results_dir}/klam_results.tex'
 headers = ["", "True value", "Original fit", "With new NPs"]
-columns = BP_Names
+columns = BP_names
 # table_text = "\\hline\n" + " & ".join(headers) + "\\\\\n"
 table_text = " & ".join(headers) + "\\\\\n"
 table_text += "\\hline"

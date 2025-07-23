@@ -10,7 +10,7 @@ BPO_Names=()
 # BPB_Names=("BPB_"{0..18})
 BPB_Names=("BPB_2" "BPB_4" "BPB_6")
 # BP_New_Names=("BP_new_"{0..10})
-# BP_others="BP_lambda1"
+BP_others="BP_lambda1"
 
 # Using realistic HL-LHC observables
 
@@ -36,9 +36,9 @@ no_C_HG="false" # Exclude the C_HG operator from the fit
 no_HLLHC_Higgs="false" # Exclude the HL-LHC Higgs observables from the fit
 LoopH3d6Full="false" # Use the full expansion of the ZH cross-section in terms of C1 and dZH
 
-use_new_NPs="true" # Use newly implementent theory nuisance parameters
-scale_NPs=$(echo "scale=20.0; scl=2.295748928898636; scl=sqrt(scl); scl" | bc)
-# scale_NPs="1.0"  # default
+use_new_NPs="false" # Use newly implementent theory nuisance parameters
+# scale_NPs=$(echo "scale=20.0; scl=2.295748928898636; scl=sqrt(scl); scl" | bc)
+scale_NPs="1.0"  # default
 
 # Check if more than one exclusive flag is set to "true"
 EXCLUSIVE_FLAGS=(
@@ -71,7 +71,7 @@ fi
 
 # BP_Names_Total=("${BP_Names[@]}" "${BPO_Names[@]}" "${BPB_Names[@]}" "${BP_New_Names[@]}")
 BP_Names_Total=("${BPO_Names[@]}" "${BPB_Names[@]}")
-# BP_Names_Total+=("$BP_others")
+BP_Names_Total+=("$BP_others")
 
 IDM_SCENARIOS=('IDM_FCCee240' 'IDM_FCCee240_FCCee365' 'IDM_FCCee240_FCCee365_HLLHClambda')
 

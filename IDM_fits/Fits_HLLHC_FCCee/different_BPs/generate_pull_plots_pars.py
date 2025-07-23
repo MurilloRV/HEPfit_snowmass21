@@ -151,9 +151,11 @@ num_BPOs = 2
 num_BPBs = 17
 BPs = [f"BPO_{i}" for i in range(num_BPOs)]
 BPs = BPs + [f"BPB_{i}" for i in range(num_BPBs)]
-BPs = ["BPB_2", "BPB_4", "BPB_6"]
+# BPs = ["BP_lambda1", "BPB_2", "BPB_4", "BPB_6"]
+BPs = ["BP_lambda1",]
 # BP_Names = ["BPB 2", "BPB 4", "BPB 6"]
-BP_Names = ["BP 1", "BP 2", "BP 3"]
+# BP_Names = ["BP 0", "BP 1", "BP 2", "BP 3"]
+BP_Names = ["BP 0",]
 print(BPs)
 
 
@@ -181,8 +183,9 @@ scenarios = [
 # }
 
 # spec = "fits_realistic_HL_LHC_smeft_formula_no_cross_small_priors_long"
-spec = "fits_realistic_HL_LHC_use_new_NPs_scale1.52_WFR_kala2_input_all_all_EW_mods_small_priors_strict"
+# spec = "fits_realistic_HL_LHC_use_new_NPs_scale1.52_WFR_kala2_input_all_all_EW_mods_small_priors_strict"
 # spec = "fits_realistic_HL_LHC_WFR_kala2_input_all_all_EW_mods_small_priors_long"
+spec = "fits_realistic_HL_LHC_WFR_kala2_input_all_all_EW_mods_small_priors_strict"
 model_spec = {
     # "IDM_FCCee240" : spec,
     "IDM_FCCee240_FCCee365" : spec,
