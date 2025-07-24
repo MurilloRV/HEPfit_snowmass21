@@ -21,26 +21,27 @@ parser.add_argument("--smeft_formula_external_leg", help = "Use the HEPfit SMEFT
 parser.add_argument("--smeft_formula_all", help = "Use the HEPfit SMEFT expression for all XS and BR, including 2*dkappaf in the square root to stand in for C_Hbox (as \"_no_cross\")", action="store_true")
 parser.add_argument("--WFR_kala2_input", help = "Include the WFR contribution, proportional to kappa_lambda**2, into the IDM ZH cross-section prediction", action="store_true")
 parser.add_argument("--WFR_kala2_input_all", help = "Include the WFR contribution, proportional to kappa_lambda**2, into the IDM predictions for all the XS and BR", action="store_true")
-
+parser.add_argument("--use_HEPfit_C1_values_WFR_kala2_input_all", help = "Use the HEPfit C1 values, instead of the IDM values. Activates WFR_kala2_input_all as well", action="store_true")
 parser.add_argument("--higgsconf", help = "Name of the ObsevablesHiggs configuration file", type=str, default=None)
 
 
 args = parser.parse_args()
-scenario                                = args.scenario
-BP                                      = args.bp
-realistic_HL_LHC_k_lambda_uncertainties = args.realistic
-modify_all_ewpos                        = args.ewpos_all
-no_1L_BSM_sqrt_s                        = args.no_1L_BSM_sqrt_s
-no_1L_BSM                               = args.no_1L_BSM
-no_quad                                 = args.no_quad
-smeft_formula                           = args.smeft_formula
-smeft_formula_sqrt                      = args.smeft_formula_sqrt
-smeft_formula_no_cross                  = args.smeft_formula_no_cross
-smeft_formula_external_leg              = args.smeft_formula_external_leg
-smeft_formula_all                       = args.smeft_formula_all
-WFR_kala2_input                         = args.WFR_kala2_input
-WFR_kala2_input_all                     = args.WFR_kala2_input_all
-higgsconf                               = args.higgsconf
+scenario                                 = args.scenario
+BP                                       = args.bp
+realistic_HL_LHC_k_lambda_uncertainties  = args.realistic
+modify_all_ewpos                         = args.ewpos_all
+no_1L_BSM_sqrt_s                         = args.no_1L_BSM_sqrt_s
+no_1L_BSM                                = args.no_1L_BSM
+no_quad                                  = args.no_quad
+smeft_formula                            = args.smeft_formula
+smeft_formula_sqrt                       = args.smeft_formula_sqrt
+smeft_formula_no_cross                   = args.smeft_formula_no_cross
+smeft_formula_external_leg               = args.smeft_formula_external_leg
+smeft_formula_all                        = args.smeft_formula_all
+WFR_kala2_input                          = args.WFR_kala2_input
+WFR_kala2_input_all                      = args.WFR_kala2_input_all
+use_HEPfit_C1_values_WFR_kala2_input_all = args.use_HEPfit_C1_values_WFR_kala2_input_all
+higgsconf                                = args.higgsconf
 
 exclusive_flag_count = sum([
     no_1L_BSM_sqrt_s, 
@@ -52,6 +53,7 @@ exclusive_flag_count = sum([
     smeft_formula_all, 
     WFR_kala2_input,
     WFR_kala2_input_all,
+    use_HEPfit_C1_values_WFR_kala2_input_all,
 ])
 
 # These flags are mutually exclusive, and can only be used one at a time
@@ -68,6 +70,7 @@ if exclusive_flag_count > 1:
         --smeft_formula_all,
         --WFR_kala2_input
         --WFR_kala2_input_all
+        --use_HEPfit_C1_values_WFR_kala2_input_all
         """)
 
 # Use of these flags is not currently possible without use of the realistic HL-LHC kappa_lambda uncertainties
@@ -84,6 +87,7 @@ elif exclusive_flag_count == 1 and not realistic_HL_LHC_k_lambda_uncertainties:
         --smeft_formula_all,
         --WFR_kala2_input
         --WFR_kala2_input_all
+        --use_HEPfit_C1_values_WFR_kala2_input_all
         """)
 
 
@@ -326,6 +330,9 @@ elif BP == "BPO_0":
     kappas['lam'] = 4.038636858901748
     kappas['gamgam'] = 0.9514322699531608
     kappas['Zgam'] = 0.9820015140523058
+    kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0215075131871578
+    kappas['ZZ_365_use_HEPfit_C1_values'] = 1.006161719593712
+    kappas['ZZ_500_use_HEPfit_C1_values'] = 1.0017209156873719
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.6864189906268178
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.016315718736075624
     Mw = 80.35863800163634
@@ -372,6 +379,9 @@ elif BP == "BPO_1":
     kappas['lam'] = 1.2385642568656816
     kappas['gamgam'] = 0.9519204100128348
     kappas['Zgam'] = 0.982125765438694
+    kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0034424665596777
+    kappas['ZZ_365_use_HEPfit_C1_values'] = 1.0039492517522552
+    kappas['ZZ_500_use_HEPfit_C1_values'] = 1.0076575856113832
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.12450133724029452
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.00044917707932956574
     Mw = 80.35797476859611
@@ -418,6 +428,9 @@ elif BP == "BPB_0":
     kappas['lam'] = 1.1209067864736006
     kappas['gamgam'] = 0.9821975068074829
     kappas['Zgam'] = 0.9934043522024448
+    kappas['ZZ_240_use_HEPfit_C1_values'] = 0.9988410497488983
+    kappas['ZZ_365_use_HEPfit_C1_values'] = 0.9985301470423177
+    kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9988416851022752
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.31614353125012806
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.0003406396908013365
     Mw = 80.3914079929351
@@ -464,6 +477,9 @@ elif BP == "BPB_1":
     kappas['lam'] = 1.1119460475058272
     kappas['gamgam'] = 0.9745673696771745
     kappas['Zgam'] = 0.9905664142164403
+    kappas['ZZ_240_use_HEPfit_C1_values'] = 0.9999488105858648
+    kappas['ZZ_365_use_HEPfit_C1_values'] = 0.9999944237598942
+    kappas['ZZ_500_use_HEPfit_C1_values'] = 1.0008624781876416
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.749434482912224
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 1.7700421218513895e-05
     Mw = 80.35622948679458
@@ -510,6 +526,9 @@ elif BP == "BPB_2":
     kappas['lam'] = 2.3867362274064843
     kappas['gamgam'] = 0.974955131015653
     kappas['Zgam'] = 0.9907251332792432
+    kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0068213860748716
+    kappas['ZZ_365_use_HEPfit_C1_values'] = 0.9996321876372681
+    kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9973467531881702
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.972569755753518
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.007558150774753747
     Mw = 80.37905036636042
@@ -556,6 +575,9 @@ elif BP == "BPB_3":
     kappas['lam'] = 2.296737570137434
     kappas['gamgam'] = 0.9814976263381598
     kappas['Zgam'] = 0.9931497692470427
+    kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0085993395094819
+    kappas['ZZ_365_use_HEPfit_C1_values'] = 1.0017199676173572
+    kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9993122390369574
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7616860647496536
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.007238182068803667
     Mw = 80.35902874095682
@@ -602,6 +624,9 @@ elif BP == "BPB_4":
     kappas['lam'] = 3.3446699219962595
     kappas['gamgam'] = 0.9730906099071067
     kappas['Zgam'] = 0.9900356683423326
+    kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0133558053282368
+    kappas['ZZ_365_use_HEPfit_C1_values'] = 1.0008766984717623
+    kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9964195435197634
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.8761452003718885
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.013152506832024402
     Mw = 80.38071823046351
@@ -648,6 +673,9 @@ elif BP == "BPB_5":
     kappas['lam'] = 3.3186760761499228
     kappas['gamgam'] = 0.9802217711125746
     kappas['Zgam'] = 0.9926780357796698
+    kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0160606131668226
+    kappas['ZZ_365_use_HEPfit_C1_values'] = 1.0035299011700685
+    kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9987735387903312
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7459022968686289
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.013231568016927264
     Mw = 80.35940143464471
@@ -694,6 +722,9 @@ elif BP == "BPB_6":
     kappas['lam'] = 4.332584967850238
     kappas['gamgam'] = 0.9700106601524686
     kappas['Zgam'] = 0.9888951932924951
+    kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0206205957905823
+    kappas['ZZ_365_use_HEPfit_C1_values'] = 1.002779262406923
+    kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9961557883332115
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.8187710155862721
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.01888098764545476
     Mw = 80.37348693182949
@@ -740,6 +771,9 @@ elif BP == "BPB_7":
     kappas['lam'] = 4.324280052220163
     kappas['gamgam'] = 0.9690970559288911
     kappas['Zgam'] = 0.9885564514654552
+    kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0229661070552436
+    kappas['ZZ_365_use_HEPfit_C1_values'] = 1.0052132874030593
+    kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9986281817875683
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7399166728011941
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.01883179277131064
     Mw = 80.35876824202134
@@ -786,6 +820,9 @@ elif BP == "BPB_8":
     kappas['lam'] = 5.390968560325193
     kappas['gamgam'] = 0.9681793366722093
     kappas['Zgam'] = 0.9882174303694794
+    kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0281959386017996
+    kappas['ZZ_365_use_HEPfit_C1_values'] = 1.004611068542431
+    kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9955906775771884
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7950653452447117
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.02506654279567444
     Mw = 80.37609074924455
@@ -832,6 +869,9 @@ elif BP == "BPB_9":
     kappas['lam'] = 5.289906405452073
     kappas['gamgam'] = 0.9717649005806308
     kappas['Zgam'] = 0.9895460934847392
+    kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0304199508254335
+    kappas['ZZ_365_use_HEPfit_C1_values'] = 1.007304806201831
+    kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9983057374369962
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7295186448626314
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.02462075168485356
     Mw = 80.36227084007066
@@ -878,6 +918,9 @@ elif BP == "BPB_10":
     kappas['lam'] = 6.370034303736775
     kappas['gamgam'] = 0.9642362524964034
     kappas['Zgam'] = 0.9867567059352143
+    kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0351908448775666
+    kappas['ZZ_365_use_HEPfit_C1_values'] = 1.0064235117994058
+    kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9953278506615736
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7793395772932701
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.030704808369749648
     Mw = 80.37895112068958
@@ -924,6 +967,9 @@ elif BP == "BPB_11":
     kappas['lam'] = 6.270579956517072
     kappas['gamgam'] = 0.9716394792919597
     kappas['Zgam'] = 0.9895001872696593
+    kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0376429141548693
+    kappas['ZZ_365_use_HEPfit_C1_values'] = 1.0092200021448645
+    kappas['ZZ_500_use_HEPfit_C1_values'] = 0.997929669772392
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.726069782680232
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.03040301363706388
     Mw = 80.36604187614141
@@ -970,6 +1016,9 @@ elif BP == "BPB_12":
     kappas['lam'] = 7.515862276796717
     kappas['gamgam'] = 0.964519464620997
     kappas['Zgam'] = 0.9868624932160871
+    kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0432516761045383
+    kappas['ZZ_365_use_HEPfit_C1_values'] = 1.0083083768422563
+    kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9945130439986215
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7718960244295371
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.03746873548257623
     Mw = 80.37475970785388
@@ -1016,6 +1065,9 @@ elif BP == "BPB_13":
     kappas['lam'] = 7.466008740779396
     kappas['gamgam'] = 0.9687124711983263
     kappas['Zgam'] = 0.988416241175598
+    kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0458375066283774
+    kappas['ZZ_365_use_HEPfit_C1_values'] = 1.011091205374564
+    kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9971733346852643
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7293169930651524
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.037347499422743624
     Mw = 80.35999526714207
@@ -1062,6 +1114,9 @@ elif BP == "BPB_14":
     kappas['lam'] = 8.611459058586306
     kappas['gamgam'] = 0.9617556329224429
     kappas['Zgam'] = 0.9858388012191261
+    kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0513493810758867
+    kappas['ZZ_365_use_HEPfit_C1_values'] = 1.010677002433265
+    kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9944856425298773
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7589345667791059
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.043831520618606845
     Mw = 80.37845879589715
@@ -1108,6 +1163,9 @@ elif BP == "BPB_15":
     kappas['lam'] = 8.459762817722257
     kappas['gamgam'] = 0.9626061555176816
     kappas['Zgam'] = 0.9861539099506105
+    kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0531538851791662
+    kappas['ZZ_365_use_HEPfit_C1_values'] = 1.0133414391337519
+    kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9974568214104397
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7219985807961474
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.04299605614299051
     Mw = 80.36644727286449
@@ -1154,6 +1212,9 @@ elif BP == "BPB_16":
     kappas['lam'] = 9.319513844125106
     kappas['gamgam'] = 0.9553893338375414
     kappas['Zgam'] = 0.9834792434465481
+    kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0568880081437206
+    kappas['ZZ_365_use_HEPfit_C1_values'] = 1.0127740940600591
+    kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9954137718180324
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7449363773395835
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.04772474876185351
     Mw = 80.37347683058418
@@ -1200,6 +1261,9 @@ elif BP == "BPB_17":
     kappas['lam'] = 9.888810967739037
     kappas['gamgam'] = 0.9590465290403257
     kappas['Zgam'] = 0.9848353795963092
+    kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0628045998368727
+    kappas['ZZ_365_use_HEPfit_C1_values'] = 1.0155994756196123
+    kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9966290459139281
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7250331000061386
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.051271904558578996
     Mw = 80.37022469814376
@@ -1246,6 +1310,9 @@ elif BP == "BPB_18":
     kappas['lam'] = 11.2535829810942
     kappas['gamgam'] = 0.9520472670797051
     kappas['Zgam'] = 0.9822414834898094
+    kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0712469635812127
+    kappas['ZZ_365_use_HEPfit_C1_values'] = 1.0172428988294235
+    kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9957011135308628
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7310552407842171
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.05894999216074326
     Mw = 80.36926541455969
@@ -1590,6 +1657,9 @@ elif BP == "BP_lambda1":
     kappas['lam'] = 1.1000242642433875
     kappas['gamgam'] = 0.9919985602913337
     kappas['Zgam'] = 0.9970379541928285
+    kappas['ZZ_240_use_HEPfit_C1_values'] = 0.9997517809389181
+    kappas['ZZ_365_use_HEPfit_C1_values'] = 0.999333764397566
+    kappas['ZZ_500_use_HEPfit_C1_values'] = 0.999327944752674
     Mw = 80.37399739650569
     sin2thetaEff = 0.23143603210752
     GammaZ = 2.4952832270640632
@@ -1624,6 +1694,12 @@ if no_1L_BSM:
     kappas['ZZ_365'] = kappas['ZZ_365_no_1L_BSM']
     kappas['ZZ_500'] = kappas['ZZ_500_no_1L_BSM']
     kappas['ZZ_550'] = kappas['ZZ_550_no_1L_BSM']
+
+if use_HEPfit_C1_values_WFR_kala2_input_all:
+    kappas['ZZ_240'] = kappas['ZZ_240_use_HEPfit_C1_values']
+    kappas['ZZ_365'] = kappas['ZZ_365_use_HEPfit_C1_values']
+    kappas['ZZ_500'] = kappas['ZZ_500_use_HEPfit_C1_values']
+
 
 
 M_PI = 3.14159265358979323846
@@ -2055,7 +2131,7 @@ if WFR_kala2_input:
     kappas['ZZ_365'] = sqrt( kappas['ZZ_365']**2 + ZZh_hextleg( kappas["lam"] ) )
     kappas['ZZ_500'] = sqrt( kappas['ZZ_500']**2 + ZZh_hextleg( kappas["lam"] ) )
 
-if WFR_kala2_input_all:
+if WFR_kala2_input_all or use_HEPfit_C1_values_WFR_kala2_input_all:
     # Adds the external-leg correction (the contribution proportional to kappa_lambda**2) to 
     # the all Higgs cross-sections and decay rates
     coupling_list = [
@@ -2159,6 +2235,7 @@ output_file_flag_map = {
     smeft_formula_all: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_smeft_formula_all.conf",
     WFR_kala2_input: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_WFR_kala2_input.conf",
     WFR_kala2_input_all: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_WFR_kala2_input_all.conf",
+    use_HEPfit_C1_values_WFR_kala2_input_all: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_use_HEPfit_C1_values_WFR_kala2_input_all.conf",
 }
 
 for condition, filename in output_file_flag_map.items():
@@ -2257,6 +2334,7 @@ if (scenario == "IDM_FCCee240_FCCee365"
         smeft_formula_all: "ObservablesHiggs_FCCee_365_kappa_scaled_smeft_formula_all.conf",
         WFR_kala2_input: "ObservablesHiggs_FCCee_365_kappa_scaled_WFR_kala2_input.conf",
         WFR_kala2_input_all: "ObservablesHiggs_FCCee_365_kappa_scaled_WFR_kala2_input_all.conf",
+        use_HEPfit_C1_values_WFR_kala2_input_all: "ObservablesHiggs_FCCee_365_kappa_scaled_use_HEPfit_C1_values_WFR_kala2_input_all.conf",
     }
 
     for condition, filename in output_file_flag_map.items():
@@ -2382,6 +2460,7 @@ output_file_flag_map = {
     smeft_formula_all: "ObservablesHiggs_HLLHC_SM_kappa_scaled_smeft_formula_all.conf",
     WFR_kala2_input: "ObservablesHiggs_HLLHC_SM_kappa_scaled_WFR_kala2_input.conf",
     WFR_kala2_input_all: "ObservablesHiggs_HLLHC_SM_kappa_scaled_WFR_kala2_input_all.conf",
+    use_HEPfit_C1_values_WFR_kala2_input_all: "ObservablesHiggs_HLLHC_SM_kappa_scaled_use_HEPfit_C1_values_WFR_kala2_input_all.conf",
 }
 
 for condition, filename in output_file_flag_map.items():
@@ -2592,6 +2671,7 @@ if scenario == "IDM_FCCee240_FCCee365_HLLHClambda":
             smeft_formula_all: "_smeft_formula_all",
             WFR_kala2_input: "_WFR_kala2_input",
             WFR_kala2_input_all: "_WFR_kala2_input_all",
+            use_HEPfit_C1_values_WFR_kala2_input_all: "_use_HEPfit_C1_values_WFR_kala2_input_all",
         }
 
         for condition, flag in flag_map.items():

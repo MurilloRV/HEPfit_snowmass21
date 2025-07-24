@@ -25,7 +25,8 @@ smeft_formula_no_cross="false" # Using the HEPfit SMEFT expression for sigma_Zh,
 smeft_formula_external_leg="false" # Using the HEPfit SMEFT expression for sigma_Zh, without the external-leg correction (dkappaf)
 smeft_formula_all="false" # Using the HEPfit SMEFT expression for all XS and BR, including 2*dkappaf in the square root to stand in for C_Hbox  (as "_no_cross")
 WFR_kala2_input="false" # Include the WFR contribution, proportional to kappa_lambda**2, into the IDM ZH cross-section prediction
-WFR_kala2_input_all="true" # Include the WFR contribution, proportional to kappa_lambda**2, into the IDM predictions for all the XS and BR
+WFR_kala2_input_all="false" # Include the WFR contribution, proportional to kappa_lambda**2, into the IDM predictions for all the XS and BR
+use_HEPfit_C1_values_WFR_kala2_input_all="true" # Use the HEPfit C1 values, instead of the IDM values. Activates WFR_kala2_input_all as well
 
 # Additional, independent flags
 modify_all_ewpos="true" # Modify also the EWPO central values for *current* observables, not just future ones
@@ -52,6 +53,7 @@ EXCLUSIVE_FLAGS=(
     "$smeft_formula_all"
     "$WFR_kala2_input"
     "$WFR_kala2_input_all"
+    "$use_HEPfit_C1_values_WFR_kala2_input_all"
 )
 
 # Count how many flags are set to "true"
@@ -100,6 +102,7 @@ for BP_Name in "${BP_Names_Total[@]}"; do
         if [ "$smeft_formula_all" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_smeft_formula_all"; fi
         if [ "$WFR_kala2_input" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_WFR_kala2_input"; fi
         if [ "$WFR_kala2_input_all" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_WFR_kala2_input_all"; fi
+        if [ "$use_HEPfit_C1_values_WFR_kala2_input_all" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_use_HEPfit_C1_values_WFR_kala2_input_all"; fi
         
         if [ "$modify_all_ewpos" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_all_EW_mods"; fi
         if [ "$noLoopH3d6Quad" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_noLoopH3d6Quad"; fi
@@ -303,7 +306,8 @@ for BP_Name in "${BP_Names_Total[@]}"; do
               "$smeft_formula_external_leg" == "true" || 
               "$smeft_formula_all" == "true" || 
               "$WFR_kala2_input" == "true" ||
-              "$WFR_kala2_input_all" == "true" ]];
+              "$WFR_kala2_input_all" == "true" ||
+              "$use_HEPfit_C1_values_WFR_kala2_input_all" == "true" ]]; 
         then
 
             FLAG_ARRAY=("no_1L_BSM_sqrt_s" 
@@ -315,7 +319,9 @@ for BP_Name in "${BP_Names_Total[@]}"; do
                         "smeft_formula_external_leg" 
                         "smeft_formula_all" 
                         "WFR_kala2_input"
-                        "WFR_kala2_input_all")
+                        "WFR_kala2_input_all"
+                        "use_HEPfit_C1_values_WFR_kala2_input_all"
+                       )
 
             for FLAG in "${FLAG_ARRAY[@]}"; do
                 if [ "${!FLAG}" == "true" ]; then
