@@ -1,20 +1,46 @@
 import copy
 import subprocess
+import argparse
 
+parser = argparse.ArgumentParser()
+parser.add_argument("-m", "--model", help = "Name of the model considered", type=str)
+
+args = parser.parse_args()
+model = args.model
 
 working_dir = "./General_lambdas/"
-LAMBDAS = [
-    1.1209067864736006, # BPB_0
-    2.3867362274064843, # BPB_2
-    3.3446699219962595, # BPB_4
-    4.332584967850238,  # BPB_6
-    5.390968560325193,  # BPB_8
-    6.370034303736775,  # BPB_10
-    7.515862276796717,  # BPB_12
-    8.611459058586306,  # BPB_14
-    9.319513844125106,  # BPB_16
-    11.2535829810942,   # BPB_18
-]
+
+
+if model == "IDM":
+    LAMBDAS = [
+        1.1209067864736006, # BPB_0
+        2.3867362274064843, # BPB_2
+        3.3446699219962595, # BPB_4
+        4.332584967850238,  # BPB_6
+        5.390968560325193,  # BPB_8
+        6.370034303736775,  # BPB_10
+        7.515862276796717,  # BPB_12
+        8.611459058586306,  # BPB_14
+        9.319513844125106,  # BPB_16
+        11.2535829810942,   # BPB_18
+    ]
+
+elif model == "Z2SSM":
+    LAMBDAS=[
+        1.0643594459030925, # BPB_0
+        2.068362744578383,  # BPB_1
+        3.41660475844658,   # BPB_2
+        4.996504503173265,  # BPB_4
+        6.114019817191308,  # BPB_6
+        7.24831645311373,   # BPB_8
+        8.535635929341407,  # BPB_10
+        9.584476423981522,  # BPB_12
+        10.34814810189343,  # BPB_13
+    ]
+
+else:
+    raise ValueError("Model not recognized. Please use 'IDM' or 'Z2SSM'.")
+
 LAMBDAS = [lmbd for lmbd in LAMBDAS for _ in range(2)]
 
 # WITH_LAMBDA=['no', '', 'no', '', 'no', '', 'no', '']
@@ -160,7 +186,7 @@ for i, lmbd in enumerate(LAMBDAS):
 
 print(k_ZH_240_365_central_values)
 
-with open(f"comparison_plots/k_ZH_240_365_predictions_general_lambdas.txt", "w") as k_ZH_output:
+with open(f"comparison_plots/k_ZH_240_365_predictions_general_lambdas_{model}.txt", "w") as k_ZH_output:
 
     for i, lmbd in enumerate(LAMBDAS):
         if WITH_LAMBDA[i] == 'no':

@@ -1,23 +1,44 @@
 #!/bin/bash
 
+# MODEL="IDM"
+MODEL="Z2SSM"
 ORIGINAL_PATH="/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/Fits_HLLHC_FCCee/large_kappa_lambda_fits"
 ORIGINAL_PATH="${ORIGINAL_PATH}/General_lambdas"
 mkdir -p "$ORIGINAL_PATH"
 cd "$ORIGINAL_PATH"
 
 # INDIVIDUAL_LAMBDAS=({-5..10})
-INDIVIDUAL_LAMBDAS=(
-    1.1209067864736006 # BPB_0
-    2.3867362274064843 # BPB_2
-    3.3446699219962595 # BPB_4
-    4.332584967850238  # BPB_6
-    5.390968560325193  # BPB_8
-    6.370034303736775  # BPB_10
-    7.515862276796717  # BPB_12
-    8.611459058586306  # BPB_14
-    9.319513844125106  # BPB_16
-    11.2535829810942   # BPB_18
-)
+
+if [ "$MODEL" == "IDM" ]; then
+    INDIVIDUAL_LAMBDAS=(
+        1.1209067864736006 # BPB_0
+        2.3867362274064843 # BPB_2
+        3.3446699219962595 # BPB_4
+        4.332584967850238  # BPB_6
+        5.390968560325193  # BPB_8
+        6.370034303736775  # BPB_10
+        7.515862276796717  # BPB_12
+        8.611459058586306  # BPB_14
+        9.319513844125106  # BPB_16
+        11.2535829810942   # BPB_18
+    )
+elif [ "$MODEL" == "Z2SSM" ]; then
+    INDIVIDUAL_LAMBDAS=(
+        1.0643594459030925 # BPB_0
+        2.068362744578383  # BPB_1
+        3.41660475844658   # BPB_2
+        4.996504503173265  # BPB_4
+        6.114019817191308  # BPB_6
+        7.24831645311373   # BPB_8
+        8.535635929341407  # BPB_10
+        9.584476423981522  # BPB_12
+        10.34814810189343  # BPB_13
+    )
+else 
+    echo "Unknown model: $MODEL"
+    return 1
+fi
+
 LAMBDAS=()
 WITH_LAMBDA=()
 CH=()
@@ -58,4 +79,4 @@ for ((i=0; i<${#LAMBDAS[@]}; i++)); do
 done
 
 cd ..
-python modify_observables_general_lambdas.py
+python modify_observables_general_lambdas.py -m "$MODEL"
