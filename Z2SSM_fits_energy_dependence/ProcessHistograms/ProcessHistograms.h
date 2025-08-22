@@ -11,7 +11,9 @@
 
 #include <string>
 #include <vector>
+#include <TH1D.h>
 #include <TColor.h>
+#include <TAxis.h>
 
 
 // This is a ProcessHistograms header file.
@@ -32,22 +34,41 @@ public:
         bool noLegend = true,
         unsigned int nBins1D = 100,
         unsigned int nBins2D = 100,
-        bool drawGlobalModes = false);
+        bool drawGlobalModes = false,
+        bool setRangeKLambda = false,
+        bool drawKLambdaErrorProjection = false,
+        bool only_relevant_plots = false);
 
     // Destructor
     ~ProcessHistograms();
 
     void Get_Global_Modes(std::string filepath);
 
-    void Modify_1D_Hist(BCH1D bch1d, std::string filename, std::string title, std::string hist_title);
+    static Double_t ShiftX(Double_t x, Double_t xmin, Double_t xmax, Double_t xmin_new, Double_t xmax_new);
+    static void ShiftAxis(TAxis *a, Double_t (*Shift)(Double_t, Double_t, Double_t, Double_t, Double_t), Double_t xmin, Double_t xmax, Double_t xmin_new, Double_t xmax_new);
+    static void ShiftXaxis(TH1D *h, Double_t (*Shift)(Double_t, Double_t, Double_t, Double_t, Double_t), Double_t xmin, Double_t xmax, Double_t xmin_new, Double_t xmax_new);
 
-    void Print_1D_Histos(std::string filepath, std::string plot_dir, std::string title, float k_lambda);
+    void Modify_1D_Hist(BCH1D bch1d, std::string filename, std::string title, std::string hist_title, std::string BP_name);
+
+    void Print_1D_Histos(std::string filepath, 
+        std::string plot_dir, std::string title, 
+        Double_t k_lambda, 
+        Double_t k_lambda_err_low=-1.0,
+        Double_t k_lambda_err_high=-1.0,
+        Double_t k_lambda_range_low=1.0,
+        Double_t k_lambda_range_high=-1.0,
+        std::string BP_name = "BP"
+    );
     
 
 
-    void setKappaLambda(float KappaLambda)
+    void setKappaLambda(Double_t KappaLambda, Double_t KappaLambda_err_low, Double_t KappaLambda_err_high, Double_t KappaLambda_range_low, Double_t KappaLambda_range_high)
     {
         this->KappaLambda = KappaLambda;
+        this->KappaLambda_err_low = KappaLambda_err_low;
+        this->KappaLambda_err_high = KappaLambda_err_high;
+        this->KappaLambda_range_low = KappaLambda_range_low;
+        this->KappaLambda_range_high = KappaLambda_range_high;
     };
 
     void setdrawKappaLambdaLine(bool drawKappaLambdaLine)
@@ -71,12 +92,20 @@ private:
     TColor * HEPfit_green; /// < The colour green for HEPfit.
     TColor * HEPfit_red; /// < The colour red for HEPfit.
 
-    float KappaLambda;
+    Double_t KappaLambda;
+    Double_t KappaLambda_err_low;
+    Double_t KappaLambda_err_high;
+    Double_t KappaLambda_range_low;
+    Double_t KappaLambda_range_high;
     bool drawKappaLambdaLine;
 
     bool drawGlobalModes;
+    bool setRangeKLambda;
+    bool drawKLambdaErrorProjection;
 
-    std::map<std::string, float> Global_Modes;
+    bool only_relevant_plots;
+
+    std::map<std::string, Double_t> Global_Modes;
 
 
 
