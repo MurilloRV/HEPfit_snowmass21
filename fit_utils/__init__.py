@@ -2,3 +2,4 @@
 
 from . import utils
 from . import pullplots
+from . import parser

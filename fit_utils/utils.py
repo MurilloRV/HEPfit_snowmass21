@@ -1,11 +1,11 @@
 import uproot
 import subprocess
-import hist
 from matplotlib import pyplot as plt
 import matplotlib
 import numpy as np
-import math
 import os.path
+
+from .parser import read_fit_results
 
 plt.rcParams.update({
     #   "text.usetex": True,
@@ -20,160 +20,6 @@ def print_to_file(message, file):
     """
     print(message)
     print(message, file=file)
-
-def parameter_order(par):
-    """
-    Simple function which assigns the order of the model parameters for plots 
-
-    Parameters
-    ----------
-    par : str
-        The model parameter for which to determine the order, following HEPfit 
-        conventions
-
-    Returns
-    -------
-    order : int
-        The order of the model parameter for plotting purposes.
-    """
-
-    order_dict = {
-        "CW":             1,
-        "CHG":            2,
-        "CHWB":           3,
-        "CHWHB_gaga":     4,
-        "CHWHB_gagaorth": 5,
-        "CHW":            6,
-        "CHB":            7,
-        "CH":             8,
-        "CHD":            9,
-        "CHbox":          10,
-        "CHL1_11":        11,
-        "CHL1_22":        12,
-        "CHL1_33":        13,
-        "CHL3_11":        14,
-        "CHL3_22":        15,
-        "CHL3_33":        16,
-        "CHe_11":         17,
-        "CHe_22":         18,
-        "CHe_33":         19,
-        "CHQ1_11":        20,
-        "CHQ1_33":        21,
-        "CHQ3_11":        22,
-        "CHu_11":         23,
-        "CHd_11":         24,
-        "CHd_33":         25,
-        "CeH_22r":        26,
-        "CeH_33r":        27,
-        "CuH_22r":        28,
-        "CuH_33r":        29,
-        "CdH_33r":        30,
-        "CLL_1221":       31,
-    }
-    return order_dict.get(par, 9999)  # Return a large number for unknown parameters
-
-def observable_order(obs):
-    """
-    Simple function which assigns the order of the observables for plots 
-
-    Parameters
-    ----------
-    obs : str
-        The observable for which to determine the order, following HEPfit 
-        conventions
-
-    Returns
-    -------
-    order : int
-        The order of the observable for plotting purposes.
-    """
-
-    order_dict = {
-        "deltalHHH_HLLHC": 1,
-
-        "eeZH_FCCee240":       2,
-        "eeZHbb_FCCee240":     3,
-        "eeHvvbb_FCCee240":    4,
-        "eeZHcc_FCCee240":     5,
-        "eeZHgg_FCCee240":     6,
-        "eeZHWW_FCCee240":     7,
-        "eeZHZZ_FCCee240":     8,
-        "eeZHtautau_FCCee240": 9,
-        "eeZHgaga_FCCee240":   10,
-        "eeZHmumu_FCCee240":   11,
-        "eeZHZga_FCCee240":    12,
-
-        ### FCC-ee_365
-        "eeZH_FCCee365":        13,
-        "eeZHbb_FCCee365":      14,
-        "eeHvvbb_FCCee365":     15,
-        "eeZHcc_FCCee365":      16,
-        "eeHvvcc_FCCee365":     17,
-        "eeZHgg_FCCee365":      18,
-        "eeHvvgg_FCCee365":     19,
-        "eeZHWW_FCCee365":      20,
-        "eeHvvWW_FCCee365":     21,
-        "eeZHZZ_FCCee365":      22,
-        "eeHvvZZ_FCCee365":     23,
-        "eeZHtautau_FCCee365":  24,
-        "eeHvvtautau_FCCee365": 25,
-        "eeZHgaga_FCCee365":    26,
-        "eeHvvgaga_FCCee365":   27,
-        "eeZHmumu_FCCee365":    28,
-        # "eeHvvmumu_FCCee365":   29,
-
-        ### HL-LHC
-        "muggHgagaHL":    29,
-        "muggHZZ4lHL":    30,
-        "muggHWW2l2vHL":  31,
-        "muggHtautauHL":  32,
-        "muggHbbHL":      33,
-        "muggHmumuHL":    34,
-        "muggHZgaHL":     35,
-
-        "muVBFgagaHL":    36,
-        "muVBFZZ4lHL":    37,
-        "muVBFWW2l2vHL":  38,
-        "muVBFtautauHL":  39,
-        "muVBFmumuHL":    40,
-        "muVBFZgaHL":     41,
-
-        "muWHgagaHL":     42,
-        "muWHZZ4lHL":     43,
-        "muWHWW2l2vHL":   44,
-        "muWHbbHL":       45,
-
-        "muZHgagaHL":     46,
-        "muZHZZ4lHL":     47,
-        "muZHWW2l2vHL":   48,
-        "muZHbbHL":       49,
-
-        "muttHgagaHL":    50,
-        "muttHZZ4lHL":    51,
-        "muttHWW2l2vHL":  52,
-        "muttHtautauHL":  53,
-        "muttHbbHL":      54,
-    }
-
-    if obs in order_dict:
-        order = order_dict[obs]
-    elif obs.endswith("_C"):
-        order = 10000
-    elif obs.endswith("_FCCee"):
-        order = 20000
-    elif obs.endswith("_FCCee161"):
-        order = 30000
-    elif obs.endswith("_FCCee240"):
-        order = 40000
-    elif obs.endswith("_FCCee365"):
-        order = 50000
-    elif obs.endswith("_HLLHC") or obs.endswith("_HLLHC_OO"):
-        order = 60000
-    else:
-        order = 999999
-
-    return order
-
 
 
 def group_plots(
@@ -230,6 +76,7 @@ def group_plots(
                     except:
                         print(f"file not found: {working_dir}/{BP}/{scenario}/results_{spec}/Observables/{obs}.pdf")
 
+
 def print_klam_results(
     BPs,
     model_specs,
@@ -247,7 +94,7 @@ def print_klam_results(
     BPs : list
         List of benchmark point names. Must correspond to the directory name for the BP
     model_specs : dict
-        Dictionary mapping scenarios to model specifications.
+        Dictionary mapping scenarios to a list of model specifications.
     working_dir : str
         Working directory path, containing subdirectories for each benchmark point.
     results_dirs : list of str
@@ -275,53 +122,14 @@ def print_klam_results(
     for results_dir in results_dirs:
         subprocess.run(["mkdir", "-p", f"{working_dir}/comparison_plots/results_{results_dir}"])
 
-    results = {}
-    parameters = {}
 
-    for BP in BPs:
-
-        results[BP] = {}
-        parameters[BP] = {}
-        for scenario in scenarios:
-
-            parameters[BP][scenario] = {}
-            results[BP][scenario] = {}
-            for model_spec in model_specs[scenario]:
-
-                line_nrs = []
-                parameters[BP][scenario][model_spec] = []
-
-                file_path = files[BP][scenario][model_spec]
-                with open(file_path, 'r') as file:
-                    lines = file.readlines()
-                    
-                    for n, line in enumerate(lines):
-                        columns = line.split()
-                        if len(columns) < 2:
-                            continue
-                        
-                        if columns[1] == "Observable":
-                            parameter = columns[2][1:-2]
-                            # print(f"Found parameter: {parameter} in file {file_path} at line {n}")
-                            if parameter == "deltalHHH_HLLHC":
-                                parameters[BP][scenario][model_spec].append(parameter)
-                                line_nrs.append(n)
-
-                    results[BP][scenario][model_spec] = []
-                    print(f"Reading results for {BP}, scenario: {scenario}, model spec: {model_spec}")
-                    for line_nr, par in zip(line_nrs, parameters[BP][scenario][model_spec]):
-                    
-                        columns = lines[line_nr + 1].split()
-                        means_uncertainties = [float(columns[3]),    # Mean
-                                               float(columns[5]),]   # Uncertainty
-
-                        results[BP][scenario][model_spec].append(means_uncertainties)
-
-                results[BP][scenario][model_spec] = np.array(results[BP][scenario][model_spec])
-
-
-    # print(f"\nParameter dictionary: \n{parameters}")
-    # print(f"\nResults dictionary: \n{results}")
+    print(f"\nReading klam fit results")
+    kappa_lambda_results = read_fit_results(
+        BPs=BPs,
+        model_specs=model_specs,
+        observables=["deltalHHH_HLLHC"],
+        files=files,
+    )
 
     for scenario in scenarios:
         for model_spec, results_dir in zip(model_specs[scenario], results_dirs):
@@ -330,15 +138,14 @@ def print_klam_results(
                 print(f"Writing results to {output_file}")
                 print(f"BP,klam,error", file=f)
                 for BP in BPs:
-                    if BP not in results or scenario not in results[BP] or model_spec not in results[BP][scenario]:
+                    if BP not in kappa_lambda_results or scenario not in kappa_lambda_results[BP] or model_spec not in kappa_lambda_results[BP][scenario]:
                         print(f"Skipping {BP}, {scenario}, {model_spec} as results are missing.")
                         continue
-                    
-                    klams = results[BP][scenario][model_spec][:, 0]
-                    errors = results[BP][scenario][model_spec][:, 1]
 
-                    for k, e in zip(klams, errors):
-                        print(f"{BP},{k+1},{e}", file=f)
+                    klam = kappa_lambda_results[BP][scenario][model_spec][0, 0] + 1
+                    error = kappa_lambda_results[BP][scenario][model_spec][0, 1]
+                    print(f"{BP},{klam},{error}", file=f)
+
 
 def generate_klam_comparison_plot(
     BPs,
@@ -350,7 +157,7 @@ def generate_klam_comparison_plot(
     model,
     plot_labels=None,
     plot_titles=None,
-    colors=[],
+    colors=None,
     show_plots=False,
     figsize=(3.5, 4),
     fig_kwargs={},
@@ -363,7 +170,7 @@ def generate_klam_comparison_plot(
     BPs : list of str
         List of benchmark point names. Must correspond to the directory name for the BP
     model_specs : dict
-        Dictionary mapping collider scenarios to model specifications.
+        Dictionary mapping collider scenarios to a list of model specifications.
     working_dir : str
         Working directory path, containing subdirectories for each benchmark point.
     results_dirs : list of str
@@ -385,8 +192,8 @@ def generate_klam_comparison_plot(
         A dictionary in the form plot_titles[scenario][model_spec] containing the titles 
         for the plots. If not provided, no title is shown.
     colors : list, optional
-        List of colors assign to each model specification. If set to
-        an empty list, the default matplotlib color cycle will be used.
+        List of colors assign to each model specification. If not set, the default 
+        matplotlib color cycle will be used.
     show_plots : bool, optional
         Whether to show the plots or not. Default is False.
     figsize : tuple, optional
@@ -403,7 +210,7 @@ def generate_klam_comparison_plot(
 
     scenarios = model_specs.keys()
     
-    if colors == []:
+    if colors is None:
         # Default matplotlib color cycle
         colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
@@ -417,7 +224,6 @@ def generate_klam_comparison_plot(
     for results_dir in results_dirs:
         subprocess.run(["mkdir", "-p", f"{working_dir}/comparison_plots/results_{results_dir}"])
 
-    # files = [working_dir + file_dir + f"/results_{model_specs}/Observables/Statistics.txt" for file_dir in scenarios]
     files = {}
     for BP in BPs:
         files[BP] = {}
@@ -426,38 +232,20 @@ def generate_klam_comparison_plot(
             for model_spec in model_specs[scenario]:
                 files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/results_{model_spec}/Observables/Statistics.txt"
 
-    
-    kappa_lambda_results = {}
-    for BP in BPs:
+    print(f"\nReading klam fit results")
+    kappa_lambda_results = read_fit_results(
+        BPs=BPs,
+        model_specs=model_specs,
+        observables=["deltalHHH_HLLHC"],
+        files=files,
+    )
 
-        kappa_lambda_results[BP] = {}
-        for scenario in scenarios:
-
-            kappa_lambda_results[BP][scenario] = {}
-            for model_spec in model_specs[scenario]:
-
-                file_path = files[BP][scenario][model_spec]
-                with open(file_path, 'r') as file:
-                    lines = file.readlines()
-                    
-                    for n, line in enumerate(lines):
-                        columns = line.split()
-                        if len(columns) < 2:
-                            continue
-                        
-                        if columns[1] == "Observable" and columns[2].startswith("\"deltalHHH_HLLHC"):
-                            line_kappa_lambda = n
-                            
-                    columns_kappa_lambda = lines[line_kappa_lambda + 1].split()
-                    kappa_lambda_results[BP][scenario][model_spec] = [float(columns_kappa_lambda[3])+1,  # Mean
-                                                                      float(columns_kappa_lambda[5]),]   # Uncertainty
-                    
     for scenario in scenarios:
         for model_spec, results_dir in zip(model_specs[scenario], results_dirs):                
             fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, figsize=figsize, height_ratios=[0.7, 0.3], gridspec_kw=dict(hspace=0.), **fig_kwargs)
 
-            means  = {BP : kappa_lambda_results[BP][scenario][model_spec][0] for BP in BPs}
-            errors = {BP : kappa_lambda_results[BP][scenario][model_spec][1] for BP in BPs}
+            means  = {BP : kappa_lambda_results[BP][scenario][model_spec][0, 0] + 1 for BP in BPs}
+            errors = {BP : kappa_lambda_results[BP][scenario][model_spec][0, 1]     for BP in BPs}
             for i, BP in enumerate(BPs):
                 ax1.errorbar(x=BP_lambdas[i],
                             y=means[BP],
@@ -507,6 +295,7 @@ def generate_klam_comparison_plot(
     if show_plots:
         plt.show()
 
+
 def compare_BP_results_uproot(
     BPs,
     model_specs,
@@ -518,7 +307,7 @@ def compare_BP_results_uproot(
     model,
     scenario_titles=None,
     plot_titles=None,
-    colors=[],
+    colors=None,
     show_plots=False,
     legend_fontsize=8.,
 ):
@@ -532,7 +321,7 @@ def compare_BP_results_uproot(
     BPs : list of str
         List of benchmark point names. Must correspond to the directory name for the BP
     model_specs : dict
-        Dictionary mapping collider scenarios to model specifications.
+        Dictionary mapping collider scenarios to a list of model specifications.
     working_dir : str
         Working directory path, containing subdirectories for each benchmark point.
     results_dir : str
@@ -555,8 +344,8 @@ def compare_BP_results_uproot(
         the plots. If not provided, the format "<model> <BP_name>, <scenario_title>"
         will be used.
     colors : list, optional
-        List of colors assign to each model specification. If set to
-        an empty list, the default matplotlib color cycle will be used.
+        List of colors assign to each model specification. If not set, the default 
+        matplotlib color cycle will be used.
     show_plots : bool, optional
         Whether to show the plots or not. Default is False.
     legend_fontsize : float, optional
@@ -571,12 +360,11 @@ def compare_BP_results_uproot(
     scenarios = model_specs.keys()
 
     # Deal with optional arguments
-    if colors == []:
+    if colors is None:
         # Default matplotlib color cycle
         colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
     colors_rgb_list = [ matplotlib.colors.to_rgb(c) for c in colors ]
-    # print(colors_rgb_list)
 
     if model not in ["IDM", "Z2SSM"]:
         raise ValueError(f"Invalid model specified ({model}). Please choose either 'IDM' or 'Z2SSM'.")
@@ -629,150 +417,69 @@ def compare_BP_results_uproot(
             plt.axvline(BP_lambda, color="black", linestyle="--", label=rf"{model} {BP_name} value"+"\n"+rf"($\kappa_{{\lambda}}$ = {BP_lambda:.2f})")
             plt.legend(fontsize=legend_fontsize, loc="best")
             plt.tight_layout()
-            plt.savefig(f"{working_dir}/comparison_plots/results_{results_dir}/IDM_{BP}_{scenario}_final.pdf")
+            plt.savefig(f"{working_dir}/comparison_plots/results_{results_dir}/{model}_{BP}_{scenario}_final.pdf")
 
     if show_plots:
         plt.show()
 
 
-    obs_list = ["deltalHHH_HLLHC",]
-    obs_tex_list = [r"$\kappa_{\lambda}$",]
-    
+def generate_klam_latex_table(
+    BPs,
+    model_specs,
+    working_dir,
+    results_dir,
+    spec_labels,
+    BP_names,
+    BP_lambdas,
+):
+    """
+    Generates a LaTeX table, comparing the posterior kappa_lambda distribution between 
+    different model specifications, as well as with the true value of the BP.
 
+    Parameters
+    ----------
+    BPs : list of str
+        List of benchmark point names. Must correspond to the directory name for the BP
+    model_specs : dict
+        Dictionary mapping collider scenarios to a list of model specifications.
+    working_dir : str
+        Working directory path, containing subdirectories for each benchmark point.
+    results_dir : str
+        Suffix of the name of the directory to store the results. Results are stored in
+        '{working_dir}/comparison_plots/results_{results_dir}/'.
+    spec_labels : list of str
+        List with the labels for each model specification. Must have the same length as the
+        model_specs[scenario] lists, for each collider scenario.
+    BP_names : list of str
+        List with the names for the benchmark point, used in plots.
+    BP_lambda : list of float
+        List of the corresponding BSM model prediction for kappa_lambda for each BP.
+
+    Returns
+    -------
+    None
+
+    """
+
+    scenarios = list(model_specs.keys())
+    
     files = {}
     for BP in BPs:
         files[BP] = {}
         for scenario in scenarios:
             files[BP][scenario] = {}
             for model_spec in model_specs[scenario]:
-                if BP == "BP_lambda1" and model_spec == "fits_realistic_HL_LHC_WFR_kala2_input_all_all_EW_mods_small_priors_long":
-                    files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/results_{model_spec[:-5]}_strict/Observables/Statistics.txt"
-                else:
-                    files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/results_{model_spec}/Observables/Statistics.txt"
+                files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/results_{model_spec}/Observables/Statistics.txt"
 
+    print(f"\nReading klam fit results")
+    kappa_lambda_results = read_fit_results(
+        BPs=BPs,
+        model_specs=model_specs,
+        observables=["deltalHHH_HLLHC"],
+        files=files,
+    )
 
-    print(f"Reading fit results")
-    results = {}
-    observables = {}
-    observables_tex = {}
-    central_values_obs = {}
-
-    for BP, BP_lambda in zip(BPs, BP_lambdas):
-
-        results[BP] = {}
-        observables[BP] = {}
-        observables_tex[BP] = {}
-        central_values_obs[BP] = {}
-        for scenario in scenarios:
-
-            results[BP][scenario] = {}
-            observables[BP][scenario] = {}
-            observables_tex[BP][scenario] = {}
-            central_values_obs[BP][scenario] = {}
-            for model_spec in model_specs[scenario]:
-
-                file_path = files[BP][scenario][model_spec]
-                observables[BP][scenario][model_spec] = obs_list
-                observables_tex[BP][scenario][model_spec] = obs_tex_list
-                central_values_obs[BP][scenario][model_spec] = [BP_lambda,]
-
-                print(f"Reading file: {file_path}")
-
-                if os.path.isfile(file_path):
-                    with open(file_path, 'r') as file:
-                        lines = file.readlines()
-                        
-                        line_nrs = [np.nan for obs in observables[BP][scenario][model_spec]]
-                        for n, line in enumerate(lines):
-                            columns = line.split()
-                            if len(columns) < 2:
-                                continue
-                            
-                            if (columns[1] == "Observable" \
-                                or columns[1] == "AsyGausObservable") \
-                                and columns[2][1:-2] in observables[BP][scenario][model_spec]:
-
-                                observable_index = observables[BP][scenario][model_spec].index(columns[2][1:-2])
-                                line_nrs[observable_index] = n
-
-                        # print(f"Line numbers: {line_nrs}")
-
-                        if any(np.isnan(line_nrs)):
-                            print(f"Missing observable: {observables[BP][scenario][model_spec][line_nrs.index(np.nan)]}")
-                            raise ValueError(f"Not all observables were found in the file {file_path}!")
-
-                        results[BP][scenario][model_spec] = []
-                        # print(BP)
-
-                        for line_nr, obs in zip(line_nrs, observables[BP][scenario][model_spec]):
-                        
-                            columns = lines[line_nr + 1].split()
-                            if obs == "deltalHHH_HLLHC":
-                                results[BP][scenario][model_spec].append([float(columns[3])+1,  # Mean
-                                                                          float(columns[5]),])  # Uncertainty
-                            else:
-                                results[BP][scenario][model_spec].append([float(columns[3]),    # Mean
-                                                                          float(columns[5]),])  # Uncertainty
-
-                else:
-                    print(f"File not found: {file_path}")
-                    results[BP][scenario][model_spec] = []
-                    for obs in observables[BP][scenario][model_spec]:
-                        results[BP][scenario][model_spec].append(np.full(2, np.nan))
-
-                results[BP][scenario][model_spec] = np.array(results[BP][scenario][model_spec])
-
-    # Align observables across model_specs
-    aligned_observables = {}
-    aligned_observables_tex = {}
-
-    for BP in BPs:
-        aligned_observables[BP] = {}
-        aligned_observables_tex[BP] = {}
-
-        for scenario in scenarios:
-            # Collect all unique observables across model_specs
-            all_observables = set()
-            for model_spec in model_specs[scenario]:
-                all_observables.update(observables[BP][scenario][model_spec])
-
-            aligned_observables[BP][scenario] = sorted(all_observables, key=observable_order)
-
-            aligned_observables_tex[BP][scenario] = [np.nan for i in range(len(aligned_observables[BP][scenario]))]
-
-            # Align central values for observables for each model_spec
-            for model_spec in model_specs[scenario]:
-                aligned_central_values = []
-                aligned_results = []
-                for aligned_idx, obs in enumerate(aligned_observables[BP][scenario]):
-                    if obs in observables[BP][scenario][model_spec]:
-                        idx = observables[BP][scenario][model_spec].index(obs)
-                        aligned_central_values.append(central_values_obs[BP][scenario][model_spec][idx])
-                        aligned_results.append(results[BP][scenario][model_spec][idx])
-                        aligned_observables_tex[BP][scenario][aligned_idx] = observables_tex[BP][scenario][model_spec][idx]
-                    else:
-                        # Handle missing observables (e.g., assign NaN)
-                        aligned_central_values.append(np.nan)
-                        aligned_results.append([np.nan, np.nan])
-
-                central_values_obs[BP][scenario][model_spec] = np.array(aligned_central_values)
-                results[BP][scenario][model_spec] = np.array(aligned_results)
-
-            if np.nan in aligned_observables_tex[BP][scenario]:
-                print(f"Missing observable LaTeX: {aligned_observables[BP][scenario][aligned_observables_tex[BP][scenario].index(np.nan)]}")
-                raise ValueError(f"Not all observables LaTeX descriptions were found in the file for {BP} in scenario: {scenario}, model spec {model_spec}!")
-
-    print(f"\n\n")
-    print(f"Aligned observables: {aligned_observables[BP][scenario]}")
-    print(f"Aligned observables (LaTeX): {aligned_observables_tex[BP][scenario]}")
-    print(f"Central values shape: {central_values_obs[BP][scenario][model_spec].shape}")
-    print(f"results shape: {results[BP][scenario][model_spec].shape}")
-    # print(f"results: {results}")
-    print("\n")
-
-
-
-    table_tex_output_file = working_dir + f'/comparison_plots/results_{results_dir}/klam_results.tex'
+    table_tex_output_file = working_dir + f'/comparison_plots/results_{results_dir}/klam_results_table.tex'
     headers = ["", "True value",] + spec_labels
     columns = BP_names
     # table_text = "\\hline\n" + " & ".join(headers) + "\\\\\n"
@@ -782,8 +489,8 @@ def compare_BP_results_uproot(
         table_text += "\\hline\n"
         table_text += f"{column} & {BP_lambda:.3g}"
         for model_spec in model_specs[scenario]:
-            klam = results[BP][scenario][model_spec][0,0]
-            klam_err_abs = results[BP][scenario][model_spec][0,1]
+            klam = kappa_lambda_results[BP][scenario][model_spec][0,0] + 1
+            klam_err_abs = kappa_lambda_results[BP][scenario][model_spec][0,1]
             klam_err_rel = klam_err_abs / klam
             table_text += rf" & ${klam:.2f}\pm{klam_err_abs:.2f}\;[\textcolor{{violet}}{{{100*klam_err_rel:.2g}\%}}]$"
         table_text += "\\\\"

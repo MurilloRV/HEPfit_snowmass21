@@ -1,0 +1,876 @@
+import numpy as np
+import copy
+
+def parameter_order(par):
+    """
+    Simple function which assigns the order of the model parameters for plots 
+
+    Parameters
+    ----------
+    par : str
+        The model parameter for which to determine the order, following HEPfit 
+        conventions
+
+    Returns
+    -------
+    order : int
+        The order of the model parameter for plotting purposes.
+    """
+
+    order_dict = {
+        "CW_corr":             1,
+        "CHG_corr":            2,
+        "CHWB_corr":           3,
+        "CHWHB_gaga_corr":     4,
+        "CHWHB_gagaorth_corr": 5,
+        "CHW_corr":            6,
+        "CHB_corr":            7,
+        "CH_corr":             8,
+        "CHbox_corr":          9,
+        "CHD_corr":            10,
+        "CHL1_11_corr":        11,
+        "CHL1_22_corr":        12,
+        "CHL1_33_corr":        13,
+        "CHL3_11_corr":        14,
+        "CHL3_22_corr":        15,
+        "CHL3_33_corr":        16,
+        "CHe_11_corr":         17,
+        "CHe_22_corr":         18,
+        "CHe_33_corr":         19,
+        "CHQ1_11_corr":        20,
+        "CHQ1_33_corr":        21,
+        "CHQ3_11_corr":        22,
+        "CHu_11_corr":         23,
+        "CHd_11_corr":         24,
+        "CHd_33_corr":         25,
+        "CeH_22r_corr":        26,
+        "CeH_33r_corr":        27,
+        "CuH_22r_corr":        28,
+        "CuH_33r_corr":        29,
+        "CdH_33r_corr":        30,
+        "CLL_1221_corr":       31,
+    }
+    return order_dict.get(par, 9999)  # Return a large number for unknown parameters
+
+def observable_order(obs):
+    """
+    Simple function which assigns the order of the observables for plots 
+
+    Parameters
+    ----------
+    obs : str
+        The observable for which to determine the order, following HEPfit 
+        conventions
+
+    Returns
+    -------
+    order : int
+        The order of the observable for plotting purposes.
+    """
+
+    order_dict = {
+        "deltalHHH_HLLHC": 1,
+
+        "eeZH_FCCee240":       2,
+        "eeZHbb_FCCee240":     3,
+        "eeHvvbb_FCCee240":    4,
+        "eeZHcc_FCCee240":     5,
+        "eeZHgg_FCCee240":     6,
+        "eeZHWW_FCCee240":     7,
+        "eeZHZZ_FCCee240":     8,
+        "eeZHtautau_FCCee240": 9,
+        "eeZHgaga_FCCee240":   10,
+        "eeZHmumu_FCCee240":   11,
+        "eeZHZga_FCCee240":    12,
+
+        ### FCC-ee_365
+        "eeZH_FCCee365":        13,
+        "eeZHbb_FCCee365":      14,
+        "eeHvvbb_FCCee365":     15,
+        "eeZHcc_FCCee365":      16,
+        "eeHvvcc_FCCee365":     17,
+        "eeZHgg_FCCee365":      18,
+        "eeHvvgg_FCCee365":     19,
+        "eeZHWW_FCCee365":      20,
+        "eeHvvWW_FCCee365":     21,
+        "eeZHZZ_FCCee365":      22,
+        "eeHvvZZ_FCCee365":     23,
+        "eeZHtautau_FCCee365":  24,
+        "eeHvvtautau_FCCee365": 25,
+        "eeZHgaga_FCCee365":    26,
+        "eeHvvgaga_FCCee365":   27,
+        "eeZHmumu_FCCee365":    28,
+        # "eeHvvmumu_FCCee365":   29,
+
+        ### HL-LHC
+        "muggHgagaHL":    29,
+        "muggHZZ4lHL":    30,
+        "muggHWW2l2vHL":  31,
+        "muggHtautauHL":  32,
+        "muggHbbHL":      33,
+        "muggHmumuHL":    34,
+        "muggHZgaHL":     35,
+
+        "muVBFgagaHL":    36,
+        "muVBFZZ4lHL":    37,
+        "muVBFWW2l2vHL":  38,
+        "muVBFtautauHL":  39,
+        "muVBFmumuHL":    40,
+        "muVBFZgaHL":     41,
+
+        "muWHgagaHL":     42,
+        "muWHZZ4lHL":     43,
+        "muWHWW2l2vHL":   44,
+        "muWHbbHL":       45,
+
+        "muZHgagaHL":     46,
+        "muZHZZ4lHL":     47,
+        "muZHWW2l2vHL":   48,
+        "muZHbbHL":       49,
+
+        "muttHgagaHL":    50,
+        "muttHZZ4lHL":    51,
+        "muttHWW2l2vHL":  52,
+        "muttHtautauHL":  53,
+        "muttHbbHL":      54,
+    }
+
+    if obs in order_dict:
+        order = order_dict[obs]
+    elif obs.endswith("_C"):
+        order = 10000
+    elif obs.endswith("_FCCee"):
+        order = 20000
+    elif obs.endswith("_FCCee161"):
+        order = 30000
+    elif obs.endswith("_FCCee240"):
+        order = 40000
+    elif obs.endswith("_FCCee365"):
+        order = 50000
+    elif obs.endswith("_HLLHC") or obs.endswith("_HLLHC_OO"):
+        order = 60000
+    else:
+        order = 999999
+
+    return order
+
+
+def find_tex_label_par(par_tex, par):
+    if par =="AlsMz":             tex_label = r"$\alpha_s(M_Z)$"
+    elif par == "dAle5Mz":        tex_label = r"$\Delta\alpha_{\mathrm{had}}^{(5)}(M_Z^2)$"
+    elif par == "mtop":           tex_label = r"$M_t$"
+    elif par == "mHl":            tex_label = r"$M_h$"
+    elif par == "Mz":             tex_label = r"$M_Z$"
+    elif par == "CW":             tex_label = r"$C_W$"
+    elif par == "CHG":            tex_label = r"$C_{HG}$"
+    elif par == "CHWB":           tex_label = r"$C_{HWB}$"
+    elif par == "CHWHB_gaga":     tex_label = r"$(C_{HWHB})_{\gamma\gamma}$"
+    elif par == "CHWHB_gagaorth": tex_label = r"$(C_{HWHB})_{\gamma\gamma\text{orth}}$"
+    elif par == "CHW":            tex_label = r"$C_{HW}$"  # Rotated!!
+    elif par == "CHB":            tex_label = r"$C_{HB}$"  # Rotated!!
+    elif par == "CHD":            tex_label = r"$C_{HD}$"
+    elif par == "CHbox":          tex_label = r"$C_{H\boxdot}$"
+    elif par == "CH":             tex_label = r"$C_{H}$"
+    elif par == "CHL1_11":        tex_label = r"$(C_{HL}^{(1)})_{11}$"
+    elif par == "CHL1_22":        tex_label = r"$(C_{HL}^{(1)})_{22}$"
+    elif par == "CHL1_33":        tex_label = r"$(C_{HL}^{(1)})_{33}$"
+    elif par == "CHL3_11":        tex_label = r"$(C_{HL}^{(3)})_{11}$"
+    elif par == "CHL3_22":        tex_label = r"$(C_{HL}^{(3)})_{22}$"
+    elif par == "CHL3_33":        tex_label = r"$(C_{HL}^{(3)})_{33}$"
+    elif par == "CHe_11":         tex_label = r"$(C_{He})_{11}$"
+    elif par == "CHe_22":         tex_label = r"$(C_{He})_{22}$"
+    elif par == "CHe_33":         tex_label = r"$(C_{He})_{33}$"
+    elif par == "CHQ1_11":        tex_label = r"$(C_{HQ}^{(1)})_{11}$"
+    elif par == "CHQ1_33":        tex_label = r"$(C_{HQ}^{(1)})_{33}$"
+    elif par == "CHQ3_11":        tex_label = r"$(C_{HQ}^{(3)})_{11}$"
+    elif par == "CHu_11":         tex_label = r"$(C_{Hu})_{11}$"
+    elif par == "CHd_11":         tex_label = r"$(C_{Hd})_{11}$"
+    elif par == "CHd_33":         tex_label = r"$(C_{Hd})_{33}$"
+    elif par == "CeH_22r":        tex_label = r"${Re}\left[(C_{eH})_{22}\right]$"
+    elif par == "CeH_33r":        tex_label = r"${Re}\left[(C_{eH})_{33}\right]$"
+    elif par == "CuH_22r":        tex_label = r"${Re}\left[(C_{uH})_{22}\right]$"
+    elif par == "CuH_33r":        tex_label = r"${Re}\left[(C_{uH})_{33}\right]$"
+    elif par == "CdH_33r":        tex_label = r"${Re}\left[(C_{dH})_{33}\right]$"
+    elif par == "CLL_1221":       tex_label = r"$(C_{LL})_{1221}$"
+    elif par == "eHggint":        tex_label = r"$\varepsilon_\text{Int}(H\to gg)$"
+    elif par == "eHggpar":        tex_label = r"$\varepsilon_\text{Par}(H\to gg)$"
+    elif par == "eHWWint":        tex_label = r"$\varepsilon_\text{Int}(H\to WW^*)$"
+    elif par == "eHWWpar":        tex_label = r"$\varepsilon_\text{Par}(H\to WW^*)$"
+    elif par == "eHZZint":        tex_label = r"$\varepsilon_\text{Int}(H\to ZZ^*)$"
+    elif par == "eHZZpar":        tex_label = r"$\varepsilon_\text{Par}(H\to ZZ^*)$"
+    elif par == "eHZgaint":       tex_label = r"$\varepsilon_\text{Int}(H\to Z\gamma)$"
+    elif par == "eHZgapar":       tex_label = r"$\varepsilon_\text{Par}(H\to Z\gamma)$"
+    elif par == "eHgagaint":      tex_label = r"$\varepsilon_\text{Int}(H\to \gamma\gamma)$"
+    elif par == "eHgagapar":      tex_label = r"$\varepsilon_\text{Par}(H\to \gamma\gamma)$"
+    elif par == "eHmumuint":      tex_label = r"$\varepsilon_\text{Int}(H\to \mu\mu)$"
+    elif par == "eHmumupar":      tex_label = r"$\varepsilon_\text{Par}(H\to \mu\mu)$"
+    elif par == "eHtautauint":    tex_label = r"$\varepsilon_\text{Int}(H\to \tau\tau)$"
+    elif par == "eHtautaupar":    tex_label = r"$\varepsilon_\text{Par}(H\to \tau\tau)$"
+    elif par == "eHccint":        tex_label = r"$\varepsilon_\text{Int}(H\to cc)$"
+    elif par == "eHccpar":        tex_label = r"$\varepsilon_\text{Par}(H\to cc)$"
+    elif par == "eHbbint":        tex_label = r"$\varepsilon_\text{Int}(H\to bb)$"
+    elif par == "eHbbpar":        tex_label = r"$\varepsilon_\text{Par}(H\to bb)$"
+    else: raise KeyError(f"Latex label for parameter {par} not found!")
+    return tex_label
+
+def find_tex_label_obs(obs_tex, obs):
+    ### FCC-ee_240
+    if obs == "eeZH_FCCee240":         tex_label = r"$\mu_{ZH}$(FCC-ee$_{240}$)"
+    elif obs == "eeZHbb_FCCee240":     tex_label = r"$\mu_{ZH,bb}$(FCC-ee$_{240}$)"
+    elif obs == "eeHvvbb_FCCee240":    tex_label = r"$\mu_{\nu\nu H,bb}$(FCC-ee$_{240}$)"
+    elif obs == "eeZHcc_FCCee240":     tex_label = r"$\mu_{ZH,cc}$(FCC-ee$_{240}$)"
+    elif obs == "eeZHgg_FCCee240":     tex_label = r"$\mu_{ZH,gg}$(FCC-ee$_{240}$)"
+    elif obs == "eeZHWW_FCCee240":     tex_label = r"$\mu_{ZH,WW}$(FCC-ee$_{240}$)"
+    elif obs == "eeZHZZ_FCCee240":     tex_label = r"$\mu_{ZH,ZZ}$(FCC-ee$_{240}$)"
+    elif obs == "eeZHtautau_FCCee240": tex_label = r"$\mu_{ZH,\tau\tau}$(FCC-ee$_{240}$)"
+    elif obs == "eeZHgaga_FCCee240":   tex_label = r"$\mu_{ZH,\gamma\gamma}$(FCC-ee$_{240}$)"
+    elif obs == "eeZHmumu_FCCee240":   tex_label = r"$\mu_{ZH,\mu\mu}$(FCC-ee$_{240}$)"
+    elif obs == "eeZHZga_FCCee240":    tex_label = r"$\mu_{ZH,Z\gamma}$(FCC-ee$_{240}$)"
+
+    ### FCC-ee_365
+    elif obs == "eeZH_FCCee365":        tex_label = r"$\mu_{ZH}$(FCC-ee$_{365}$)"
+    elif obs == "eeZHbb_FCCee365":      tex_label = r"$\mu_{ZH,bb}$(FCC-ee$_{365}$)"
+    elif obs == "eeHvvbb_FCCee365":     tex_label = r"$\mu_{\nu\nu H,bb}$(FCC-ee$_{365}$)"
+    elif obs == "eeZHcc_FCCee365":      tex_label = r"$\mu_{ZH,cc}$(FCC-ee$_{365}$)"
+    elif obs == "eeHvvcc_FCCee365":     tex_label = r"$\mu_{\nu\nu H,cc}$(FCC-ee$_{365}$)"
+    elif obs == "eeZHgg_FCCee365":      tex_label = r"$\mu_{ZH,gg}$(FCC-ee$_{365}$)"
+    elif obs == "eeHvvgg_FCCee365":     tex_label = r"$\mu_{\nu\nu H,gg}$(FCC-ee$_{365}$)"
+    elif obs == "eeZHWW_FCCee365":      tex_label = r"$\mu_{ZH,WW}$(FCC-ee$_{365}$)"
+    elif obs == "eeHvvWW_FCCee365":     tex_label = r"$\mu_{\nu\nu H,WW}$(FCC-ee$_{365}$)"
+    elif obs == "eeZHZZ_FCCee365":      tex_label = r"$\mu_{ZH,ZZ}$(FCC-ee$_{365}$)"
+    elif obs == "eeHvvZZ_FCCee365":     tex_label = r"$\mu_{\nu\nu H,ZZ}$(FCC-ee$_{365}$)"
+    elif obs == "eeZHtautau_FCCee365":  tex_label = r"$\mu_{ZH,\tau\tau}$(FCC-ee$_{365}$)"
+    elif obs == "eeHvvtautau_FCCee365": tex_label = r"$\mu_{\nu\nu H,\tau\tau}$(FCC-ee$_{365}$)"
+    elif obs == "eeZHgaga_FCCee365":    tex_label = r"$\mu_{ZH,\gamma\gamma}$(FCC-ee$_{365}$)"
+    elif obs == "eeHvvgaga_FCCee365":   tex_label = r"$\mu_{\nu\nu H,\gamma\gamma}$(FCC-ee$_{365}$)"
+    elif obs == "eeZHmumu_FCCee365":    tex_label = r"$\mu_{ZH,\mu\mu}$(FCC-ee$_{365}$)"
+    # elif obs == "eeHvvmumu_FCCee365":   tex_label = r"$\mu_{\nu\nu H,\mu\mu}$(FCC-ee$_{365}$)"
+
+
+    ### HL-LHC
+    elif obs == "muggHgagaHL":     tex_label = r"$\mu_{ggH}^{\gamma\gamma}$(HL-LHC)"
+    elif obs == "muggHZZ4lHL":     tex_label = r"$\mu_{ggH}^{ZZ,4\ell}$(HL-LHC)"
+    elif obs == "muggHWW2l2vHL":   tex_label = r"$\mu_{ggH}^{WW,2\ell 2\nu}$(HL-LHC)"
+    elif obs == "muggHtautauHL":   tex_label = r"$\mu_{ggH}^{\tau\tau}$(HL-LHC)"
+    elif obs == "muggHbbHL":       tex_label = r"$\mu_{ggH}^{bb}$(HL-LHC)"
+    elif obs == "muggHmumuHL":     tex_label = r"$\mu_{ggH}^{\mu\mu}$(HL-LHC)"
+    elif obs == "muggHZgaHL":      tex_label = r"$\mu_{ggH}^{Z\gamma}$(HL-LHC)"
+
+    elif obs == "muVBFgagaHL":     tex_label = r"$\mu_{VBF}^{\gamma\gamma}$(HL-LHC)"
+    elif obs == "muVBFZZ4lHL":     tex_label = r"$\mu_{VBF}^{ZZ,4\ell}$(HL-LHC)"
+    elif obs == "muVBFWW2l2vHL":   tex_label = r"$\mu_{VBF}^{WW,2\ell 2\nu}$(HL-LHC)"
+    elif obs == "muVBFtautauHL":   tex_label = r"$\mu_{VBF}^{\tau\tau}$(HL-LHC)"
+    elif obs == "muVBFmumuHL":     tex_label = r"$\mu_{VBF}^{\mu\mu}$(HL-LHC)"
+    elif obs == "muVBFZgaHL":      tex_label = r"$\mu_{VBF}^{Z\gamma}$(HL-LHC)"
+
+    elif obs == "muWHgagaHL":     tex_label = r"$\mu_{WH}^{\gamma\gamma}$(HL-LHC)"
+    elif obs == "muWHZZ4lHL":     tex_label = r"$\mu_{WH}^{ZZ,4\ell}$(HL-LHC)"
+    elif obs == "muWHWW2l2vHL":   tex_label = r"$\mu_{WH}^{WW,2\ell 2\nu}$(HL-LHC)"
+    elif obs == "muWHbbHL":       tex_label = r"$\mu_{WH}^{bb}$(HL-LHC)"
+
+    elif obs == "muZHgagaHL":     tex_label = r"$\mu_{ZH}^{\gamma\gamma}$(HL-LHC)"
+    elif obs == "muZHZZ4lHL":     tex_label = r"$\mu_{ZH}^{ZZ,4\ell}$(HL-LHC)"
+    elif obs == "muZHWW2l2vHL":   tex_label = r"$\mu_{ZH}^{WW,2\ell 2\nu}$(HL-LHC)"
+    elif obs == "muZHbbHL":       tex_label = r"$\mu_{ZH}^{bb}$(HL-LHC)"
+
+    elif obs == "muttHgagaHL":     tex_label = r"$\mu_{ttH}^{\gamma\gamma}$(HL-LHC)"
+    elif obs == "muttHZZ4lHL":     tex_label = r"$\mu_{ttH}^{ZZ,4\ell}$(HL-LHC)"
+    elif obs == "muttHWW2l2vHL":   tex_label = r"$\mu_{ttH}^{WW,2\ell 2\nu}$(HL-LHC)"
+    elif obs == "muttHtautauHL":   tex_label = r"$\mu_{ttH}^{\tau\tau}$(HL-LHC)"
+    elif obs == "muttHbbHL":       tex_label = r"$\mu_{ttH}^{bb}$(HL-LHC)"
+
+    else: tex_label = fix_obs_tex(obs_tex, obs)
+
+    return tex_label
+
+def fix_obs_tex(obs_tex, obs):
+    obs_tex_corrected = obs_tex.replace("lamdba", "lambda")
+    obs_tex_corrected = obs_tex_corrected.replace("#", "\\")
+    obs_tex_corrected = "$" + obs_tex_corrected + "$"
+    if obs.endswith("_C"):
+        obs_tex_corrected = obs_tex_corrected + " (Current)"
+    if obs.endswith("_FCCee"):
+        obs_tex_corrected = obs_tex_corrected + " (FCC-ee)"
+    if obs.endswith("_FCCee161"):
+        obs_tex_corrected = obs_tex_corrected + r" (FCC-ee$_{161}$)"
+    if obs.endswith("_FCCee240"):
+        obs_tex_corrected = obs_tex_corrected + r" (FCC-ee$_{240}$)"
+    if obs.endswith("_FCCee365"):
+        obs_tex_corrected = obs_tex_corrected + r" (FCC-ee$_{365}$)"
+    if obs.endswith("_HLLHC") or obs.endswith("_HLLHC_OO"):
+        obs_tex_corrected = obs_tex_corrected + " (HL-LHC)"
+        
+    return obs_tex_corrected
+
+
+
+def read_SM_predictions():
+
+    # observables = {}
+    central_values_obs = {}
+    central_values_gaus_corr_obs = {}
+
+    lmbd = 1
+    WITH_LAMBDA = "no"
+    
+    working_dir = "/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/Fits_HLLHC_FCCee/large_kappa_lambda_fits"
+    scenario = f"Lambda{lmbd}_FCCee240_FCCee365_{WITH_LAMBDA}HLLHClambda"
+    scenario_dir = f"{working_dir}/{scenario}"
+    input_file =  f"{scenario_dir}/results_observables/observables.txt"
+
+
+    print(f"Reading SM predictions")
+
+    with open(input_file, 'r') as infile:
+
+        print("Reading names of configuration files with observables\n")
+        observable_files = []
+        for line_nr, input_line in enumerate(infile):
+
+            if input_line.startswith("Including File: ../Globalfits/AllOps/../../"):
+                # Split the line into columns by whitespace
+                columns = input_line.split()
+                
+                observable_file = columns[2]
+                observable_files.append(observable_file)
+
+
+            if input_line.startswith("Observables:"):
+                print(f"Files found in results: \n")
+                [print(file_name) for file_name in observable_files]
+                print("\n")
+                break
+
+        print("Reading Observables:")
+        for line_nr, input_line in enumerate(infile):
+            # Skip the empty line after "Observables"
+            if line_nr == 0:
+                continue
+            
+            if input_line in ['\n', '\r\n']:
+                # observables_end = line_nr
+                break
+            else:
+                columns = input_line.split()
+                observable = columns[0]
+                central_values_obs[observable] = float(columns[2])
+
+        print(central_values_obs)
+
+
+        print("\nReading Correlated Gaussian Observables: ")
+        corr_obs = {}
+        for line_nr, input_line in enumerate(infile):
+            # Skip the "Correlated Gaussian Observables:" line and the following empty one
+            if line_nr <= 1:
+                continue
+
+            if input_line in ['\n', '\r\n']:
+                if corr_obs == {}: break  # Reached end of file
+
+                central_values_gaus_corr_obs[corr_obs_name] = copy.deepcopy(corr_obs)
+                corr_obs = {}
+                continue
+            elif len(input_line.split()) == 1:
+                corr_obs_name = input_line.split()[0]
+            else:
+                columns = input_line.split()
+                observable = columns[0]
+                corr_obs[observable] = float(columns[2])
+
+        print(central_values_gaus_corr_obs)
+
+    obs, central_values = zip(*central_values_obs.items())
+
+    gaus_corr_obs = {}
+    for dict in central_values_gaus_corr_obs.values():
+        gaus_corr_obs.update(dict)
+    obs_, central_values_ = zip(*gaus_corr_obs.items())
+
+    obs = list(obs) + list(obs_)
+    central_values = list(central_values) + list(central_values_)
+    central_values = np.array(central_values)
+
+    print(f"SM observables: {obs}")
+    
+    return obs, central_values
+
+
+def find_configuration_files(
+    model_specs,
+    model,
+    read_WCs=False,
+):
+    """
+    Find the names of the configuration files given a model specification. 
+
+    Parameters
+    ----------
+    model_specs : dict
+        Dictionary mapping scenarios to a list of model specifications.
+    model : str
+        The BSM model considered. Currently can be either "IDM" or "Z2SSM"
+    read_WCs : bool, optional
+        If set to True, the function will find the configuration files with the 
+        Wilson coefficients, instead of the observables
+
+    Returns
+    -------
+    conf_files : dict
+        Dictionary mapping scenarios and model specifications to a list of 
+        configuration files, conf_files[scenario][model_spec].
+    """
+
+    HEPfit_flags = [
+        "",
+        "use_new_NPs_",
+        "use_new_NPs_scale1.52_",
+    ]
+
+    exclusive_flag_list = [
+        "",
+        "no_quad",
+        "no_BSM",
+        "no_1L_BSM",
+        "no_1L_BSM_sqrt_s",
+        "smeft_formula", 
+        "smeft_formula_all", 
+        "smeft_formula_sqrt", 
+        "smeft_formula_no_cross", 
+        "smeft_formula_external_leg", 
+        "WFR_kala2_input",
+        "WFR_kala2_input_all",
+        "use_HEPfit_C1_values_WFR_kala2_input_all",
+        "use_HEPfit_C1_values_decayrates_WFR_kala2_input_all",
+        "no_BSM_WFR_kala2_input_all",
+    ]
+    additional_flag_list = [
+        "",
+        "_no_HLLHC_Higgs",
+        "_no_C_HG",
+        "_all_EW_mods",
+    ]
+    priors_flag_list = [
+        "",
+        "_small_priors",
+        "_test_small_priors",
+    ]
+    MC_flag_list = [
+        "_short",
+        "_long",
+        "_full",
+        "_strict",
+    ]
+
+    scenarios = model_specs.keys()
+
+    conf_files = {}
+    for scenario in scenarios:
+
+        conf_files[scenario] = {}
+        for model_spec in model_specs[scenario]:
+
+            print(f"\nSetting configuration files for scenario: {scenario} model spec: {model_spec}")
+
+            if read_WCs:
+                conf_files[scenario][model_spec] = [
+                    "Globalfits/AllOps/d6Ops_corr",
+                ]
+
+            else:
+                conf_files[scenario][model_spec] = [
+                    "ObservablesEW",
+                    "ObservablesEW_Current_SM_noLFU",
+                    "ObservablesEW_FCCee_Zpole_SM_kappa_scaled",
+                    "ObservablesEW_FCCee_WW_SM_kappa_scaled",
+                    "ObservablesEW_HLLHC_kappa_scaled",
+                    "ObservablesHiggs",
+                    "ObservablesHiggs_FCCee_240_SM_kappa_scaled",
+                    "ObservablesHiggs_HLLHC_SM_kappa_scaled",
+                    "ObservablesVV",
+                    "aTGC_observables_Current",
+                    "aTGC_observables_HLLHC_Full",
+                    "ObservablesVV_OO_FCCee_161",
+                    "ObservablesVV_OO_FCCee_240",
+                    "EffVHcouplings_QFU12",
+                    "HiggsEW_Par_Corr",
+                ]
+
+                if "no_HLLHC_Higgs" in model_spec:
+                    conf_files[scenario][model_spec].remove("ObservablesHiggs_HLLHC_SM_kappa_scaled")
+
+
+                if scenario == f"{model}_FCCee240_FCCee365" or scenario == f"{model}_FCCee240_FCCee365_HLLHClambda":
+                    conf_files[scenario][model_spec].append("ObservablesHiggs_FCCee_365_kappa_scaled")
+                    conf_files[scenario][model_spec].append("ObservablesVV_OO_FCCee_365")
+
+                if scenario == f"{model}_FCCee240_FCCee365_HLLHClambda":
+                    conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs")] = f"ObservablesHiggs_scaled_realistic_HL_LHC"
+
+            found_flag = False
+            for hepfit_flag in HEPfit_flags:
+                for exclusive_flag in exclusive_flag_list:
+                    for additional_flag in additional_flag_list:
+                        for priors_flag in priors_flag_list:
+                            for MC_flag in MC_flag_list:
+                                full_flag = hepfit_flag + exclusive_flag + additional_flag + priors_flag + MC_flag
+                                if model_spec == f"fits_realistic_HL_LHC_{full_flag}":
+                                    print(f"Full fit flag: {full_flag}")
+                                    found_flag = True
+
+                                    if read_WCs:
+                                        if additional_flag == "_no_C_HG":
+                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("d6Ops_corr")] = "d6Ops_corr_no_C_HG"
+
+                                    else:
+                                        Higgs_flag = exclusive_flag
+                                        
+                                        if not additional_flag == "_no_HLLHC_Higgs":
+                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_HLLHC_SM_kappa_scaled")] = f"ObservablesHiggs_HLLHC_SM_kappa_scaled_{Higgs_flag}"
+                                        conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_FCCee_240_SM_kappa_scaled")] = f"ObservablesHiggs_FCCee_240_SM_kappa_scaled_{Higgs_flag}"
+                                        if scenario == f"{model}_FCCee240_FCCee365" or scenario == f"{model}_FCCee240_FCCee365_HLLHClambda":
+                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_FCCee_365_kappa_scaled")] = f"ObservablesHiggs_FCCee_365_kappa_scaled_{Higgs_flag}"
+
+                                        if additional_flag == "_no_HLLHC_Higgs":
+                                            Higgs_flag = "no_HLLHC_" + Higgs_flag
+                                        if scenario == f"{model}_FCCee240_FCCee365_HLLHClambda":
+                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_scaled_realistic_HL_LHC")] = f"ObservablesHiggs_scaled_realistic_HL_LHC_{Higgs_flag}"
+                                        else:
+                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs")] = f"ObservablesHiggs_{Higgs_flag}"
+
+                                        if additional_flag == "_all_EW_mods":
+                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesEW")] = "ObservablesEW_all_mods"
+                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesEW_Current_SM_noLFU")] = "ObservablesEW_Current_SM_noLFU_kappa_scaled"
+
+            if found_flag == False:
+                raise ValueError(f"Model specification {model_spec} could not be assigned flags. Make sure all flags are implemented")
+
+            for i, file in enumerate(conf_files[scenario][model_spec]):
+                conf_files[scenario][model_spec][i] = file + ".conf"
+
+            print(f"Files considered:")
+            for file in conf_files[scenario][model_spec]:
+                print(f"- {file}")
+
+    return conf_files
+
+
+def read_configuration_files(
+    working_dir,
+    BPs,
+    model_specs,
+    conf_files,
+    only_obs=None,
+    skip_obs=None,
+    only_higgs_fccee_obs=False,
+    read_model_parameters=False,
+    compare_with_SM=False,
+):
+    """
+    Function to read the configuration files for a given fit setup, in order to obtain 
+    the central values and errors for the observables, which were given as input to such
+    fit.
+
+    Parameters
+    ----------
+    working_dir : str
+        Working directory path, containing subdirectories for each benchmark point.
+    BPs : list
+        List of benchmark point names. Must correspond to the directory name for the BP
+    model_specs : dict
+        Dictionary mapping scenarios to a list of model specifications.
+    conf_files : dict
+        Dictionary mapping scenarios and model specifications to a list of 
+        configuration files, conf_files[scenario][model_spec].
+    only_obs : list, optional
+        List of observables to include. If set, only these observables will be
+        processed.
+    skip_obs : list of str, optional
+        A list of observables to skip (i.e., don't store results). 
+        Default is an empty list.
+    only_higgs_fccee_obs : bool, optional
+        If set to True, only FCC-ee Higgs observables are considered for 
+        the plot. Default is False.
+    read_model_parameters : bool, optional
+        If set to True, instead of reading the configuration files for the input
+        observables, the function reads the config file for the input Wilson 
+        coefficients. Although central values and errors are not read in this 
+        case, the function can still be used to obtain the list of Wilson coefficients
+    compare_with_SM : bool, optional
+        If set to true, use SM predictions as the central values for the 
+        pulls. Default is False
+
+    Returns
+    -------
+    observables : dict
+        Dictionary mapping benchmark points, scenarios, and model specifications, 
+        to a list of observables which were found in the configuration files.
+    observables_tex : dict
+        Dictionary mapping benchmark points, scenarios, and model specifications, 
+        to a list LaTeX labels for observables which were found in the configuration files.
+    central_values_obs : dict
+        Dictionary mapping benchmark points, scenarios, and model specifications, 
+        to a list of central values for observables which were found in the configuration files.
+
+    """
+
+    if only_obs is not None and skip_obs is not None:
+        raise ValueError("only_obs and skip_obs cannot be both set!")
+
+    scenarios = model_specs.keys()
+
+    observables = {}
+    observables_tex = {}
+    central_values_obs = {}
+
+    for BP in BPs:
+        observables[BP] = {}
+        observables_tex[BP] = {}
+        central_values_obs[BP] = {}
+
+        for scenario in scenarios:
+            observables[BP][scenario] = {}
+            observables_tex[BP][scenario] = {} 
+            central_values_obs[BP][scenario] = {}
+
+            for model_spec in model_specs[scenario]:
+                observables[BP][scenario][model_spec] = []
+                observables_tex[BP][scenario][model_spec] = []
+                central_values_obs[BP][scenario][model_spec] = []
+
+                for conf_file in conf_files[scenario][model_spec]:
+
+                    file_name = f"{working_dir}/{BP}/{scenario}/{conf_file}"
+                    print(f"Reading configuration file {file_name}")
+
+                    with open(file_name, "r") as infile:
+                        
+                        for line in infile:
+                            columns = line.split()
+
+                            if (line.startswith("Observable ") \
+                                or line.startswith("AsyGausObservable ")):
+
+                                if read_model_parameters==False and not (columns[6]=="MCMC" and columns[7]=="weight"):
+                                    continue
+
+                                observable = columns[1]
+
+                                if  (only_obs is not None and observable not in only_obs) or \
+                                    (skip_obs is not None and observable in skip_obs) or \
+                                    (only_higgs_fccee_obs and not observable.startswith("eeZH") and not observable.startswith("eeHvv")):
+                                    continue
+
+                                if read_model_parameters==True:
+                                    observable_tex_label = find_tex_label_par(columns[3], observable[0:-5])
+                                    central_value = 0.0
+                                else:
+                                    observable_tex_label = find_tex_label_obs(columns[3], observable)
+                                    central_value = float(columns[8])
+
+                                observables[BP][scenario][model_spec].append(observable)
+                                observables_tex[BP][scenario][model_spec].append(observable_tex_label)
+                                central_values_obs[BP][scenario][model_spec].append(central_value)
+                                
+
+                n_obs = len(observables[BP][scenario][model_spec])
+                print(f"Found {n_obs} observables")
+                print("\n\n")
+
+                if not observables[BP][scenario][model_spec] == observables[BP][scenario][model_specs[scenario][0]]:
+                    print(f"Warning: Observable list for {BP} in {scenario} is not the same for all model specifications!")
+                if not observables_tex[BP][scenario][model_spec] == observables_tex[BP][scenario][model_specs[scenario][0]]:
+                    print(f"Warning: Observable latex label list for {BP} in {scenario} is not the same for all model specifications!")
+
+                if compare_with_SM:
+                    obs_SM, central_values_SM = read_SM_predictions()
+                    central_values_obs[BP][scenario][model_spec] = np.full((n_obs,), np.nan)
+                    for idx, obs in enumerate(observables[BP][scenario][model_spec]):
+                        if obs in obs_SM:
+                            idx_SM = obs_SM.index(obs)
+                            central_values_obs[BP][scenario][model_spec][idx] = central_values_SM[idx_SM]
+                        else:
+                            raise ValueError(f"Observable {obs} not found in SM predictions!")
+
+    return observables, observables_tex, central_values_obs
+
+def read_fit_results(
+    BPs,
+    model_specs,
+    files,
+    observables,
+):
+    """
+    Read and store the fit results (central values and errors), given certain benchmark points,
+    model specifications, and observables. The path to the files to be read must be stored in 
+    the {files} dictionary.
+
+    Parameters
+    ----------
+    BPs : list
+        List of benchmark point names. Must correspond to the directory name for the BP
+    model_specs : dict
+        Dictionary mapping scenarios to a list of model specifications.
+    files : dict
+        Dictionary mapping BPs, scenarios, and model specifications to the Statistics.txt file 
+        containing the fit results
+    observables : dict or list
+        The observables to read. Must be a dictionary mapping benchmark points, scenarios, and 
+        model specifications, to a list of observables. A list of observables can also be provided;
+        in that case, the same list will be used for all benchmark points, scenarios, and 
+        model_specs.
+
+    Returns
+    -------
+    results : dict
+        Dictionary mapping benchmark points, scenarios, and model specifications, 
+        to a list of central values for observables which were found in the configuration files.
+
+    """
+    scenarios = list(model_specs.keys())
+
+    if isinstance(observables, list):
+        observables = {BP: {scenario: {model_spec: observables for model_spec in model_specs[scenario]} for scenario in scenarios} for BP in BPs}
+    elif not isinstance(observables, dict):
+        raise ValueError("observables must be either a list or a dictionary with the correct structure!")
+
+    results = {}
+    for BP in BPs:
+
+        results[BP] = {}
+        for scenario in scenarios:
+
+            results[BP][scenario] = {}
+            for model_spec in model_specs[scenario]:
+
+                file_path = files[BP][scenario][model_spec]
+                print(f"Reading file: {file_path}")
+                with open(file_path, 'r') as file:
+                    lines = file.readlines()
+                    
+                    line_nrs = [np.nan for obs in observables[BP][scenario][model_spec]]
+                    for n, line in enumerate(lines):
+                        columns = line.split()
+                        if len(columns) < 2:
+                            continue
+                        
+                        if (columns[1] == "Observable" \
+                            or columns[1] == "AsyGausObservable") \
+                            and columns[2][1:-2] in observables[BP][scenario][model_spec]:
+
+                            observable_index = observables[BP][scenario][model_spec].index(columns[2][1:-2])
+                            line_nrs[observable_index] = n
+
+                    # print(f"Line numbers: {line_nrs}")
+
+                    if any(np.isnan(line_nrs)):
+                        print(f"Missing observable: {observables[BP][scenario][model_spec][line_nrs.index(np.nan)]}")
+                        raise ValueError(f"Not all observables were found in the file {file_path}!")
+
+                    results[BP][scenario][model_spec] = []
+
+                    for line_nr, obs in zip(line_nrs, observables[BP][scenario][model_spec]):                    
+                        columns = lines[line_nr + 1].split()
+                        results[BP][scenario][model_spec].append([float(columns[3]),    # Mean
+                                                                  float(columns[5]),])  # Uncertainty
+
+                results[BP][scenario][model_spec] = np.array(results[BP][scenario][model_spec])
+
+    return results
+
+
+def align_observables(
+    observable_order_func,
+    BPs,
+    model_specs,
+    observables,
+    observables_tex,
+    central_values_obs,
+    results,
+):
+    """
+    Function to sort observables following a given scheme, defined by the {observable_order_func} 
+    argument. 
+
+    Parameters
+    ----------
+    observable_order_func : callable
+        Function defining the order of the observables for the alignment. Must take a single 
+        argument (an observable name) and return a numeric value indicating its order.
+    BPs : list
+        List of benchmark point names. Must correspond to the directory name for the BP
+    model_specs : dict
+        Dictionary mapping scenarios to a list of model specifications.
+    observables : dict
+        Dictionary mapping benchmark points, scenarios, and model specifications, 
+        to a list of observables which were found in the configuration files.
+    observables_tex : dict
+        Dictionary mapping benchmark points, scenarios, and model specifications, 
+        to a list LaTeX labels for observables which were found in the configuration files.
+    central_values_obs : dict
+        Dictionary mapping benchmark points, scenarios, and model specifications, 
+        to a list of central values for observables which were found in the configuration files.
+    results : dict
+        Dictionary mapping benchmark points, scenarios, and model specifications, 
+        to a list of central values for observables which were found in the configuration files.
+
+    Returns
+    -------
+    aligned_observables : dict
+        The {observables} dictionary, after sorting observables
+    aligned_observables_tex : dict
+        The {aligned_observables_tex} dictionary, after sorting observables
+    central_values_obs : dict
+        The {central_values_obs} dictionary, after sorting observables
+    results : dict
+        The {results} dictionary, after sorting observables
+
+    """
+    
+    scenarios = model_specs.keys()
+    
+    aligned_observables = {}
+    aligned_observables_tex = {}
+    
+    for BP in BPs:
+        aligned_observables[BP] = {}
+        aligned_observables_tex[BP] = {}
+
+        for scenario in scenarios:
+            # Collect all unique observables across model_specs
+            all_observables = set()
+            for model_spec in model_specs[scenario]:
+                all_observables.update(observables[BP][scenario][model_spec])
+
+            aligned_observables[BP][scenario] = sorted(all_observables, key=observable_order_func)
+            aligned_observables_tex[BP][scenario] = [np.nan for i in range(len(aligned_observables[BP][scenario]))]
+
+            # Align central values for observables for each model_spec
+            for model_spec in model_specs[scenario]:
+                aligned_central_values = []
+                aligned_results = []
+                for aligned_idx, obs in enumerate(aligned_observables[BP][scenario]):
+                    if obs in observables[BP][scenario][model_spec]:
+                        idx = observables[BP][scenario][model_spec].index(obs)
+                        aligned_central_values.append(central_values_obs[BP][scenario][model_spec][idx])
+                        aligned_results.append(results[BP][scenario][model_spec][idx])
+                        aligned_observables_tex[BP][scenario][aligned_idx] = observables_tex[BP][scenario][model_spec][idx]
+                    else:
+                        # Handle missing observables (e.g., assign NaN)
+                        aligned_central_values.append(np.nan)
+                        aligned_results.append([np.nan, np.nan])
+
+                central_values_obs[BP][scenario][model_spec] = np.array(aligned_central_values)
+                results[BP][scenario][model_spec] = np.array(aligned_results)
+
+            if np.nan in aligned_observables_tex[BP][scenario]:
+                print(f"Missing observable LaTeX: {aligned_observables[BP][scenario][aligned_observables_tex[BP][scenario].index(np.nan)]}")
+                raise ValueError(f"Not all observables LaTeX descriptions were found in the file for {BP} in scenario: {scenario}, model spec {model_spec}!")
+
+    print(f"\n\n\n")
+    print(f"Aligned observables: {aligned_observables[BP][scenario]}")
+    print(f"Aligned observables (LaTeX): {aligned_observables_tex[BP][scenario]}")
+    print(f"Central values shape: {central_values_obs[BP][scenario][model_spec].shape}")
+    print(f"results shape: {results[BP][scenario][model_spec].shape}")
+
+    return aligned_observables, aligned_observables_tex, central_values_obs, results

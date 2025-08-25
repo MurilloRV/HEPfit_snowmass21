@@ -25,8 +25,9 @@ smeft_formula_no_cross="false" # Using the HEPfit SMEFT expression for sigma_Zh,
 smeft_formula_external_leg="false" # Using the HEPfit SMEFT expression for sigma_Zh, without the external-leg correction (dkappaf)
 smeft_formula_all="false" # Using the HEPfit SMEFT expression for all XS and BR, including 2*dkappaf in the square root to stand in for C_Hbox  (as "_no_cross")
 WFR_kala2_input="false" # Include the WFR contribution, proportional to kappa_lambda**2, into the IDM ZH cross-section prediction
-WFR_kala2_input_all="true" # Include the WFR contribution, proportional to kappa_lambda**2, into the IDM predictions for all the XS and BR
+WFR_kala2_input_all="false" # Include the WFR contribution, proportional to kappa_lambda**2, into the IDM predictions for all the XS and BR
 use_HEPfit_C1_values_WFR_kala2_input_all="false" # Use the HEPfit C1 values, instead of the IDM values. Activates WFR_kala2_input_all as well
+use_HEPfit_C1_values_decayrates_WFR_kala2_input_all="true" # Use the HEPfit C1 values, also for the Higgs decay rates, instead of the Z2SSM values. Activates WFR_kala2_input_all as well
 
 # Additional, independent flags
 modify_all_ewpos="true" # Modify also the EWPO central values for *current* observables, not just future ones
@@ -37,11 +38,11 @@ no_C_HG="false" # Exclude the C_HG operator from the fit
 no_HLLHC_Higgs="false" # Exclude the HL-LHC Higgs observables from the fit
 LoopH3d6Full="false" # Use the full expansion of the ZH cross-section in terms of C1 and dZH
 
-use_new_NPs="true" # Use newly implementent theory nuisance parameters
-theoerr_FCCee240_input="0.001074700180397359"
-# theoerr_FCCee240_input="DEFAULT"
-theoerr_FCCee365_input="0.0010540963454747359" # default: -1.0
-# theoerr_FCCee365_input="DEFAULT"
+use_new_NPs="false" # Use newly implementent theory nuisance parameters
+# theoerr_FCCee240_input="0.001074700180397359"
+theoerr_FCCee240_input="DEFAULT"
+# theoerr_FCCee365_input="0.0010540963454747359" # default: -1.0
+theoerr_FCCee365_input="DEFAULT"
 
 set_theoerr() {
     local input="$1"
@@ -70,6 +71,7 @@ EXCLUSIVE_FLAGS=(
     "$WFR_kala2_input"
     "$WFR_kala2_input_all"
     "$use_HEPfit_C1_values_WFR_kala2_input_all"
+    "$use_HEPfit_C1_values_decayrates_WFR_kala2_input_all"
 )
 
 # Count how many flags are set to "true"
@@ -126,7 +128,8 @@ for BP_Name in "${BP_Names_Total[@]}"; do
         if [ "$WFR_kala2_input" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_WFR_kala2_input"; fi
         if [ "$WFR_kala2_input_all" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_WFR_kala2_input_all"; fi
         if [ "$use_HEPfit_C1_values_WFR_kala2_input_all" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_use_HEPfit_C1_values_WFR_kala2_input_all"; fi
-        
+        if [ "$use_HEPfit_C1_values_decayrates_WFR_kala2_input_all" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_use_HEPfit_C1_values_decayrates_WFR_kala2_input_all"; fi
+
         if [ "$modify_all_ewpos" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_all_EW_mods"; fi
         if [ "$noLoopH3d6Quad" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_noLoopH3d6Quad"; fi
         if [ "$LoopHd6NoSubleading" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_LoopHd6NoSubleading"; fi
@@ -336,8 +339,8 @@ for BP_Name in "${BP_Names_Total[@]}"; do
               "$smeft_formula_all" == "true" || 
               "$WFR_kala2_input" == "true" ||
               "$WFR_kala2_input_all" == "true" ||
-              "$use_HEPfit_C1_values_WFR_kala2_input_all" == "true" ]]; 
-        then
+              "$use_HEPfit_C1_values_WFR_kala2_input_all" == "true" ||
+              "$use_HEPfit_C1_values_decayrates_WFR_kala2_input_all" == "true" ]]; then
 
             FLAG_ARRAY=("no_1L_BSM_sqrt_s" 
                         "no_1L_BSM" 
@@ -350,6 +353,7 @@ for BP_Name in "${BP_Names_Total[@]}"; do
                         "WFR_kala2_input"
                         "WFR_kala2_input_all"
                         "use_HEPfit_C1_values_WFR_kala2_input_all"
+                        "use_HEPfit_C1_values_decayrates_WFR_kala2_input_all"
                        )
 
             for FLAG in "${FLAG_ARRAY[@]}"; do

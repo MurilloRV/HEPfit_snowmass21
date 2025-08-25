@@ -22,26 +22,28 @@ parser.add_argument("--smeft_formula_all", help = "Use the HEPfit SMEFT expressi
 parser.add_argument("--WFR_kala2_input", help = "Include the WFR contribution, proportional to kappa_lambda**2, into the IDM ZH cross-section prediction", action="store_true")
 parser.add_argument("--WFR_kala2_input_all", help = "Include the WFR contribution, proportional to kappa_lambda**2, into the IDM predictions for all the XS and BR", action="store_true")
 parser.add_argument("--use_HEPfit_C1_values_WFR_kala2_input_all", help = "Use the HEPfit C1 values, instead of the IDM values. Activates WFR_kala2_input_all as well", action="store_true")
+parser.add_argument("--use_HEPfit_C1_values_decayrates_WFR_kala2_input_all", help = "Use the HEPfit C1 values, also for the Higgs decay rates, instead of the Z2SSM values. Activates WFR_kala2_input_all as well", action="store_true")
 parser.add_argument("--higgsconf", help = "Name of the ObsevablesHiggs configuration file", type=str, default=None)
 
 
 args = parser.parse_args()
-scenario                                 = args.scenario
-BP                                       = args.bp
-realistic_HL_LHC_k_lambda_uncertainties  = args.realistic
-modify_all_ewpos                         = args.ewpos_all
-no_1L_BSM_sqrt_s                         = args.no_1L_BSM_sqrt_s
-no_1L_BSM                                = args.no_1L_BSM
-no_quad                                  = args.no_quad
-smeft_formula                            = args.smeft_formula
-smeft_formula_sqrt                       = args.smeft_formula_sqrt
-smeft_formula_no_cross                   = args.smeft_formula_no_cross
-smeft_formula_external_leg               = args.smeft_formula_external_leg
-smeft_formula_all                        = args.smeft_formula_all
-WFR_kala2_input                          = args.WFR_kala2_input
-WFR_kala2_input_all                      = args.WFR_kala2_input_all
-use_HEPfit_C1_values_WFR_kala2_input_all = args.use_HEPfit_C1_values_WFR_kala2_input_all
-higgsconf                                = args.higgsconf
+scenario                                            = args.scenario
+BP                                                  = args.bp
+realistic_HL_LHC_k_lambda_uncertainties             = args.realistic
+modify_all_ewpos                                    = args.ewpos_all
+no_1L_BSM_sqrt_s                                    = args.no_1L_BSM_sqrt_s
+no_1L_BSM                                           = args.no_1L_BSM
+no_quad                                             = args.no_quad
+smeft_formula                                       = args.smeft_formula
+smeft_formula_sqrt                                  = args.smeft_formula_sqrt
+smeft_formula_no_cross                              = args.smeft_formula_no_cross
+smeft_formula_external_leg                          = args.smeft_formula_external_leg
+smeft_formula_all                                   = args.smeft_formula_all
+WFR_kala2_input                                     = args.WFR_kala2_input
+WFR_kala2_input_all                                 = args.WFR_kala2_input_all
+use_HEPfit_C1_values_WFR_kala2_input_all            = args.use_HEPfit_C1_values_WFR_kala2_input_all
+use_HEPfit_C1_values_decayrates_WFR_kala2_input_all = args.use_HEPfit_C1_values_decayrates_WFR_kala2_input_all
+higgsconf                                           = args.higgsconf
 
 exclusive_flag_count = sum([
     no_1L_BSM_sqrt_s, 
@@ -54,6 +56,7 @@ exclusive_flag_count = sum([
     WFR_kala2_input,
     WFR_kala2_input_all,
     use_HEPfit_C1_values_WFR_kala2_input_all,
+    use_HEPfit_C1_values_decayrates_WFR_kala2_input_all,
 ])
 
 # These flags are mutually exclusive, and can only be used one at a time
@@ -71,6 +74,7 @@ if exclusive_flag_count > 1:
         --WFR_kala2_input
         --WFR_kala2_input_all
         --use_HEPfit_C1_values_WFR_kala2_input_all
+        --use_HEPfit_C1_values_decayrates_WFR_kala2_input_all
         """)
 
 # Use of these flags is not currently possible without use of the realistic HL-LHC kappa_lambda uncertainties
@@ -88,6 +92,7 @@ elif exclusive_flag_count == 1 and not realistic_HL_LHC_k_lambda_uncertainties:
         --WFR_kala2_input
         --WFR_kala2_input_all
         --use_HEPfit_C1_values_WFR_kala2_input_all
+        --use_HEPfit_C1_values_decayrates_WFR_kala2_input_all
         """)
 
 
@@ -300,6 +305,7 @@ elif BP == "BP_7":
     sin2thetaEff = 0.2313950375810892
     GammaZ = 2.4956912542658984
 
+
 elif BP == "BPO_0":
     kappas['uu'] = 0.9818547810617284
     kappas['dd'] = 0.9818547810617284
@@ -315,6 +321,29 @@ elif BP == "BPO_0":
     kappas['ZZ_365'] = 1.0074536101415776
     kappas['ZZ_500'] = 1.0026988104523176
     kappas['ZZ_550'] = 1.0021232678597285
+    kappas['ZZ'] = 0.9899392240917029
+    kappas['WW'] = 0.9899392240917029
+    kappas['lam'] = 4.038636858901748
+    kappas['gamgam'] = 0.9514322699531608
+    kappas['Zgam'] = 0.9820015140523058
+    kappas['ZZ_0_with_WFR'] = 0.9953498248226368
+    kappas['ZZ_240_with_WFR'] = 1.0119172507528293
+    kappas['ZZ_365_with_WFR'] = 0.9956631382646509
+    kappas['ZZ_500_with_WFR'] = 0.990876120168658
+    kappas['ZZ_550_with_WFR'] = 0.9902951077003839
+    kappas['ZZ_0_with_WFR_no_BSM'] = 1.000617382762773
+    kappas['ZZ_240_with_WFR_no_BSM'] = 1.015950662913649
+    kappas['ZZ_365_with_WFR_no_BSM'] = 0.9981502437103232
+    kappas['ZZ_500_with_WFR_no_BSM'] = 0.9906558146426329
+    kappas['ZZ_550_with_WFR_no_BSM'] = 0.9887425788229198
+    kappas['ZZ_0_with_WFR_ZZh1L_hextlegonly'] = 0.9823159923418117
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly'] = 0.9979305144137739
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly'] = 0.9798027715527419
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly'] = 0.9721669122165778
+    kappas['ZZ_550_with_WFR_ZZh1L_hextlegonly'] = 0.9702172175862757
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.995893695803244
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9785027628142164
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9711620241904166
     kappas['ZZ_0_no_1L_BSM_sqrt_s'] = 1.0023378651272847
     kappas['ZZ_240_no_1L_BSM_sqrt_s'] = 1.0177981665211153
     kappas['ZZ_365_no_1L_BSM_sqrt_s'] = 0.9998722462932628
@@ -325,14 +354,13 @@ elif BP == "BPO_0":
     kappas['ZZ_365_no_1L_BSM'] = 1.00993302220156
     kappas['ZZ_500_no_1L_BSM'] = 1.0024805392347005
     kappas['ZZ_550_no_1L_BSM'] = 1.00058701128077
-    kappas['ZZ'] = 0.9899392240917029
-    kappas['WW'] = 0.9899392240917029
-    kappas['lam'] = 4.038636858901748
-    kappas['gamgam'] = 0.9514322699531608
-    kappas['Zgam'] = 0.9820015140523058
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0215075131871578
     kappas['ZZ_365_use_HEPfit_C1_values'] = 1.006161719593712
     kappas['ZZ_500_use_HEPfit_C1_values'] = 1.0017209156873719
+    kappas['gg_HEPfit_C1'] = 1.0009544366905418
+    kappas['ZZ_HEPfit_C1'] = 1.002596804964073
+    kappas['WW_HEPfit_C1'] = 1.0010802747358802
+    kappas['gamgam_HEPfit_C1'] = 0.9592250439374708
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.6864189906268178
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.016315718736075624
     Mw = 80.35863800163634
@@ -364,6 +392,29 @@ elif BP == "BPO_1":
     kappas['ZZ_365'] = 1.0040569863550053
     kappas['ZZ_500'] = 1.0077635634642326
     kappas['ZZ_550'] = 1.009112592294324
+    kappas['ZZ'] = 0.9983782692638437
+    kappas['WW'] = 0.9983782692638437
+    kappas['lam'] = 1.2385642568656816
+    kappas['gamgam'] = 0.9519204100128348
+    kappas['Zgam'] = 0.982125765438694
+    kappas['ZZ_0_with_WFR'] = 1.0008120929115734
+    kappas['ZZ_240_with_WFR'] = 1.003191785638549
+    kappas['ZZ_365_with_WFR'] = 1.0036394337267343
+    kappas['ZZ_500_with_WFR'] = 1.0073257999027794
+    kappas['ZZ_550_with_WFR'] = 1.0086641288406946
+    kappas['ZZ_0_with_WFR_no_BSM'] = 1.0005623328879683
+    kappas['ZZ_240_with_WFR_no_BSM'] = 1.0017747089261173
+    kappas['ZZ_365_with_WFR_no_BSM'] = 1.00036884652689
+    kappas['ZZ_500_with_WFR_no_BSM'] = 0.9997837945895649
+    kappas['ZZ_550_with_WFR_no_BSM'] = 0.999635089956073
+    kappas['ZZ_0_with_WFR_ZZh1L_hextlegonly'] = 0.99543206848373
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly'] = 0.9966506852531588
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly'] = 0.9952375847369938
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly'] = 0.9946495146007429
+    kappas['ZZ_550_with_WFR_ZZh1L_hextlegonly'] = 0.9945000422539308
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9964907192541284
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9951371651471106
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9945724407036374
     kappas['ZZ_0_no_1L_BSM_sqrt_s'] = 0.9993516901502957
     kappas['ZZ_240_no_1L_BSM_sqrt_s'] = 1.0005654828751926
     kappas['ZZ_365_no_1L_BSM_sqrt_s'] = 0.9991581137039593
@@ -374,14 +425,13 @@ elif BP == "BPO_1":
     kappas['ZZ_365_no_1L_BSM'] = 1.0007798444401157
     kappas['ZZ_500_no_1L_BSM'] = 1.0001947478513
     kappas['ZZ_550_no_1L_BSM'] = 1.0000460864250884
-    kappas['ZZ'] = 0.9983782692638437
-    kappas['WW'] = 0.9983782692638437
-    kappas['lam'] = 1.2385642568656816
-    kappas['gamgam'] = 0.9519204100128348
-    kappas['Zgam'] = 0.982125765438694
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0034424665596777
     kappas['ZZ_365_use_HEPfit_C1_values'] = 1.0039492517522552
     kappas['ZZ_500_use_HEPfit_C1_values'] = 1.0076575856113832
+    kappas['gg_HEPfit_C1'] = 0.9982256932082572
+    kappas['ZZ_HEPfit_C1'] = 0.9993694271240505
+    kappas['WW_HEPfit_C1'] = 0.9992500626036445
+    kappas['gamgam_HEPfit_C1'] = 0.9525342155836951
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.12450133724029452
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.00044917707932956574
     Mw = 80.35797476859611
@@ -413,6 +463,29 @@ elif BP == "BPB_0":
     kappas['ZZ_365'] = 0.9985818760113092
     kappas['ZZ_500'] = 0.9988812072771296
     kappas['ZZ_550'] = 0.9990824850147142
+    kappas['ZZ'] = 0.9965497536506333
+    kappas['WW'] = 0.9965497536506333
+    kappas['lam'] = 1.1209067864736006
+    kappas['gamgam'] = 0.9821975068074829
+    kappas['Zgam'] = 0.9934043522024448
+    kappas['ZZ_0_with_WFR'] = 0.9978303652641312
+    kappas['ZZ_240_with_WFR'] = 0.9987243848566684
+    kappas['ZZ_365_with_WFR'] = 0.9983832518255341
+    kappas['ZZ_500_with_WFR'] = 0.9986830228142305
+    kappas['ZZ_550_with_WFR'] = 0.9988845456470622
+    kappas['ZZ_0_with_WFR_no_BSM'] = 1.000295978534025
+    kappas['ZZ_240_with_WFR_no_BSM'] = 1.000910770055903
+    kappas['ZZ_365_with_WFR_no_BSM'] = 1.0001978962466753
+    kappas['ZZ_500_with_WFR_no_BSM'] = 0.9999013780758704
+    kappas['ZZ_550_with_WFR_no_BSM'] = 0.9998260246857975
+    kappas['ZZ_0_with_WFR_ZZh1L_hextlegonly'] = 0.9977908682997046
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly'] = 0.9984072024003215
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly'] = 0.9976925397371732
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly'] = 0.9973952767428573
+    kappas['ZZ_550_with_WFR_ZZh1L_hextlegonly'] = 0.9973197340020606
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9983262758557929
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9976417725701672
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9973563231927968
     kappas['ZZ_0_no_1L_BSM_sqrt_s'] = 0.9970430932347498
     kappas['ZZ_240_no_1L_BSM_sqrt_s'] = 0.9976582557060288
     kappas['ZZ_365_no_1L_BSM_sqrt_s'] = 0.996944986727216
@@ -423,14 +496,13 @@ elif BP == "BPB_0":
     kappas['ZZ_365_no_1L_BSM'] = 1.0003952330765826
     kappas['ZZ_500_no_1L_BSM'] = 1.0000987001874577
     kappas['ZZ_550_no_1L_BSM'] = 1.0000233570679478
-    kappas['ZZ'] = 0.9965497536506333
-    kappas['WW'] = 0.9965497536506333
-    kappas['lam'] = 1.1209067864736006
-    kappas['gamgam'] = 0.9821975068074829
-    kappas['Zgam'] = 0.9934043522024448
     kappas['ZZ_240_use_HEPfit_C1_values'] = 0.9988410497488983
     kappas['ZZ_365_use_HEPfit_C1_values'] = 0.9985301470423177
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9988416851022752
+    kappas['gg_HEPfit_C1'] = 0.9991472718704654
+    kappas['ZZ_HEPfit_C1'] = 0.9970531268838531
+    kappas['WW_HEPfit_C1'] = 0.9969924929719356
+    kappas['gamgam_HEPfit_C1'] = 0.9824990512120385
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.31614353125012806
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.0003406396908013365
     Mw = 80.3914079929351
@@ -462,6 +534,29 @@ elif BP == "BPB_1":
     kappas['ZZ_365'] = 1.0000413187916326
     kappas['ZZ_500'] = 1.0008988220698813
     kappas['ZZ_550'] = 1.0013781536705735
+    kappas['ZZ'] = 0.9979016528292391
+    kappas['WW'] = 0.9979016528292391
+    kappas['lam'] = 1.1119460475058272
+    kappas['gamgam'] = 0.9745673696771745
+    kappas['Zgam'] = 0.9905664142164403
+    kappas['ZZ_0_with_WFR'] = 0.9987795280066999
+    kappas['ZZ_240_with_WFR'] = 0.9998416841934842
+    kappas['ZZ_365_with_WFR'] = 0.9998593872606788
+    kappas['ZZ_500_with_WFR'] = 1.0007166436358483
+    kappas['ZZ_550_with_WFR'] = 1.0011955173946705
+    kappas['ZZ_0_with_WFR_no_BSM'] = 1.0002748174050902
+    kappas['ZZ_240_with_WFR_no_BSM'] = 1.0008440700061005
+    kappas['ZZ_365_with_WFR_no_BSM'] = 1.0001840026781075
+    kappas['ZZ_500_with_WFR_no_BSM'] = 0.9999094594976691
+    kappas['ZZ_550_with_WFR_no_BSM'] = 0.9998396915161477
+    kappas['ZZ_0_with_WFR_ZZh1L_hextlegonly'] = 0.9972183053759608
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly'] = 0.9977893017608942
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly'] = 0.9971272122729963
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly'] = 0.9968518272215972
+    kappas['ZZ_550_with_WFR_ZZh1L_hextlegonly'] = 0.996781845226538
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9977143267287237
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.997080181040088
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9968157410169555
     kappas['ZZ_0_no_1L_BSM_sqrt_s'] = 0.9983584296416149
     kappas['ZZ_240_no_1L_BSM_sqrt_s'] = 0.9989280007074098
     kappas['ZZ_365_no_1L_BSM_sqrt_s'] = 0.9982675940808219
@@ -472,14 +567,13 @@ elif BP == "BPB_1":
     kappas['ZZ_365_no_1L_BSM'] = 1.0003659412515828
     kappas['ZZ_500_no_1L_BSM'] = 1.0000913852414428
     kappas['ZZ_550_no_1L_BSM'] = 1.0000216260105352
-    kappas['ZZ'] = 0.9979016528292391
-    kappas['WW'] = 0.9979016528292391
-    kappas['lam'] = 1.1119460475058272
-    kappas['gamgam'] = 0.9745673696771745
-    kappas['Zgam'] = 0.9905664142164403
     kappas['ZZ_240_use_HEPfit_C1_values'] = 0.9999488105858648
     kappas['ZZ_365_use_HEPfit_C1_values'] = 0.9999944237598942
     kappas['ZZ_500_use_HEPfit_C1_values'] = 1.0008624781876416
+    kappas['gg_HEPfit_C1'] = 0.9988424115117444
+    kappas['ZZ_HEPfit_C1'] = 0.9983670972711519
+    kappas['WW_HEPfit_C1'] = 0.9983110311251299
+    kappas['gamgam_HEPfit_C1'] = 0.9748487542548665
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.749434482912224
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 1.7700421218513895e-05
     Mw = 80.35622948679458
@@ -511,6 +605,29 @@ elif BP == "BPB_2":
     kappas['ZZ_365'] = 1.0002131692051668
     kappas['ZZ_500'] = 0.997795877018984
     kappas['ZZ_550'] = 0.9973832902199067
+    kappas['ZZ'] = 0.9920448239572286
+    kappas['WW'] = 0.9920448239572286
+    kappas['lam'] = 2.3867362274064843
+    kappas['gamgam'] = 0.974955131015653
+    kappas['Zgam'] = 0.9907251332792432
+    kappas['ZZ_0_with_WFR'] = 0.9966292246707532
+    kappas['ZZ_240_with_WFR'] = 1.0041488808247878
+    kappas['ZZ_365_with_WFR'] = 0.996593534653003
+    kappas['ZZ_500_with_WFR'] = 0.9941650209798174
+    kappas['ZZ_550_with_WFR'] = 0.9937499259580582
+    kappas['ZZ_0_with_WFR_no_BSM'] = 1.0020424230905143
+    kappas['ZZ_240_with_WFR_no_BSM'] = 1.0090590603477374
+    kappas['ZZ_365_with_WFR_no_BSM'] = 1.0009188574744274
+    kappas['ZZ_500_with_WFR_no_BSM'] = 0.9975151185370316
+    kappas['ZZ_550_with_WFR_no_BSM'] = 0.9966484440745323
+    kappas['ZZ_0_with_WFR_ZZh1L_hextlegonly'] = 0.9933519299813723
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly'] = 1.0004295209531087
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly'] = 0.9922185234979847
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly'] = 0.9887848354594422
+    kappas['ZZ_550_with_WFR_ZZh1L_hextlegonly'] = 0.9879105021209128
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9995028213528719
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9916328809204834
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9883340745373363
     kappas['ZZ_0_no_1L_BSM_sqrt_s'] = 0.9977031653428668
     kappas['ZZ_240_no_1L_BSM_sqrt_s'] = 1.0047587501412416
     kappas['ZZ_365_no_1L_BSM_sqrt_s'] = 0.9965779361302687
@@ -521,14 +638,13 @@ elif BP == "BPB_2":
     kappas['ZZ_365_no_1L_BSM'] = 1.00453311217304
     kappas['ZZ_500_no_1L_BSM'] = 1.0011320384040576
     kappas['ZZ_550_no_1L_BSM'] = 1.0002678930871767
-    kappas['ZZ'] = 0.9920448239572286
-    kappas['WW'] = 0.9920448239572286
-    kappas['lam'] = 2.3867362274064843
-    kappas['gamgam'] = 0.974955131015653
-    kappas['Zgam'] = 0.9907251332792432
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0068213860748716
     kappas['ZZ_365_use_HEPfit_C1_values'] = 0.9996321876372681
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9973467531881702
+    kappas['gg_HEPfit_C1'] = 1.0002409603006601
+    kappas['ZZ_HEPfit_C1'] = 0.9978290652350243
+    kappas['WW_HEPfit_C1'] = 0.9971339464687761
+    kappas['gamgam_HEPfit_C1'] = 0.9784337049632136
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.972569755753518
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.007558150774753747
     Mw = 80.37905036636042
@@ -560,6 +676,29 @@ elif BP == "BPB_3":
     kappas['ZZ_365'] = 1.0022646595923244
     kappas['ZZ_500'] = 0.9997291599866133
     kappas['ZZ_550'] = 0.999214728766395
+    kappas['ZZ'] = 0.9964595388770217
+    kappas['WW'] = 0.9964595388770217
+    kappas['lam'] = 2.296737570137434
+    kappas['gamgam'] = 0.9814976263381598
+    kappas['Zgam'] = 0.9931497692470427
+    kappas['ZZ_0_with_WFR'] = 0.9993048765243754
+    kappas['ZZ_240_with_WFR'] = 1.0061941626005981
+    kappas['ZZ_365_with_WFR'] = 0.9989746386740315
+    kappas['ZZ_500_with_WFR'] = 0.9964333040913925
+    kappas['ZZ_550_with_WFR'] = 0.9959168976687026
+    kappas['ZZ_0_with_WFR_no_BSM'] = 1.0019996226865402
+    kappas['ZZ_240_with_WFR_no_BSM'] = 1.008562642518992
+    kappas['ZZ_365_with_WFR_no_BSM'] = 1.000948969398728
+    kappas['ZZ_500_with_WFR_no_BSM'] = 0.9977665802219817
+    kappas['ZZ_550_with_WFR_no_BSM'] = 0.996956379879939
+    kappas['ZZ_0_with_WFR_ZZh1L_hextlegonly'] = 0.9947373074733177
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly'] = 1.0013479269965007
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly'] = 0.9936789755024872
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly'] = 0.9904732281203592
+    kappas['ZZ_550_with_WFR_ZZh1L_hextlegonly'] = 0.9896570569639819
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 1.0004821913641921
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9931321567114535
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9900524464587701
     kappas['ZZ_0_no_1L_BSM_sqrt_s'] = 1.0017506560443745
     kappas['ZZ_240_no_1L_BSM_sqrt_s'] = 1.0083483360548362
     kappas['ZZ_365_no_1L_BSM_sqrt_s'] = 1.000698453782578
@@ -570,14 +709,13 @@ elif BP == "BPB_3":
     kappas['ZZ_365_no_1L_BSM'] = 1.0042389149055564
     kappas['ZZ_500_no_1L_BSM'] = 1.0010585695393026
     kappas['ZZ_550_no_1L_BSM'] = 1.000250506927025
-    kappas['ZZ'] = 0.9964595388770217
-    kappas['WW'] = 0.9964595388770217
-    kappas['lam'] = 2.296737570137434
-    kappas['gamgam'] = 0.9814976263381598
-    kappas['Zgam'] = 0.9931497692470427
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0085993395094819
     kappas['ZZ_365_use_HEPfit_C1_values'] = 1.0017199676173572
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9993122390369574
+    kappas['gg_HEPfit_C1'] = 1.0006537870165462
+    kappas['ZZ_HEPfit_C1'] = 1.0018455641720172
+    kappas['WW_HEPfit_C1'] = 1.0011981806221033
+    kappas['gamgam_HEPfit_C1'] = 0.9847292036905961
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7616860647496536
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.007238182068803667
     Mw = 80.35902874095682
@@ -609,6 +747,29 @@ elif BP == "BPB_4":
     kappas['ZZ_365'] = 1.0018592821116823
     kappas['ZZ_500'] = 0.9971793729362697
     kappas['ZZ_550'] = 0.9962084260225224
+    kappas['ZZ'] = 0.9895595726245274
+    kappas['WW'] = 0.9895595726245274
+    kappas['lam'] = 3.3446699219962595
+    kappas['gamgam'] = 0.9730906099071067
+    kappas['Zgam'] = 0.9900356683423326
+    kappas['ZZ_0_with_WFR'] = 0.9947193829297043
+    kappas['ZZ_240_with_WFR'] = 1.0071477737968992
+    kappas['ZZ_365_with_WFR'] = 0.9940028292716281
+    kappas['ZZ_500_with_WFR'] = 0.9892834812373934
+    kappas['ZZ_550_with_WFR'] = 0.9883015291001433
+    kappas['ZZ_0_with_WFR_no_BSM'] = 1.0017270657567594
+    kappas['ZZ_240_with_WFR_no_BSM'] = 1.0135660011787824
+    kappas['ZZ_365_with_WFR_no_BSM'] = 0.9998260236719412
+    kappas['ZZ_500_with_WFR_no_BSM'] = 0.9940579071481797
+    kappas['ZZ_550_with_WFR_no_BSM'] = 0.992587002980971
+    kappas['ZZ_0_with_WFR_ZZh1L_hextlegonly'] = 0.9900873916213483
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly'] = 1.002063854015035
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly'] = 0.9881639572406814
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly'] = 0.9823273647525742
+    kappas['ZZ_550_with_WFR_ZZh1L_hextlegonly'] = 0.980838869164892
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 1.0004990643816172
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9871694928987288
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9815600910679545
     kappas['ZZ_0_no_1L_BSM_sqrt_s'] = 0.9991265995710326
     kappas['ZZ_240_no_1L_BSM_sqrt_s'] = 1.0110560618089828
     kappas['ZZ_365_no_1L_BSM_sqrt_s'] = 0.9972240812420315
@@ -619,14 +780,13 @@ elif BP == "BPB_4":
     kappas['ZZ_365_no_1L_BSM'] = 1.0076645086175042
     kappas['ZZ_500_no_1L_BSM'] = 1.001914031193591
     kappas['ZZ_550_no_1L_BSM'] = 1.0004529490550547
-    kappas['ZZ'] = 0.9895595726245274
-    kappas['WW'] = 0.9895595726245274
-    kappas['lam'] = 3.3446699219962595
-    kappas['gamgam'] = 0.9730906099071067
-    kappas['Zgam'] = 0.9900356683423326
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0133558053282368
     kappas['ZZ_365_use_HEPfit_C1_values'] = 1.0008766984717623
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9964195435197634
+    kappas['gg_HEPfit_C1'] = 1.0019395120835062
+    kappas['ZZ_HEPfit_C1'] = 0.9993442390514924
+    kappas['WW_HEPfit_C1'] = 0.9981704454668101
+    kappas['gamgam_HEPfit_C1'] = 0.9789761068111758
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.8761452003718885
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.013152506832024402
     Mw = 80.38071823046351
@@ -658,6 +818,29 @@ elif BP == "BPB_5":
     kappas['ZZ_365'] = 1.0045074415993116
     kappas['ZZ_500'] = 0.999519357798253
     kappas['ZZ_550'] = 0.9983919428055029
+    kappas['ZZ'] = 0.994767605927034
+    kappas['WW'] = 0.994767605927034
+    kappas['lam'] = 3.3186760761499228
+    kappas['gamgam'] = 0.9802217711125746
+    kappas['Zgam'] = 0.9926780357796698
+    kappas['ZZ_0_with_WFR'] = 0.9978966554709787
+    kappas['ZZ_240_with_WFR'] = 1.0099839770547894
+    kappas['ZZ_365_with_WFR'] = 0.9967971197157198
+    kappas['ZZ_500_with_WFR'] = 0.9917803840928886
+    kappas['ZZ_550_with_WFR'] = 0.9906429731673957
+    kappas['ZZ_0_with_WFR_no_BSM'] = 1.001754232150576
+    kappas['ZZ_240_with_WFR_no_BSM'] = 1.0134623612019436
+    kappas['ZZ_365_with_WFR_no_BSM'] = 0.9998743365869543
+    kappas['ZZ_500_with_WFR_no_BSM'] = 0.9941706281112236
+    kappas['ZZ_550_with_WFR_no_BSM'] = 0.9927162080252052
+    kappas['ZZ_0_with_WFR_ZZh1L_hextlegonly'] = 0.9918154013150834
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly'] = 1.003639480205531
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly'] = 0.9899166316510759
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly'] = 0.984155214614684
+    kappas['ZZ_550_with_WFR_ZZh1L_hextlegonly'] = 0.9826859713714002
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 1.0020944848783921
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9889349407130866
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9833978608094132
     kappas['ZZ_0_no_1L_BSM_sqrt_s'] = 1.0042285694053632
     kappas['ZZ_240_no_1L_BSM_sqrt_s'] = 1.0160257773760775
     kappas['ZZ_365_no_1L_BSM_sqrt_s'] = 1.002347143072169
@@ -668,14 +851,13 @@ elif BP == "BPB_5":
     kappas['ZZ_365_no_1L_BSM'] = 1.0075795371451353
     kappas['ZZ_500_no_1L_BSM'] = 1.0018928115620667
     kappas['ZZ_550_no_1L_BSM'] = 1.0004479275005054
-    kappas['ZZ'] = 0.994767605927034
-    kappas['WW'] = 0.994767605927034
-    kappas['lam'] = 3.3186760761499228
-    kappas['gamgam'] = 0.9802217711125746
-    kappas['Zgam'] = 0.9926780357796698
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0160606131668226
     kappas['ZZ_365_use_HEPfit_C1_values'] = 1.0035299011700685
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9987735387903312
+    kappas['gg_HEPfit_C1'] = 1.0026945628802895
+    kappas['ZZ_HEPfit_C1'] = 1.0043941463558252
+    kappas['WW_HEPfit_C1'] = 1.0032392163176722
+    kappas['gamgam_HEPfit_C1'] = 0.9860001183246415
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7459022968686289
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.013231568016927264
     Mw = 80.35940143464471
@@ -707,6 +889,29 @@ elif BP == "BPB_6":
     kappas['ZZ_365'] = 1.0041791687182084
     kappas['ZZ_500'] = 0.9972340465022999
     kappas['ZZ_550'] = 0.9957200588363064
+    kappas['ZZ'] = 0.98767749768558
+    kappas['WW'] = 0.98767749768558
+    kappas['lam'] = 4.332584967850238
+    kappas['gamgam'] = 0.9700106601524686
+    kappas['Zgam'] = 0.9888951932924951
+    kappas['ZZ_0_with_WFR'] = 0.9918111684323379
+    kappas['ZZ_240_with_WFR'] = 1.0093420087774163
+    kappas['ZZ_365_with_WFR'] = 0.9904591437267468
+    kappas['ZZ_500_with_WFR'] = 0.9834221224683241
+    kappas['ZZ_550_with_WFR'] = 0.9818814060914466
+    kappas['ZZ_0_with_WFR_no_BSM'] = 0.9999235323675025
+    kappas['ZZ_240_with_WFR_no_BSM'] = 1.0167393149595234
+    kappas['ZZ_365_with_WFR_no_BSM'] = 0.9972155236433569
+    kappas['ZZ_500_with_WFR_no_BSM'] = 0.9889853262048497
+    kappas['ZZ_550_with_WFR_no_BSM'] = 0.9868832614562448
+    kappas['ZZ_0_with_WFR_ZZh1L_hextlegonly'] = 0.9852618667724345
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly'] = 1.0023236553718364
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly'] = 0.9825134483196111
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly'] = 0.9741590480933345
+    kappas['ZZ_550_with_WFR_ZZh1L_hextlegonly'] = 0.9720249211188536
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 1.0000993940316913
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9810915287606191
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9730591516486929
     kappas['ZZ_0_no_1L_BSM_sqrt_s'] = 1.0012755439989802
     kappas['ZZ_240_no_1L_BSM_sqrt_s'] = 1.0182314260000087
     kappas['ZZ_365_no_1L_BSM_sqrt_s'] = 0.9985714090054754
@@ -717,14 +922,13 @@ elif BP == "BPB_6":
     kappas['ZZ_365_no_1L_BSM'] = 1.0108939113198954
     kappas['ZZ_500_no_1L_BSM'] = 1.0027204987465046
     kappas['ZZ_550_no_1L_BSM'] = 1.0006437968935058
-    kappas['ZZ'] = 0.98767749768558
-    kappas['WW'] = 0.98767749768558
-    kappas['lam'] = 4.332584967850238
-    kappas['gamgam'] = 0.9700106601524686
-    kappas['Zgam'] = 0.9888951932924951
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0206205957905823
     kappas['ZZ_365_use_HEPfit_C1_values'] = 1.002779262406923
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9961557883332115
+    kappas['gg_HEPfit_C1'] = 1.0037141020004705
+    kappas['ZZ_HEPfit_C1'] = 1.001582395346287
+    kappas['WW_HEPfit_C1'] = 0.9999173514344851
+    kappas['gamgam_HEPfit_C1'] = 0.9783917145764748
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.8187710155862721
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.01888098764545476
     Mw = 80.37348693182949
@@ -756,6 +960,29 @@ elif BP == "BPB_7":
     kappas['ZZ_365'] = 1.0066194417575949
     kappas['ZZ_500'] = 0.9996973232749794
     kappas['ZZ_550'] = 0.9981907127682461
+    kappas['ZZ'] = 0.9916592197495162
+    kappas['WW'] = 0.9916592197495162
+    kappas['lam'] = 4.324280052220163
+    kappas['gamgam'] = 0.9690970559288911
+    kappas['Zgam'] = 0.9885564514654552
+    kappas['ZZ_0_with_WFR'] = 0.9943177704846525
+    kappas['ZZ_240_with_WFR'] = 1.0117628618736003
+    kappas['ZZ_365_with_WFR'] = 0.9929755803261411
+    kappas['ZZ_500_with_WFR'] = 0.9859798507874314
+    kappas['ZZ_550_with_WFR'] = 0.9844506311366452
+    kappas['ZZ_0_with_WFR_no_BSM'] = 0.99994496780743
+    kappas['ZZ_240_with_WFR_no_BSM'] = 1.016718836931155
+    kappas['ZZ_365_with_WFR_no_BSM'] = 0.9972437747361607
+    kappas['ZZ_500_with_WFR_no_BSM'] = 0.9890344068586083
+    kappas['ZZ_550_with_WFR_no_BSM'] = 0.9869376903676026
+    kappas['ZZ_0_with_WFR_ZZh1L_hextlegonly'] = 0.9850541167583271
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly'] = 1.0020772762964771
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly'] = 0.9823119771992765
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly'] = 0.9739767616577332
+    kappas['ZZ_550_with_WFR_ZZh1L_hextlegonly'] = 0.9718475595314646
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9998580173183167
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9808933123462651
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9728794021664096
     kappas['ZZ_0_no_1L_BSM_sqrt_s'] = 1.005223379266794
     kappas['ZZ_240_no_1L_BSM_sqrt_s'] = 1.0221370066304132
     kappas['ZZ_365_no_1L_BSM_sqrt_s'] = 1.0025259830701059
@@ -766,14 +993,13 @@ elif BP == "BPB_7":
     kappas['ZZ_365_no_1L_BSM'] = 1.0108667633205897
     kappas['ZZ_500_no_1L_BSM'] = 1.002713719170656
     kappas['ZZ_550_no_1L_BSM'] = 1.0006421925296456
-    kappas['ZZ'] = 0.9916592197495162
-    kappas['WW'] = 0.9916592197495162
-    kappas['lam'] = 4.324280052220163
-    kappas['gamgam'] = 0.9690970559288911
-    kappas['Zgam'] = 0.9885564514654552
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0229661070552436
     kappas['ZZ_365_use_HEPfit_C1_values'] = 1.0052132874030593
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9986281817875683
+    kappas['gg_HEPfit_C1'] = 1.0035741554535051
+    kappas['ZZ_HEPfit_C1'] = 1.0054747796676187
+    kappas['WW_HEPfit_C1'] = 1.003820328791675
+    kappas['gamgam_HEPfit_C1'] = 0.9774651278004362
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7399166728011941
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.01883179277131064
     Mw = 80.35876824202134
@@ -805,6 +1031,29 @@ elif BP == "BPB_8":
     kappas['ZZ_365'] = 1.0064611082906136
     kappas['ZZ_500'] = 0.9970113612942804
     kappas['ZZ_550'] = 0.9948793346159323
+    kappas['ZZ'] = 0.9855351453464578
+    kappas['WW'] = 0.9855351453464578
+    kappas['lam'] = 5.390968560325193
+    kappas['gamgam'] = 0.9681793366722093
+    kappas['Zgam'] = 0.9882174303694794
+    kappas['ZZ_0_with_WFR'] = 0.9868784142674212
+    kappas['ZZ_240_with_WFR'] = 1.0098854512024047
+    kappas['ZZ_365_with_WFR'] = 0.9847515112752737
+    kappas['ZZ_500_with_WFR'] = 0.9751082221816556
+    kappas['ZZ_550_with_WFR'] = 0.9729193140284412
+    kappas['ZZ_0_with_WFR_no_BSM'] = 0.9963164776231394
+    kappas['ZZ_240_with_WFR_no_BSM'] = 1.0184931035203808
+    kappas['ZZ_365_with_WFR_no_BSM'] = 0.9927339324888739
+    kappas['ZZ_500_with_WFR_no_BSM'] = 0.9818260062569059
+    kappas['ZZ_550_with_WFR_no_BSM'] = 0.9790351568830876
+    kappas['ZZ_0_with_WFR_ZZh1L_hextlegonly'] = 0.9789374172102981
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly'] = 1.0014989491505055
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly'] = 0.9752910355098184
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly'] = 0.9641857963034799
+    kappas['ZZ_550_with_WFR_ZZh1L_hextlegonly'] = 0.9613437375070801
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9985648357188562
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9734031982701472
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9627213119503588
     kappas['ZZ_0_no_1L_BSM_sqrt_s'] = 1.0034517459492933
     kappas['ZZ_240_no_1L_BSM_sqrt_s'] = 1.0257925851168923
     kappas['ZZ_365_no_1L_BSM_sqrt_s'] = 0.9998888145150157
@@ -815,14 +1064,13 @@ elif BP == "BPB_8":
     kappas['ZZ_365_no_1L_BSM'] = 1.014353669168558
     kappas['ZZ_500_no_1L_BSM'] = 1.003584492092339
     kappas['ZZ_550_no_1L_BSM'] = 1.0008482580176918
-    kappas['ZZ'] = 0.9855351453464578
-    kappas['WW'] = 0.9855351453464578
-    kappas['lam'] = 5.390968560325193
-    kappas['gamgam'] = 0.9681793366722093
-    kappas['Zgam'] = 0.9882174303694794
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0281959386017996
     kappas['ZZ_365_use_HEPfit_C1_values'] = 1.004611068542431
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9955906775771884
+    kappas['gg_HEPfit_C1'] = 1.00589083111123
+    kappas['ZZ_HEPfit_C1'] = 1.0038548509439813
+    kappas['WW_HEPfit_C1'] = 1.0016654098068065
+    kappas['gamgam_HEPfit_C1'] = 0.9792277436350713
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7950653452447117
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.02506654279567444
     Mw = 80.37609074924455
@@ -854,6 +1102,29 @@ elif BP == "BPB_9":
     kappas['ZZ_365'] = 1.0091285593961397
     kappas['ZZ_500'] = 0.9996856607596301
     kappas['ZZ_550'] = 0.9975045713248815
+    kappas['ZZ'] = 0.9911552571416806
+    kappas['WW'] = 0.9911552571416806
+    kappas['lam'] = 5.289906405452073
+    kappas['gamgam'] = 0.9717649005806308
+    kappas['Zgam'] = 0.9895460934847392
+    kappas['ZZ_0_with_WFR'] = 0.9905984967105717
+    kappas['ZZ_240_with_WFR'] = 1.0129033172972661
+    kappas['ZZ_365_with_WFR'] = 0.988297337253369
+    kappas['ZZ_500_with_WFR'] = 0.9786959842305885
+    kappas['ZZ_550_with_WFR'] = 0.9764648742681853
+    kappas['ZZ_0_with_WFR_no_BSM'] = 0.9967361613572987
+    kappas['ZZ_240_with_WFR_no_BSM'] = 1.0183988727534035
+    kappas['ZZ_365_with_WFR_no_BSM'] = 0.9932376959901732
+    kappas['ZZ_500_with_WFR_no_BSM'] = 0.9825876507929726
+    kappas['ZZ_550_with_WFR_no_BSM'] = 0.9798632441305217
+    kappas['ZZ_0_with_WFR_ZZh1L_hextlegonly'] = 0.9805474727116916
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly'] = 1.0025600405508917
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly'] = 0.9769910396824888
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly'] = 0.9661619234760059
+    kappas['ZZ_550_with_WFR_ZZh1L_hextlegonly'] = 0.9633910670553227
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9996965978768297
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9751499092062201
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9647341013228569
     kappas['ZZ_0_no_1L_BSM_sqrt_s'] = 1.008659490805412
     kappas['ZZ_240_no_1L_BSM_sqrt_s'] = 1.030486135139472
     kappas['ZZ_365_no_1L_BSM_sqrt_s'] = 1.0051785634947046
@@ -864,14 +1135,13 @@ elif BP == "BPB_9":
     kappas['ZZ_365_no_1L_BSM'] = 1.014023306353024
     kappas['ZZ_500_no_1L_BSM'] = 1.0035019917305164
     kappas['ZZ_550_no_1L_BSM'] = 1.0008287345840854
-    kappas['ZZ'] = 0.9911552571416806
-    kappas['WW'] = 0.9911552571416806
-    kappas['lam'] = 5.289906405452073
-    kappas['gamgam'] = 0.9717649005806308
-    kappas['Zgam'] = 0.9895460934847392
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0304199508254335
     kappas['ZZ_365_use_HEPfit_C1_values'] = 1.007304806201831
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9983057374369962
+    kappas['gg_HEPfit_C1'] = 1.0061354619125524
+    kappas['ZZ_HEPfit_C1'] = 1.0089573662572882
+    kappas['WW_HEPfit_C1'] = 1.0068292111969095
+    kappas['gamgam_HEPfit_C1'] = 0.9825210243995791
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7295186448626314
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.02462075168485356
     Mw = 80.36227084007066
@@ -903,6 +1173,29 @@ elif BP == "BPB_10":
     kappas['ZZ_365'] = 1.0086936891072946
     kappas['ZZ_500'] = 0.9970643338394835
     kappas['ZZ_550'] = 0.9944257606352366
+    kappas['ZZ'] = 0.9831894512883156
+    kappas['WW'] = 0.9831894512883156
+    kappas['lam'] = 6.370034303736775
+    kappas['gamgam'] = 0.9642362524964034
+    kappas['Zgam'] = 0.9867567059352143
+    kappas['ZZ_0_with_WFR'] = 0.9807056488658086
+    kappas['ZZ_240_with_WFR'] = 1.008905195687072
+    kappas['ZZ_365_with_WFR'] = 0.9779979944482863
+    kappas['ZZ_500_with_WFR'] = 0.9660338330561968
+    kappas['ZZ_550_with_WFR'] = 0.9632986142421021
+    kappas['ZZ_0_with_WFR_no_BSM'] = 0.9914210622746767
+    kappas['ZZ_240_with_WFR_no_BSM'] = 1.0186069859025926
+    kappas['ZZ_365_with_WFR_no_BSM'] = 0.9870162043115205
+    kappas['ZZ_500_with_WFR_no_BSM'] = 0.973581106157756
+    kappas['ZZ_550_with_WFR_no_BSM'] = 0.970137872460869
+    kappas['ZZ_0_with_WFR_ZZh1L_hextlegonly'] = 0.9709376978430835
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly'] = 0.9986813716599217
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly'] = 0.9664394848848527
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly'] = 0.9527142597013745
+    kappas['ZZ_550_with_WFR_ZZh1L_hextlegonly'] = 0.9491953339296816
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9950816913524158
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9641090108657624
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9509013215165697
     kappas['ZZ_0_no_1L_BSM_sqrt_s'] = 1.0051009631840995
     kappas['ZZ_240_no_1L_BSM_sqrt_s'] = 1.0324231976879572
     kappas['ZZ_365_no_1L_BSM_sqrt_s'] = 1.0007435956099358
@@ -913,14 +1206,13 @@ elif BP == "BPB_10":
     kappas['ZZ_365_no_1L_BSM'] = 1.01755414432162
     kappas['ZZ_500_no_1L_BSM'] = 1.0043837356685394
     kappas['ZZ_550_no_1L_BSM'] = 1.0010373963263104
-    kappas['ZZ'] = 0.9831894512883156
-    kappas['WW'] = 0.9831894512883156
-    kappas['lam'] = 6.370034303736775
-    kappas['gamgam'] = 0.9642362524964034
-    kappas['Zgam'] = 0.9867567059352143
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0351908448775666
     kappas['ZZ_365_use_HEPfit_C1_values'] = 1.0064235117994058
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9953278506615736
+    kappas['gg_HEPfit_C1'] = 1.007642978236911
+    kappas['ZZ_HEPfit_C1'] = 1.0056007069635713
+    kappas['WW_HEPfit_C1'] = 1.0029270898434728
+    kappas['gamgam_HEPfit_C1'] = 0.9777856200193465
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7793395772932701
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.030704808369749648
     Mw = 80.37895112068958
@@ -952,6 +1244,29 @@ elif BP == "BPB_11":
     kappas['ZZ_365'] = 1.0114703907688232
     kappas['ZZ_500'] = 0.9996254236405407
     kappas['ZZ_550'] = 0.9968339404214662
+    kappas['ZZ'] = 0.989828251855104
+    kappas['WW'] = 0.989828251855104
+    kappas['lam'] = 6.270579956517072
+    kappas['gamgam'] = 0.9716394792919597
+    kappas['Zgam'] = 0.9895001872696593
+    kappas['ZZ_0_with_WFR'] = 0.9849373761583178
+    kappas['ZZ_240_with_WFR'] = 1.0123113220060902
+    kappas['ZZ_365_with_WFR'] = 0.9818188149488634
+    kappas['ZZ_500_with_WFR'] = 0.9696794579297972
+    kappas['ZZ_550_with_WFR'] = 0.9667964029168067
+    kappas['ZZ_0_with_WFR_no_BSM'] = 0.9919873056318833
+    kappas['ZZ_240_with_WFR_no_BSM'] = 1.0186615014943379
+    kappas['ZZ_365_with_WFR_no_BSM'] = 0.9876666838617457
+    kappas['ZZ_500_with_WFR_no_BSM'] = 0.9744908924540763
+    kappas['ZZ_550_with_WFR_no_BSM'] = 0.9711147052927168
+    kappas['ZZ_0_with_WFR_ZZh1L_hextlegonly'] = 0.9739389387168266
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly'] = 1.001094149638661
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly'] = 0.969537890040669
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly'] = 0.9561123057936224
+    kappas['ZZ_550_with_WFR_ZZh1L_hextlegonly'] = 0.9526709886680791
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9975697995252207
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9672579549510804
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.954339310633776
     kappas['ZZ_0_no_1L_BSM_sqrt_s'] = 1.0113339571975337
     kappas['ZZ_240_no_1L_BSM_sqrt_s'] = 1.0381501772434816
     kappas['ZZ_365_no_1L_BSM_sqrt_s'] = 1.0070572891353609
@@ -962,14 +1277,13 @@ elif BP == "BPB_11":
     kappas['ZZ_365_no_1L_BSM'] = 1.0172290372802568
     kappas['ZZ_500_no_1L_BSM'] = 1.004302547812999
     kappas['ZZ_550_no_1L_BSM'] = 1.0010181834929082
-    kappas['ZZ'] = 0.989828251855104
-    kappas['WW'] = 0.989828251855104
-    kappas['lam'] = 6.270579956517072
-    kappas['gamgam'] = 0.9716394792919597
-    kappas['Zgam'] = 0.9895001872696593
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0376429141548693
     kappas['ZZ_365_use_HEPfit_C1_values'] = 1.0092200021448645
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.997929669772392
+    kappas['gg_HEPfit_C1'] = 1.0084864642720994
+    kappas['ZZ_HEPfit_C1'] = 1.0116846256663303
+    kappas['WW_HEPfit_C1'] = 1.0090764103144547
+    kappas['gamgam_HEPfit_C1'] = 0.9848396415181937
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.726069782680232
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.03040301363706388
     Mw = 80.36604187614141
@@ -1001,6 +1315,29 @@ elif BP == "BPB_12":
     kappas['ZZ_365'] = 1.0110724336603367
     kappas['ZZ_500'] = 0.996621858253727
     kappas['ZZ_550'] = 0.9932624300476764
+    kappas['ZZ'] = 0.9810055074760319
+    kappas['WW'] = 0.9810055074760319
+    kappas['lam'] = 7.515862276796717
+    kappas['gamgam'] = 0.964519464620997
+    kappas['Zgam'] = 0.9868624932160871
+    kappas['ZZ_0_with_WFR'] = 0.9715591365186425
+    kappas['ZZ_240_with_WFR'] = 1.0058275864919073
+    kappas['ZZ_365_with_WFR'] = 0.9678593197272951
+    kappas['ZZ_500_with_WFR'] = 0.9528118974749228
+    kappas['ZZ_550_with_WFR'] = 0.949279545527903
+    kappas['ZZ_0_with_WFR_no_BSM'] = 0.983758370579849
+    kappas['ZZ_240_with_WFR_no_BSM'] = 1.01689956866878
+    kappas['ZZ_365_with_WFR_no_BSM'] = 0.9783692017589569
+    kappas['ZZ_500_with_WFR_no_BSM'] = 0.9618965749707126
+    kappas['ZZ_550_with_WFR_no_BSM'] = 0.9576660669569553
+    kappas['ZZ_0_with_WFR_ZZh1L_hextlegonly'] = 0.961084081792493
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly'] = 0.9949808105424701
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly'] = 0.9555670439793632
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly'] = 0.9386943600178854
+    kappas['ZZ_550_with_WFR_ZZh1L_hextlegonly'] = 0.9343588049511834
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9905950407491717
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9527062984094574
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9364612003203003
     kappas['ZZ_0_no_1L_BSM_sqrt_s'] = 1.007592375587837
     kappas['ZZ_240_no_1L_BSM_sqrt_s'] = 1.0407444761242528
     kappas['ZZ_365_no_1L_BSM_sqrt_s'] = 1.0023052572201065
@@ -1011,14 +1348,13 @@ elif BP == "BPB_12":
     kappas['ZZ_365_no_1L_BSM'] = 1.0212997497440748
     kappas['ZZ_500_no_1L_BSM'] = 1.0053191127390393
     kappas['ZZ_550_no_1L_BSM'] = 1.0012587501692474
-    kappas['ZZ'] = 0.9810055074760319
-    kappas['WW'] = 0.9810055074760319
-    kappas['lam'] = 7.515862276796717
-    kappas['gamgam'] = 0.964519464620997
-    kappas['Zgam'] = 0.9868624932160871
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0432516761045383
     kappas['ZZ_365_use_HEPfit_C1_values'] = 1.0083083768422563
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9945130439986215
+    kappas['gg_HEPfit_C1'] = 1.0104235405617579
+    kappas['ZZ_HEPfit_C1'] = 1.0081931673026352
+    kappas['WW_HEPfit_C1'] = 1.0049565166309051
+    kappas['gamgam_HEPfit_C1'] = 0.9809309470034466
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7718960244295371
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.03746873548257623
     Mw = 80.37475970785388
@@ -1050,6 +1386,29 @@ elif BP == "BPB_13":
     kappas['ZZ_365'] = 1.0138613710380702
     kappas['ZZ_500'] = 0.9992550710344579
     kappas['ZZ_550'] = 0.995797062535416
+    kappas['ZZ'] = 0.9867655737780427
+    kappas['WW'] = 0.9867655737780427
+    kappas['lam'] = 7.466008740779396
+    kappas['gamgam'] = 0.9687124711983263
+    kappas['Zgam'] = 0.988416241175598
+    kappas['ZZ_0_with_WFR'] = 0.9752822819274892
+    kappas['ZZ_240_with_WFR'] = 1.009046070512543
+    kappas['ZZ_365_with_WFR'] = 0.9713284581290288
+    kappas['ZZ_500_with_WFR'] = 0.9561727739086133
+    kappas['ZZ_550_with_WFR'] = 0.9525493984912322
+    kappas['ZZ_0_with_WFR_no_BSM'] = 0.9841357274099936
+    kappas['ZZ_240_with_WFR_no_BSM'] = 1.0170152559029741
+    kappas['ZZ_365_with_WFR_no_BSM'] = 0.9787899661357233
+    kappas['ZZ_500_with_WFR_no_BSM'] = 0.9624515898527747
+    kappas['ZZ_550_with_WFR_no_BSM'] = 0.9582559523312509
+    kappas['ZZ_0_with_WFR_ZZh1L_hextlegonly'] = 0.9629771541926464
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly'] = 0.996555016179018
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly'] = 0.9575132726704844
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly'] = 0.9408054699789454
+    kappas['ZZ_550_with_WFR_ZZh1L_hextlegonly'] = 0.9365128614762551
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9922097810546905
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9546802348691364
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9385944010491
     kappas['ZZ_0_no_1L_BSM_sqrt_s'] = 1.0131490230128533
     kappas['ZZ_240_no_1L_BSM_sqrt_s'] = 1.0460474734001508
     kappas['ZZ_365_no_1L_BSM_sqrt_s'] = 1.0079023569344399
@@ -1060,14 +1419,13 @@ elif BP == "BPB_13":
     kappas['ZZ_365_no_1L_BSM'] = 1.021136783156397
     kappas['ZZ_500_no_1L_BSM'] = 1.0052784156574788
     kappas['ZZ_550_no_1L_BSM'] = 1.0012491193415483
-    kappas['ZZ'] = 0.9867655737780427
-    kappas['WW'] = 0.9867655737780427
-    kappas['lam'] = 7.466008740779396
-    kappas['gamgam'] = 0.9687124711983263
-    kappas['Zgam'] = 0.988416241175598
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0458375066283774
     kappas['ZZ_365_use_HEPfit_C1_values'] = 1.011091205374564
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9971733346852643
+    kappas['gg_HEPfit_C1'] = 1.010978037573136
+    kappas['ZZ_HEPfit_C1'] = 1.0135946774435918
+    kappas['WW_HEPfit_C1'] = 1.0104000006933884
+    kappas['gamgam_HEPfit_C1'] = 0.984930096344399
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7293169930651524
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.037347499422743624
     Mw = 80.35999526714207
@@ -1099,6 +1457,29 @@ elif BP == "BPB_14":
     kappas['ZZ_365'] = 1.0139224973656134
     kappas['ZZ_500'] = 0.9969466588006025
     kappas['ZZ_550'] = 0.9929800438002488
+    kappas['ZZ'] = 0.979083513561544
+    kappas['WW'] = 0.979083513561544
+    kappas['lam'] = 8.611459058586306
+    kappas['gamgam'] = 0.9617556329224429
+    kappas['Zgam'] = 0.9858388012191261
+    kappas['ZZ_0_with_WFR'] = 0.9611782779520907
+    kappas['ZZ_240_with_WFR'] = 1.001460517528529
+    kappas['ZZ_365_with_WFR'] = 0.9566922843481571
+    kappas['ZZ_500_with_WFR'] = 0.9387802990057224
+    kappas['ZZ_550_with_WFR'] = 0.934545461601824
+    kappas['ZZ_0_with_WFR_no_BSM'] = 0.974438125888781
+    kappas['ZZ_240_with_WFR_no_BSM'] = 1.01340142642283
+    kappas['ZZ_365_with_WFR_no_BSM'] = 0.9680792531181251
+    kappas['ZZ_500_with_WFR_no_BSM'] = 0.9486000743575824
+    kappas['ZZ_550_with_WFR_no_BSM'] = 0.9435867382791647
+    kappas['ZZ_0_with_WFR_ZZh1L_hextlegonly'] = 0.9487441238940951
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly'] = 0.9887204875563975
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly'] = 0.9422118613961943
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly'] = 0.9221864521392327
+    kappas['ZZ_550_with_WFR_ZZh1L_hextlegonly'] = 0.9170287258828085
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9835627522603577
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9388217084579715
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9195304389230424
     kappas['ZZ_0_no_1L_BSM_sqrt_s'] = 1.0101407780543297
     kappas['ZZ_240_no_1L_BSM_sqrt_s'] = 1.048867172999423
     kappas['ZZ_365_no_1L_BSM_sqrt_s'] = 1.0039646676203833
@@ -1109,14 +1490,13 @@ elif BP == "BPB_14":
     kappas['ZZ_365_no_1L_BSM'] = 1.0248811540588394
     kappas['ZZ_500_no_1L_BSM'] = 1.0062134844355712
     kappas['ZZ_550_no_1L_BSM'] = 1.0014704002281223
-    kappas['ZZ'] = 0.979083513561544
-    kappas['WW'] = 0.979083513561544
-    kappas['lam'] = 8.611459058586306
-    kappas['gamgam'] = 0.9617556329224429
-    kappas['Zgam'] = 0.9858388012191261
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0513493810758867
     kappas['ZZ_365_use_HEPfit_C1_values'] = 1.010677002433265
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9944856425298773
+    kappas['gg_HEPfit_C1'] = 1.0126838131942453
+    kappas['ZZ_HEPfit_C1'] = 1.0108311613292718
+    kappas['WW_HEPfit_C1'] = 1.0070591728670655
+    kappas['gamgam_HEPfit_C1'] = 0.9809536415372144
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7589345667791059
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.043831520618606845
     Mw = 80.37845879589715
@@ -1148,6 +1528,29 @@ elif BP == "BPB_15":
     kappas['ZZ_365'] = 1.0165553852124465
     kappas['ZZ_500'] = 0.9998571224979024
     kappas['ZZ_550'] = 0.9959414417602217
+    kappas['ZZ'] = 0.984600234354807
+    kappas['WW'] = 0.984600234354807
+    kappas['lam'] = 8.459762817722257
+    kappas['gamgam'] = 0.9626061555176816
+    kappas['Zgam'] = 0.9861539099506105
+    kappas['ZZ_0_with_WFR'] = 0.9659587389965059
+    kappas['ZZ_240_with_WFR'] = 1.005237944894654
+    kappas['ZZ_365_with_WFR'] = 0.9615150615409238
+    kappas['ZZ_500_with_WFR'] = 0.9439887118715765
+    kappas['ZZ_550_with_WFR'] = 0.9398315416422227
+    kappas['ZZ_0_with_WFR_no_BSM'] = 0.975846827476336
+    kappas['ZZ_240_with_WFR_no_BSM'] = 1.013995161669588
+    kappas['ZZ_365_with_WFR_no_BSM'] = 0.969624148505698
+    kappas['ZZ_500_with_WFR_no_BSM'] = 0.9505681157877565
+    kappas['ZZ_550_with_WFR_no_BSM'] = 0.945665180442682
+    kappas['ZZ_0_with_WFR_ZZh1L_hextlegonly'] = 0.950732483458244
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly'] = 0.9898491866422804
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly'] = 0.9443443300896396
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly'] = 0.9247675206014405
+    kappas['ZZ_550_with_WFR_ZZh1L_hextlegonly'] = 0.919727056201317
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9848003023219897
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9410293914714996
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9221718021831663
     kappas['ZZ_0_no_1L_BSM_sqrt_s'] = 1.0150385281300451
     kappas['ZZ_240_no_1L_BSM_sqrt_s'] = 1.0529931067268972
     kappas['ZZ_365_no_1L_BSM_sqrt_s'] = 1.00898550746493
@@ -1158,14 +1561,13 @@ elif BP == "BPB_15":
     kappas['ZZ_365_no_1L_BSM'] = 1.0243852731101233
     kappas['ZZ_500_no_1L_BSM'] = 1.006089649803566
     kappas['ZZ_550_no_1L_BSM'] = 1.0014410951782684
-    kappas['ZZ'] = 0.984600234354807
-    kappas['WW'] = 0.984600234354807
-    kappas['lam'] = 8.459762817722257
-    kappas['gamgam'] = 0.9626061555176816
-    kappas['Zgam'] = 0.9861539099506105
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0531538851791662
     kappas['ZZ_365_use_HEPfit_C1_values'] = 1.0133414391337519
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9974568214104397
+    kappas['gg_HEPfit_C1'] = 1.012443601787523
+    kappas['ZZ_HEPfit_C1'] = 1.015555834446652
+    kappas['WW_HEPfit_C1'] = 1.0118764203502884
+    kappas['gamgam_HEPfit_C1'] = 0.9814089099082859
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7219985807961474
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.04299605614299051
     Mw = 80.36644727286449
@@ -1197,6 +1599,29 @@ elif BP == "BPB_16":
     kappas['ZZ_365'] = 1.016340787857924
     kappas['ZZ_500'] = 0.9980976220606489
     kappas['ZZ_550'] = 0.9939143794605771
+    kappas['ZZ'] = 0.9768730028600872
+    kappas['WW'] = 0.9768730028600872
+    kappas['lam'] = 9.319513844125106
+    kappas['gamgam'] = 0.9553893338375414
+    kappas['Zgam'] = 0.9834792434465481
+    kappas['ZZ_0_with_WFR'] = 0.9535878490496755
+    kappas['ZZ_240_with_WFR'] = 0.9980018049595551
+    kappas['ZZ_365_with_WFR'] = 0.9489773997197315
+    kappas['ZZ_500_with_WFR'] = 0.929554610329201
+    kappas['ZZ_550_with_WFR'] = 0.9250433981085046
+    kappas['ZZ_0_with_WFR_no_BSM'] = 0.9673516696468819
+    kappas['ZZ_240_with_WFR_no_BSM'] = 1.010161905980747
+    kappas['ZZ_365_with_WFR_no_BSM'] = 0.9603478372398008
+    kappas['ZZ_500_with_WFR_no_BSM'] = 0.9388607538740528
+    kappas['ZZ_550_with_WFR_no_BSM'] = 0.9333225045077285
+    kappas['ZZ_0_with_WFR_ZZh1L_hextlegonly'] = 0.9380781800168906
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly'] = 0.9821652077679434
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly'] = 0.930854117220499
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly'] = 0.9086698708662825
+    kappas['ZZ_550_with_WFR_ZZh1L_hextlegonly'] = 0.902946463792716
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9764884453327103
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9271025711482412
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.905723063206326
     kappas['ZZ_0_no_1L_BSM_sqrt_s'] = 1.0108193645129049
     kappas['ZZ_240_no_1L_BSM_sqrt_s'] = 1.0531482762759274
     kappas['ZZ_365_no_1L_BSM_sqrt_s'] = 1.004068722374181
@@ -1207,14 +1632,13 @@ elif BP == "BPB_16":
     kappas['ZZ_365_no_1L_BSM'] = 1.027195719514094
     kappas['ZZ_500_no_1L_BSM'] = 1.00679149285099
     kappas['ZZ_550_no_1L_BSM'] = 1.001607183978802
-    kappas['ZZ'] = 0.9768730028600872
-    kappas['WW'] = 0.9768730028600872
-    kappas['lam'] = 9.319513844125106
-    kappas['gamgam'] = 0.9553893338375414
-    kappas['Zgam'] = 0.9834792434465481
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0568880081437206
     kappas['ZZ_365_use_HEPfit_C1_values'] = 1.0127740940600591
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9954137718180324
+    kappas['gg_HEPfit_C1'] = 1.0134197061922674
+    kappas['ZZ_HEPfit_C1'] = 1.0115991442380339
+    kappas['WW_HEPfit_C1'] = 1.0074786919726872
+    kappas['gamgam_HEPfit_C1'] = 0.9764908586601077
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7449363773395835
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.04772474876185351
     Mw = 80.37347683058418
@@ -1246,6 +1670,29 @@ elif BP == "BPB_17":
     kappas['ZZ_365'] = 1.0194447352171014
     kappas['ZZ_500'] = 0.9994909949726744
     kappas['ZZ_550'] = 0.994801503186093
+    kappas['ZZ'] = 0.9804583865161776
+    kappas['WW'] = 0.9804583865161776
+    kappas['lam'] = 9.888810967739037
+    kappas['gamgam'] = 0.9590465290403257
+    kappas['Zgam'] = 0.9848353795963092
+    kappas['ZZ_0_with_WFR'] = 0.9488327414703943
+    kappas['ZZ_240_with_WFR'] = 0.9962334475199526
+    kappas['ZZ_365_with_WFR'] = 0.943364867291724
+    kappas['ZZ_500_with_WFR'] = 0.9219706027588287
+    kappas['ZZ_550_with_WFR'] = 0.9168701155443528
+    kappas['ZZ_0_with_WFR_no_BSM'] = 0.9610340087319995
+    kappas['ZZ_240_with_WFR_no_BSM'] = 1.0069941663061601
+    kappas['ZZ_365_with_WFR_no_BSM'] = 0.9534994496472524
+    kappas['ZZ_500_with_WFR_no_BSM'] = 0.9303549108002993
+    kappas['ZZ_550_with_WFR_no_BSM'] = 0.9243820242615433
+    kappas['ZZ_0_with_WFR_ZZh1L_hextlegonly'] = 0.9318707686866617
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly'] = 0.979200701882822
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly'] = 0.9240984601603804
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly'] = 0.9001983246170845
+    kappas['ZZ_550_with_WFR_ZZh1L_hextlegonly'] = 0.8940239875814525
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9731157960134372
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9200602091794942
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.8970197817536487
     kappas['ZZ_0_no_1L_BSM_sqrt_s'] = 1.0167276682828614
     kappas['ZZ_240_no_1L_BSM_sqrt_s'] = 1.0619531108004323
     kappas['ZZ_365_no_1L_BSM_sqrt_s'] = 1.0095150855519197
@@ -1256,14 +1703,13 @@ elif BP == "BPB_17":
     kappas['ZZ_365_no_1L_BSM'] = 1.0290566990357422
     kappas['ZZ_500_no_1L_BSM'] = 1.007256228822052
     kappas['ZZ_550_no_1L_BSM'] = 1.0017171621858696
-    kappas['ZZ'] = 0.9804583865161776
-    kappas['WW'] = 0.9804583865161776
-    kappas['lam'] = 9.888810967739037
-    kappas['gamgam'] = 0.9590465290403257
-    kappas['Zgam'] = 0.9848353795963092
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0628045998368727
     kappas['ZZ_365_use_HEPfit_C1_values'] = 1.0155994756196123
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9966290459139281
+    kappas['gg_HEPfit_C1'] = 1.0154134794179484
+    kappas['ZZ_HEPfit_C1'] = 1.017386739997205
+    kappas['WW_HEPfit_C1'] = 1.013008868546767
+    kappas['gamgam_HEPfit_C1'] = 0.981491425640702
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7250331000061386
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.051271904558578996
     Mw = 80.37022469814376
@@ -1295,6 +1741,29 @@ elif BP == "BPB_18":
     kappas['ZZ_365'] = 1.021686858342519
     kappas['ZZ_500'] = 0.999005167283247
     kappas['ZZ_550'] = 0.9937629124341144
+    kappas['ZZ'] = 0.973198925278522
+    kappas['WW'] = 0.973198925278522
+    kappas['lam'] = 11.2535829810942
+    kappas['gamgam'] = 0.9520472670797051
+    kappas['Zgam'] = 0.9822414834898094
+    kappas['ZZ_0_with_WFR'] = 0.9280562720646215
+    kappas['ZZ_240_with_WFR'] = 0.9838272072397166
+    kappas['ZZ_365_with_WFR'] = 0.9219631171492785
+    kappas['ZZ_500_with_WFR'] = 0.8970243069533121
+    kappas['ZZ_550_with_WFR'] = 0.8911610951824619
+    kappas['ZZ_0_with_WFR_no_BSM'] = 0.9435667843462965
+    kappas['ZZ_240_with_WFR_no_BSM'] = 0.9973248354481771
+    kappas['ZZ_365_with_WFR_no_BSM'] = 0.9347075998176981
+    kappas['ZZ_500_with_WFR_no_BSM'] = 0.9074045111909865
+    kappas['ZZ_550_with_WFR_no_BSM'] = 0.9003354358480898
+    kappas['ZZ_0_with_WFR_ZZh1L_hextlegonly'] = 0.9089406900316561
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly'] = 0.9646303586739049
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly'] = 0.8997406285316758
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly'] = 0.8713425551431343
+    kappas['ZZ_550_with_WFR_ZZh1L_hextlegonly'] = 0.8639784710960006
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9575009581461474
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.8949539637123386
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.8675530077888453
     kappas['ZZ_0_no_1L_BSM_sqrt_s'] = 1.015036927190039
     kappas['ZZ_240_no_1L_BSM_sqrt_s'] = 1.0672062026301008
     kappas['ZZ_365_no_1L_BSM_sqrt_s'] = 1.006716937507715
@@ -1305,14 +1774,13 @@ elif BP == "BPB_18":
     kappas['ZZ_365_no_1L_BSM'] = 1.033518012229193
     kappas['ZZ_500_no_1L_BSM'] = 1.0083703371155885
     kappas['ZZ_550_no_1L_BSM'] = 1.0019808121725968
-    kappas['ZZ'] = 0.973198925278522
-    kappas['WW'] = 0.973198925278522
-    kappas['lam'] = 11.2535829810942
-    kappas['gamgam'] = 0.9520472670797051
-    kappas['Zgam'] = 0.9822414834898094
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0712469635812127
     kappas['ZZ_365_use_HEPfit_C1_values'] = 1.0172428988294235
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9957011135308628
+    kappas['gg_HEPfit_C1'] = 1.0176448783401941
+    kappas['ZZ_HEPfit_C1'] = 1.0159827197872768
+    kappas['WW_HEPfit_C1'] = 1.0109239852359118
+    kappas['gamgam_HEPfit_C1'] = 0.9780779904288291
     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7310552407842171
     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.05894999216074326
     Mw = 80.36926541455969
@@ -1642,6 +2110,29 @@ elif BP == "BP_lambda1":
     kappas['ZZ_365'] = 0.999375887226692
     kappas['ZZ_500'] = 0.9993603116685574
     kappas['ZZ_550'] = 0.9994021868768549
+    kappas['ZZ'] = 0.9983808715093025
+    kappas['WW'] = 0.9983808715093025
+    kappas['lam'] = 1.1000242642433875
+    kappas['gamgam'] = 0.9919985602913337
+    kappas['Zgam'] = 0.9970379541928285
+    kappas['ZZ_0_with_WFR'] = 0.9990362027510766
+    kappas['ZZ_240_with_WFR'] = 0.9996569626228905
+    kappas['ZZ_365_with_WFR'] = 0.9992139481033878
+    kappas['ZZ_500_with_WFR'] = 0.9991983601708374
+    kappas['ZZ_550_with_WFR'] = 0.9992402680960598
+    kappas['ZZ_0_with_WFR_no_BSM'] = 1.000246471444266
+    kappas['ZZ_240_with_WFR_no_BSM'] = 1.000755130849711
+    kappas['ZZ_365_with_WFR_no_BSM'] = 1.000165326196393
+    kappas['ZZ_500_with_WFR_no_BSM'] = 0.9999200197146211
+    kappas['ZZ_550_with_WFR_no_BSM'] = 0.9998576826197325
+    kappas['ZZ_0_with_WFR_ZZh1L_hextlegonly'] = 0.9986634199001364
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly'] = 0.9991728852065359
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly'] = 0.9985821460127696
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly'] = 0.9983364505195728
+    kappas['ZZ_550_with_WFR_ZZh1L_hextlegonly'] = 0.9982740145389106
+    kappas['ZZ_240_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9991059877375597
+    kappas['ZZ_365_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9985401847432552
+    kappas['ZZ_500_with_WFR_ZZh1L_hextlegonly_HEPfit_C1_values'] = 0.9983042553563057
     kappas['ZZ_0_no_1L_BSM_sqrt_s'] = 0.9987890035121672
     kappas['ZZ_240_no_1L_BSM_sqrt_s'] = 0.9992979176548258
     kappas['ZZ_365_no_1L_BSM_sqrt_s'] = 0.9987078415565833
@@ -1652,14 +2143,13 @@ elif BP == "BP_lambda1":
     kappas['ZZ_365_no_1L_BSM'] = 1.0003269700472808
     kappas['ZZ_500_no_1L_BSM'] = 1.0000816530975563
     kappas['ZZ_550_no_1L_BSM'] = 1.000019322931363
-    kappas['ZZ'] = 0.9983808715093025
-    kappas['WW'] = 0.9983808715093025
-    kappas['lam'] = 1.1000242642433875
-    kappas['gamgam'] = 0.9919985602913337
-    kappas['Zgam'] = 0.9970379541928285
     kappas['ZZ_240_use_HEPfit_C1_values'] = 0.9997517809389181
     kappas['ZZ_365_use_HEPfit_C1_values'] = 0.999333764397566
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.999327944752674
+    kappas['gg_HEPfit_C1'] = 0.999538879408386
+    kappas['ZZ_HEPfit_C1'] = 0.9987965588591575
+    kappas['WW_HEPfit_C1'] = 0.9987464852126646
+    kappas['gamgam_HEPfit_C1'] = 0.992245565631246
     Mw = 80.37399739650569
     sin2thetaEff = 0.23143603210752
     GammaZ = 2.4952832270640632
@@ -1695,11 +2185,18 @@ if no_1L_BSM:
     kappas['ZZ_500'] = kappas['ZZ_500_no_1L_BSM']
     kappas['ZZ_550'] = kappas['ZZ_550_no_1L_BSM']
 
-if use_HEPfit_C1_values_WFR_kala2_input_all:
+if use_HEPfit_C1_values_WFR_kala2_input_all or \
+    use_HEPfit_C1_values_decayrates_WFR_kala2_input_all:
     kappas['ZZ_240'] = kappas['ZZ_240_use_HEPfit_C1_values']
     kappas['ZZ_365'] = kappas['ZZ_365_use_HEPfit_C1_values']
     kappas['ZZ_500'] = kappas['ZZ_500_use_HEPfit_C1_values']
 
+if use_HEPfit_C1_values_decayrates_WFR_kala2_input_all:
+    kappas['ZZ']   = kappas['ZZ_HEPfit_C1']
+    kappas['ZZ_0'] = kappas['ZZ_HEPfit_C1'] # Used for the Zh cross-section at HL-LHC
+    kappas['WW']   = kappas['WW_HEPfit_C1']
+    kappas['gg']   = kappas['gg_HEPfit_C1']
+    kappas['gamgam'] = kappas['gamgam_HEPfit_C1']
 
 
 M_PI = 3.14159265358979323846
@@ -2131,7 +2628,9 @@ if WFR_kala2_input:
     kappas['ZZ_365'] = sqrt( kappas['ZZ_365']**2 + ZZh_hextleg( kappas["lam"] ) )
     kappas['ZZ_500'] = sqrt( kappas['ZZ_500']**2 + ZZh_hextleg( kappas["lam"] ) )
 
-if WFR_kala2_input_all or use_HEPfit_C1_values_WFR_kala2_input_all:
+if WFR_kala2_input_all or \
+    use_HEPfit_C1_values_WFR_kala2_input_all or \
+    use_HEPfit_C1_values_decayrates_WFR_kala2_input_all:
     # Adds the external-leg correction (the contribution proportional to kappa_lambda**2) to 
     # the all Higgs cross-sections and decay rates
     coupling_list = [
@@ -2188,7 +2687,7 @@ print(f"Total decay rate: {total_rate}")
 
 kappas2["H"] = kappas2["gg"]*BR_H_to_gg         + \
                kappas2["WW"]*BR_H_to_WW         + \
-               kappas2["ZZ"]*BR_H_to_ZZ     + \
+               kappas2["ZZ"]*BR_H_to_ZZ         + \
                kappas2["Zgam"]*BR_H_to_Zga      + \
                kappas2["gamgam"]*BR_H_to_gaga   + \
                kappas2["mumu"]*BR_H_to_mumu     + \
@@ -2236,6 +2735,7 @@ output_file_flag_map = {
     WFR_kala2_input: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_WFR_kala2_input.conf",
     WFR_kala2_input_all: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_WFR_kala2_input_all.conf",
     use_HEPfit_C1_values_WFR_kala2_input_all: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_use_HEPfit_C1_values_WFR_kala2_input_all.conf",
+    use_HEPfit_C1_values_decayrates_WFR_kala2_input_all: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_use_HEPfit_C1_values_decayrates_WFR_kala2_input_all.conf",
 }
 
 for condition, filename in output_file_flag_map.items():
@@ -2335,6 +2835,7 @@ if (scenario == "IDM_FCCee240_FCCee365"
         WFR_kala2_input: "ObservablesHiggs_FCCee_365_kappa_scaled_WFR_kala2_input.conf",
         WFR_kala2_input_all: "ObservablesHiggs_FCCee_365_kappa_scaled_WFR_kala2_input_all.conf",
         use_HEPfit_C1_values_WFR_kala2_input_all: "ObservablesHiggs_FCCee_365_kappa_scaled_use_HEPfit_C1_values_WFR_kala2_input_all.conf",
+        use_HEPfit_C1_values_decayrates_WFR_kala2_input_all: "ObservablesHiggs_FCCee_365_kappa_scaled_use_HEPfit_C1_values_decayrates_WFR_kala2_input_all.conf",
     }
 
     for condition, filename in output_file_flag_map.items():
@@ -2461,6 +2962,7 @@ output_file_flag_map = {
     WFR_kala2_input: "ObservablesHiggs_HLLHC_SM_kappa_scaled_WFR_kala2_input.conf",
     WFR_kala2_input_all: "ObservablesHiggs_HLLHC_SM_kappa_scaled_WFR_kala2_input_all.conf",
     use_HEPfit_C1_values_WFR_kala2_input_all: "ObservablesHiggs_HLLHC_SM_kappa_scaled_use_HEPfit_C1_values_WFR_kala2_input_all.conf",
+    use_HEPfit_C1_values_decayrates_WFR_kala2_input_all: "ObservablesHiggs_HLLHC_SM_kappa_scaled_use_HEPfit_C1_values_decayrates_WFR_kala2_input_all.conf",
 }
 
 for condition, filename in output_file_flag_map.items():
@@ -2672,6 +3174,7 @@ if scenario == "IDM_FCCee240_FCCee365_HLLHClambda":
             WFR_kala2_input: "_WFR_kala2_input",
             WFR_kala2_input_all: "_WFR_kala2_input_all",
             use_HEPfit_C1_values_WFR_kala2_input_all: "_use_HEPfit_C1_values_WFR_kala2_input_all",
+            use_HEPfit_C1_values_decayrates_WFR_kala2_input_all: "_use_HEPfit_C1_values_decayrates_WFR_kala2_input_all",
         }
 
         for condition, flag in flag_map.items():
