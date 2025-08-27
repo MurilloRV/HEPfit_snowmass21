@@ -159,8 +159,13 @@ def generate_klam_comparison_plot(
     plot_titles=None,
     colors=None,
     show_plots=False,
+    group_model_specs=False,
     figsize=(3.5, 4),
     fig_kwargs={},
+    x_lim=None,
+    y_lim_ax1=None,
+    y_lim_ax2=None,
+    leg_fontsize=9,
 ):
     r"""
     Compare the fit results for kappa_lambda between the benchmark points
@@ -173,10 +178,11 @@ def generate_klam_comparison_plot(
         Dictionary mapping collider scenarios to a list of model specifications.
     working_dir : str
         Working directory path, containing subdirectories for each benchmark point.
-    results_dirs : list of str
+    results_dirs : list or list of str
         List of suffixes for the result directories. For each {results_dir} in this list,
         the corresponding results will be stored in the directory
-        '{working_dir}/comparison_plots/results_{results_dir}/'
+        '{working_dir}/comparison_plots/results_{results_dir}/'. Can also be a single string,
+        in which case all plots are stored in the same directory.
     BP_names : list of str
         List with the names for the benchmark point, used in plots.
     BP_lambdas : list of float
@@ -196,11 +202,23 @@ def generate_klam_comparison_plot(
         matplotlib color cycle will be used.
     show_plots : bool, optional
         Whether to show the plots or not. Default is False.
+    group_model_specs : bool, optional
+        Whether to generate a single plot per scenario, grouping all BPs and model specs 
+        in the same plot. Default is False.
     figsize : tuple, optional
         Size for the generated plot. Default is (3.5, 4).
     fig_kwargs : dict, optional
         Additional keyword arguments for the figure.
-    
+    x_lim : tuple, optional
+        Limits for the x-axis. If not set, the limits will be determined automatically.
+    y_lim_ax1 : tuple, optional
+        Limits for the y-axis of the upper subplot. If not set, the limits will be 
+        determined automatically.
+    y_lim_ax2 : tuple, optional
+        Limits for the y-axis of the lower subplot. If not set, the limits will be 
+        determined automatically.
+    leg_fontsize : float, optional
+        Font size for the legend. Default is 9.
 
     Returns
     -------
@@ -208,7 +226,7 @@ def generate_klam_comparison_plot(
 
     """
 
-    scenarios = model_specs.keys()
+    scenarios = list(model_specs.keys())
     
     if colors is None:
         # Default matplotlib color cycle
@@ -220,6 +238,9 @@ def generate_klam_comparison_plot(
     if model not in ["IDM", "Z2SSM"]:
         raise ValueError(f"Invalid model specified ({model}). Please choose either 'IDM' or 'Z2SSM'.")
     
+    if isinstance(results_dirs, str):
+        results_dirs = [results_dirs for model_spec in model_specs[scenarios[0]]]
+
     # Create the output directories, if they do not yet exist
     for results_dir in results_dirs:
         subprocess.run(["mkdir", "-p", f"{working_dir}/comparison_plots/results_{results_dir}"])
@@ -240,31 +261,51 @@ def generate_klam_comparison_plot(
         files=files,
     )
 
+    spec_distance = 0.1
     for scenario in scenarios:
-        for model_spec, results_dir in zip(model_specs[scenario], results_dirs):                
+        n_specs = len(model_specs[scenario])
+        if group_model_specs:
             fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, figsize=figsize, height_ratios=[0.7, 0.3], gridspec_kw=dict(hspace=0.), **fig_kwargs)
+
+        for spec_idx, (model_spec, results_dir) in enumerate(zip(model_specs[scenario], results_dirs)):
+            x = BP_lambdas
+            if not group_model_specs:
+                fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, figsize=figsize, height_ratios=[0.7, 0.3], gridspec_kw=dict(hspace=0.), **fig_kwargs)
+            elif n_specs != 1:
+                x = np.array(BP_lambdas) + spec_distance * (-0.5*(n_specs-1) + spec_idx)/(n_specs-1)
 
             means  = {BP : kappa_lambda_results[BP][scenario][model_spec][0, 0] + 1 for BP in BPs}
             errors = {BP : kappa_lambda_results[BP][scenario][model_spec][0, 1]     for BP in BPs}
             for i, BP in enumerate(BPs):
-                ax1.errorbar(x=BP_lambdas[i],
+
+                if group_model_specs:
+                    idx = spec_idx
+                    if i == 0:
+                        label = plot_labels[idx]
+                    else:
+                        label = None
+                else:
+                    idx = i
+                    label = plot_labels[idx]
+
+                ax1.errorbar(x=x[i],
                             y=means[BP],
                             yerr=(errors[BP],), 
                             fmt='o', 
                             linewidth=1.5, 
                             capsize=3.5, 
                             markersize=4, 
-                            label=plot_labels[i],
-                            color=colors[i])
-                
-                ax2.errorbar(x=BP_lambdas[i],
+                            label=label,
+                            color=colors[idx])
+
+                ax2.errorbar(x=x[i],
                             y=means[BP] - BP_lambdas[i],
                             yerr=(errors[BP],), 
                             fmt='o', 
                             linewidth=1.5, 
                             capsize=3.5, 
                             markersize=4, 
-                            color=colors[i])
+                            color=colors[idx])
                 
             plt.axhline(y=0, c='0.6', linewidth=1)
 
@@ -274,9 +315,13 @@ def generate_klam_comparison_plot(
             # ax1.set_yticks(BP_lambdas)
             # ax2.set_xticks(BP_lambdas)
             # ax2.set_xticklabels(BP_lambdas,fontsize=16)
-            # ax1.set_xlim(2.0, 5.0)
-            # ax2.set_ylim(-0.9, 0.9)
-                
+            if x_lim is not None:
+                ax1.set_xlim(x_lim)
+            if y_lim_ax1 is not None:
+                ax1.set_ylim(y_lim_ax1)
+            if y_lim_ax2 is not None:
+                ax2.set_ylim(y_lim_ax2)
+
             ax1.set_ylabel(r'$\kappa_{\lambda}^\text{fit}$', fontsize=15)
             ax2.set_ylabel(r'$\kappa_{\lambda}^\text{fit} - \kappa_{\lambda}^\text{true}$', fontsize=15)
 
@@ -284,13 +329,13 @@ def generate_klam_comparison_plot(
 
             ax1.grid(which='both', linestyle='--', linewidth=0.5)
             ax2.grid(which='both', linestyle='--', linewidth=0.5)
-            ax1.legend(loc='best', fontsize=9)
+            ax1.legend(loc='best', fontsize=leg_fontsize)
 
             if plot_titles is not None and scenario in plot_titles and model_spec in plot_titles[scenario]:
                 ax1.set_title(plot_titles[scenario][model_spec], fontsize=10)
-            plt.tight_layout()   # Makes sure labels are not cut off
+            fig.tight_layout()   # Makes sure labels are not cut off
 
-            plt.savefig(working_dir + f'/comparison_plots/results_{results_dir}/kappa_lambda_results_{scenario}.pdf')
+            fig.savefig(working_dir + f'/comparison_plots/results_{results_dir}/kappa_lambda_results_{scenario}.pdf')
 
     if show_plots:
         plt.show()

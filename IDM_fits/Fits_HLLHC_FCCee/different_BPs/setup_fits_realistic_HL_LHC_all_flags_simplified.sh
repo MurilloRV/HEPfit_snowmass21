@@ -38,13 +38,17 @@ no_C_HG="false" # Exclude the C_HG operator from the fit
 no_HLLHC_Higgs="false" # Exclude the HL-LHC Higgs observables from the fit
 LoopH3d6Full="false" # Use the full expansion of the ZH cross-section in terms of C1 and dZH
 
-use_new_NPs="false" # Use newly implementent theory nuisance parameters
-# theoerr_FCCee240_input="0.001074700180397359"
-theoerr_FCCee240_input="DEFAULT"
-# theoerr_FCCee365_input="0.0010540963454747359" # default: -1.0
-theoerr_FCCee365_input="DEFAULT"
+use_new_NPs="true" # Use newly implementent theory nuisance parameters
+theoerr_FCCee240_input="0.001074700180397359"
+# theoerr_FCCee240_input="DEFAULT"
+theoerr_FCCee365_input="0.0010540963454747359"
+# theoerr_FCCee365_input="DEFAULT"
+NPmismatch_FCCee240_input="0.0"
+# NPmismatch_FCCee240_input="DEFAULT"
+NPmismatch_FCCee365_input="0.0"
+# NPmismatch_FCCee365_input="DEFAULT"
 
-set_theoerr() {
+set_nuisance_parameter() {
     local input="$1"
     local default="$2"
     local scale="$3"
@@ -54,6 +58,7 @@ set_theoerr() {
         printf "%.20f" "$(echo "$scale * $default" | bc)"
     fi
 }
+
 
 scale_NPs=$(echo "scale=20.0; scl=2.295748928898636; scl=sqrt(scl); scl" | bc)
 # scale_NPs="1.0"  # default
@@ -114,6 +119,12 @@ for BP_Name in "${BP_Names_Total[@]}"; do
                 theoerr_FCCee240_path=$(printf "%.3g" "$(echo "$theoerr_FCCee240_input" | bc)" )
                 theoerr_FCCee365_path=$(printf "%.3g" "$(echo "$theoerr_FCCee365_input" | bc)" )
                 MODEL_CONF_FILE="${MODEL_CONF_FILE}_theoerr240_${theoerr_FCCee240_path}_theoerr365_${theoerr_FCCee365_path}"
+            fi
+
+            if [[ "$NPmismatch_FCCee240_input" != "DEFAULT" || "$NPmismatch_FCCee365_input" != "DEFAULT" ]]; then
+                NPmismatch_FCCee240_path=$(printf "%.3g" "$(echo "$NPmismatch_FCCee240_input" | bc)" )
+                NPmismatch_FCCee365_path=$(printf "%.3g" "$(echo "$NPmismatch_FCCee365_input" | bc)" )
+                MODEL_CONF_FILE="${MODEL_CONF_FILE}_NPmismatch240_${NPmismatch_FCCee240_path}_NPmismatch365_${NPmismatch_FCCee365_path}"
             fi
         fi
 
@@ -221,16 +232,23 @@ for BP_Name in "${BP_Names_Total[@]}"; do
                 theoerr_FCCee365_path=$(printf "%.3g" "$(echo "$theoerr_FCCee365_input" | bc)" )
                 NEW_NP_CONF="${NEW_NP_CONF}_theoerr240_${theoerr_FCCee240_path}_theoerr365_${theoerr_FCCee365_path}"
             fi
+
+            if [[ "$NPmismatch_FCCee240_input" != "DEFAULT" || "$NPmismatch_FCCee365_input" != "DEFAULT" ]]; then
+                NPmismatch_FCCee240_path=$(printf "%.3g" "$(echo "$NPmismatch_FCCee240_input" | bc)" )
+                NPmismatch_FCCee365_path=$(printf "%.3g" "$(echo "$NPmismatch_FCCee365_input" | bc)" )
+                NEW_NP_CONF="${NEW_NP_CONF}_NPmismatch240_${NPmismatch_FCCee240_path}_NPmismatch365_${NPmismatch_FCCee365_path}"
+            fi
+
             NEW_NP_CONF="${NEW_NP_CONF}.conf"
 
             NEW_NP_CONF_INCLUDE="IncludeFile ../../${NEW_NP_CONF}"
             sed -i "\%IncludeFile ../../HiggsEW_Par_Corr.conf.*%a #\n$NEW_NP_CONF_INCLUDE" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
             sed -i "\%IncludeFile ../../HiggsEW_Par_Corr.conf.*%a #\n$NEW_NP_CONF_INCLUDE" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
 
-            theoerr_FCCee240=$(set_theoerr "$theoerr_FCCee240_input" "0.0023295620053664676" "$scale_NPs")
-            theoerr_FCCee365=$(set_theoerr "$theoerr_FCCee365_input" "0.0022585758048204183" "$scale_NPs")
-            NPmismatch_FCCee240=$(printf "%.20f" "$(echo "$scale_NPs * 0.006856788995512071" | bc)" )
-            NPmismatch_FCCee365=$(printf "%.20f" "$(echo "$scale_NPs * 0.0034632124670086065" | bc)" )
+            theoerr_FCCee240=$(set_nuisance_parameter "$theoerr_FCCee240_input" "0.0023295620053664676" "$scale_NPs")
+            theoerr_FCCee365=$(set_nuisance_parameter "$theoerr_FCCee365_input" "0.0022585758048204183" "$scale_NPs")
+            NPmismatch_FCCee240=$(set_nuisance_parameter "$NPmismatch_FCCee240_input" "0.006856788995512071" "$scale_NPs")
+            NPmismatch_FCCee365=$(set_nuisance_parameter "$NPmismatch_FCCee365_input" "0.0034632124670086065" "$scale_NPs")
 
             echo "######################################################################" > $NEW_NP_CONF
             echo "# New theory nuisance parameters for FCCee Higgs production" >> $NEW_NP_CONF

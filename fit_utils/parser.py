@@ -425,6 +425,7 @@ def find_configuration_files(
         "",
         "use_new_NPs_",
         "use_new_NPs_scale1.52_",
+        "use_new_NPs_scale1.52_theoerr240_0.00107_theoerr365_0.00105_NPmismatch240_0_NPmismatch365_0_",
     ]
 
     exclusive_flag_list = [
