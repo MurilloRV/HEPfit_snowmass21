@@ -39,10 +39,14 @@ no_HLLHC_Higgs="false" # Exclude the HL-LHC Higgs observables from the fit
 LoopH3d6Full="false" # Use the full expansion of the ZH cross-section in terms of C1 and dZH
 
 use_new_NPs="true" # Use newly implementent theory nuisance parameters
-theoerr_FCCee240_input="0.001074700180397359"
+# theoerr_FCCee240_input="0.001074700180397359" # smaller ellipses
+theoerr_FCCee240_input="0.01148860653191953"  # including blue curve (only 1/Lambda^2)
 # theoerr_FCCee240_input="DEFAULT"
-theoerr_FCCee365_input="0.0010540963454747359"
+
+# theoerr_FCCee365_input="0.0010540963454747359" # smaller ellipses
+theoerr_FCCee365_input="0.011380169070804323"  # including blue curve (only 1/Lambda^2)
 # theoerr_FCCee365_input="DEFAULT"
+
 NPmismatch_FCCee240_input="0.0"
 # NPmismatch_FCCee240_input="DEFAULT"
 NPmismatch_FCCee365_input="0.0"

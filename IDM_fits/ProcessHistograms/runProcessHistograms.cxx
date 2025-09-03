@@ -72,7 +72,8 @@ int main()
     // std::string model_spec = "fits_realistic_HL_LHC_WFR_kala2_input_all_small_priors_long";
     // std::string model_spec = "fits_realistic_HL_LHC_WFR_kala2_input_all_all_EW_mods_small_priors_long";
     // std::string model_spec = "fits_realistic_HL_LHC_use_HEPfit_C1_values_WFR_kala2_input_all_all_EW_mods_small_priors_long";
-    std::string model_spec = "fits_realistic_HL_LHC_use_HEPfit_C1_values_decayrates_WFR_kala2_input_all_all_EW_mods_small_priors_long";
+    // std::string model_spec = "fits_realistic_HL_LHC_use_HEPfit_C1_values_decayrates_WFR_kala2_input_all_all_EW_mods_small_priors_long";
+    // std::string model_spec = "fits_realistic_HL_LHC_use_HEPfit_C1_values_decayrates_WFR_kala2_input_all_all_EW_mods_noLoopH3d6Quad_small_priors_long";
     // std::string model_spec = "fits_realistic_HL_LHC_WFR_kala2_input_all_all_EW_mods_small_priors_strict";
     // std::string model_spec = "fits_realistic_HL_LHC_WFR_kala2_input_all_no_HLLHC_Higgs_small_priors_long";
     // std::string model_spec = "fits_realistic_HL_LHC_WFR_kala2_input_all_all_EW_mods_no_HLLHC_Higgs_small_priors_long";
@@ -93,6 +94,8 @@ int main()
     // std::string model_spec = "fits_realistic_HL_LHC_use_new_NPs_scale1.52_theoerr240_0.00107_theoerr365_0.00105_WFR_kala2_input_all_all_EW_mods_small_priors_strict";
     // std::string model_spec = "fits_realistic_HL_LHC_use_new_NPs_scale1.52_WFR_kala2_input_all_all_EW_mods_no_HLLHC_Higgs_small_priors_long";
     // std::string model_spec = "fits_realistic_HL_LHC_use_new_NPs_scale1.52_theoerr240_0.00107_theoerr365_0.00105_NPmismatch240_0_NPmismatch365_0_use_HEPfit_C1_values_decayrates_WFR_kala2_input_all_all_EW_mods_small_priors_long";
+    // std::string model_spec = "fits_realistic_HL_LHC_use_new_NPs_scale1.52_theoerr240_0.0115_theoerr365_0.0114_NPmismatch240_0_NPmismatch365_0_use_HEPfit_C1_values_decayrates_WFR_kala2_input_all_all_EW_mods_small_priors_long";
+    std::string model_spec = "fits_realistic_HL_LHC_use_new_NPs_scale1.52_theoerr240_0.0115_theoerr365_0.0114_NPmismatch240_0_NPmismatch365_0_use_HEPfit_C1_values_decayrates_WFR_kala2_input_all_all_EW_mods_small_priors_strict";
 
 
 
@@ -105,34 +108,34 @@ int main()
     std::vector<std::string> plot_titles;
 
     std::vector<float> KappaLambdas;
-    // std::vector<float> base_KappaLambdas = {
-    //     // 4.038636858901748, // BPO_0
-    //     // 1.2385642568656816, // BPO_1
-    //     // 1.1209067864736006, // BPB_0
-    //     // 1.3186016358896624, // BPB_1
-    //     2.3867362274064843, // BPB_2
-    //     // 2.296737570137434, // BPB_3
-    //     3.3446699219962595, // BPB_4
-    //     // 3.3186760761499228, // BPB_5
-    //     4.332584967850238, // BPB_6
-    //     // 4.324280052220163, // BPB_7
-    //     // 5.390968560325193, // BPB_8
-    //     // 5.289906405452073, // BPB_9
-    //     // 6.370034303736775, // BPB_10
-    //     // 6.270579956517072, // BPB_11
-    //     // 7.515862276796717, // BPB_12
-    //     // 7.466008740779396, // BPB_13
-    //     // 8.611459058586306, // BPB_14
-    //     // 8.459762817722257, // BPB_15
-    //     // 9.319513844125106, // BPB_16
-    //     // 9.888810967739037, // BPB_17
-    //     // 11.2535829810942, // BPB_18
-    // }; 
+    std::vector<float> base_KappaLambdas = {
+        // 4.038636858901748, // BPO_0
+        // 1.2385642568656816, // BPO_1
+        // 1.1209067864736006, // BPB_0
+        // 1.3186016358896624, // BPB_1
+        2.3867362274064843, // BPB_2
+        // 2.296737570137434, // BPB_3
+        3.3446699219962595, // BPB_4
+        // 3.3186760761499228, // BPB_5
+        4.332584967850238, // BPB_6
+        // 4.324280052220163, // BPB_7
+        // 5.390968560325193, // BPB_8
+        // 5.289906405452073, // BPB_9
+        // 6.370034303736775, // BPB_10
+        // 6.270579956517072, // BPB_11
+        // 7.515862276796717, // BPB_12
+        // 7.466008740779396, // BPB_13
+        // 8.611459058586306, // BPB_14
+        // 8.459762817722257, // BPB_15
+        // 9.319513844125106, // BPB_16
+        // 9.888810967739037, // BPB_17
+        // 11.2535829810942, // BPB_18
+    }; 
 
     // BP_lambda1
-    std::vector<float> base_KappaLambdas = {
-        1.1000242642433875,
-    };
+    // std::vector<float> base_KappaLambdas = {
+    //     1.1000242642433875,
+    // };
 
     bool drawKLambdaErrorProjection = false;
     std::vector<float> KappaLambdas_error_low;
@@ -189,8 +192,8 @@ int main()
     // const int num_BPO = 2;
     const int num_BPO = 0;
     // const int num_BPB = 19;
-    // const int num_BPB = 3;
-    const int num_BPB = 1;
+    const int num_BPB = 3;
+    // const int num_BPB = 1;
 
     const int n_scenarios = n_scenarios_base * (num_BPO + num_BPB);
     const std::string base_paths[] = {
@@ -226,17 +229,17 @@ int main()
     // };
 
     std::vector<std::string> BP_names;
-    // std::vector<std::string> base_BP_names = {
-    //     "BP 1",
-    //     "BP 2",
-    //     "BP 3",
-    // };
+    std::vector<std::string> base_BP_names = {
+        "BP 1",
+        "BP 2",
+        "BP 3",
+    };
 
     // BP_lambda1
-    std::vector<std::string> base_BP_names = {
-        // "BP_{#kappa_{#lambda} #approx 1}",
-        "BP 0",
-    };
+    // std::vector<std::string> base_BP_names = {
+    //     // "BP_{#kappa_{#lambda} #approx 1}",
+    //     "BP 0",
+    // };
 
 
     // for (int bp = 0; bp < num_BPO; ++bp) {
@@ -257,8 +260,8 @@ int main()
         for (int i=0; i<n_scenarios_base; ++i) {
             BPB = BPB_numbers[bp];
             std::cout << base_KappaLambdas[bp] << std::endl;
-            // scenarios.push_back("BPB_" + std::to_string(BPB) + "/" + base_paths[i]);
-            scenarios.push_back(std::string("BP_lambda1") + "/" + base_paths[i]);
+            scenarios.push_back("BPB_" + std::to_string(BPB) + "/" + base_paths[i]);
+            // scenarios.push_back(std::string("BP_lambda1") + "/" + base_paths[i]);
             // plot_titles.push_back("IDM BP " + std::to_string(BPB) + ", " + base_titles[i]);
             // plot_titles.push_back("IDM BP " + std::to_string(bp+1) + ", " + base_titles[i]);
             plot_titles.push_back("IDM " + base_BP_names[bp] + ", " + base_titles[i]);
