@@ -18,6 +18,7 @@ BP_others="BP_lambda1"
 # Exclusive flag
 no_1L_BSM_sqrt_s="false" # Excludes the momentum dependence of the BSM k_Zh coupling
 no_1L_BSM="false" # Excludes the full BSM contribution to the k_Zh coupling
+pure_1L_BSM="true" # Only includes strictly 1L BSM contributions, no SM-like diagrams with insertions of kappa_lambda
 no_quad="false" # Excludes the quadratic term in the scaling of the Zh cross-section coming from the 1L BSM contribution
 smeft_formula="false" # Using the HEPfit SMEFT expression for sigma_Zh, along with dkappaf
 smeft_formula_sqrt="false" # Using the HEPfit SMEFT expression for sigma_Zh, including dkappaf**2 inside of the square root (not correct)
@@ -27,7 +28,7 @@ smeft_formula_all="false" # Using the HEPfit SMEFT expression for all XS and BR,
 WFR_kala2_input="false" # Include the WFR contribution, proportional to kappa_lambda**2, into the IDM ZH cross-section prediction
 WFR_kala2_input_all="false" # Include the WFR contribution, proportional to kappa_lambda**2, into the IDM predictions for all the XS and BR
 use_HEPfit_C1_values_WFR_kala2_input_all="false" # Use the HEPfit C1 values, instead of the IDM values. Activates WFR_kala2_input_all as well
-use_HEPfit_C1_values_decayrates_WFR_kala2_input_all="true" # Use the HEPfit C1 values, also for the Higgs decay rates, instead of the Z2SSM values. Activates WFR_kala2_input_all as well
+use_HEPfit_C1_values_decayrates_WFR_kala2_input_all="false" # Use the HEPfit C1 values, also for the Higgs decay rates, instead of the Z2SSM values. Activates WFR_kala2_input_all as well
 
 # Additional, independent flags
 modify_all_ewpos="true" # Modify also the EWPO central values for *current* observables, not just future ones
@@ -38,7 +39,7 @@ no_C_HG="false" # Exclude the C_HG operator from the fit
 no_HLLHC_Higgs="false" # Exclude the HL-LHC Higgs observables from the fit
 LoopH3d6Full="false" # Use the full expansion of the ZH cross-section in terms of C1 and dZH
 
-use_new_NPs="true" # Use newly implementent theory nuisance parameters
+use_new_NPs="false" # Use newly implementent theory nuisance parameters
 # theoerr_FCCee240_input="0.001074700180397359" # smaller ellipses
 theoerr_FCCee240_input="0.01148860653191953"  # including blue curve (only 1/Lambda^2)
 # theoerr_FCCee240_input="DEFAULT"
@@ -71,6 +72,7 @@ scale_NPs=$(echo "scale=20.0; scl=2.295748928898636; scl=sqrt(scl); scl" | bc)
 EXCLUSIVE_FLAGS=(
     "$no_1L_BSM_sqrt_s"
     "$no_1L_BSM"
+    "$pure_1L_BSM"
     "$no_quad"
     "$smeft_formula"
     "$smeft_formula_sqrt"
@@ -134,6 +136,7 @@ for BP_Name in "${BP_Names_Total[@]}"; do
 
         if [ "$no_1L_BSM_sqrt_s" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_no_1L_BSM_sqrt_s"; fi
         if [ "$no_1L_BSM" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_no_1L_BSM"; fi
+        if [ "$pure_1L_BSM" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_pure_1L_BSM"; fi
         if [ "$no_quad" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_no_quad"; fi
         if [ "$smeft_formula" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_smeft_formula"; fi
         if [ "$smeft_formula_sqrt" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_smeft_formula_sqrt"; fi
@@ -353,6 +356,7 @@ for BP_Name in "${BP_Names_Total[@]}"; do
 
         if [[ "$no_1L_BSM_sqrt_s" == "true" || 
               "$no_1L_BSM" == "true" || 
+              "$pure_1L_BSM" == "true" || 
               "$no_quad" == "true" || 
               "$smeft_formula" == "true" || 
               "$smeft_formula_sqrt" == "true" || 
@@ -366,6 +370,7 @@ for BP_Name in "${BP_Names_Total[@]}"; do
 
             FLAG_ARRAY=("no_1L_BSM_sqrt_s" 
                         "no_1L_BSM" 
+                        "pure_1L_BSM" 
                         "no_quad" 
                         "smeft_formula" 
                         "smeft_formula_sqrt" 

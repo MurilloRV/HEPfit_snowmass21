@@ -157,6 +157,7 @@ def generate_klam_comparison_plot(
     model,
     plot_labels=None,
     plot_titles=None,
+    plot_true_klam=None,
     colors=None,
     show_plots=False,
     group_model_specs=False,
@@ -197,6 +198,10 @@ def generate_klam_comparison_plot(
     plot_titles : dict, optional
         A dictionary in the form plot_titles[scenario][model_spec] containing the titles 
         for the plots. If not provided, no title is shown.
+    plot_true_klam : dict, optional
+        Whether to plot markers showing the UV model predictions for kappa_lambda and 
+        respective kwargs. Must be a dictionary with arguments for pyplot.scatter(). 
+        If not provided, no markers are shown.
     colors : list, optional
         List of colors assign to each model specification. If not set, the default 
         matplotlib color cycle will be used.
@@ -309,6 +314,13 @@ def generate_klam_comparison_plot(
                 
             plt.axhline(y=0, c='0.6', linewidth=1)
 
+            if plot_true_klam is not None:
+                if "s" not in plot_true_klam:     plot_true_klam["s"] = 25
+                if "marker" not in plot_true_klam:  plot_true_klam["marker"] = 'x'
+                if "color" not in plot_true_klam:   plot_true_klam["color"] = 'black'
+                if "label" not in plot_true_klam:   plot_true_klam["label"] = rf'{model} prediction'
+                ax1.scatter(BP_lambdas, BP_lambdas, **plot_true_klam)
+
             # ax2.tick_params(axis='x', size=10, labelsize=12)
             # ax2.tick_params(axis='x', which='minor', size=6)
 
@@ -325,7 +337,7 @@ def generate_klam_comparison_plot(
             ax1.set_ylabel(r'$\kappa_{\lambda}^\text{fit}$', fontsize=15)
             ax2.set_ylabel(r'$\kappa_{\lambda}^\text{fit} - \kappa_{\lambda}^\text{true}$', fontsize=15)
 
-            ax2.set_xlabel(r'$\kappa_{\lambda}^\text{true}$', fontsize=15)
+            ax2.set_xlabel(rf'$\kappa_{{\lambda}}^\text{{true}}$ ({model} predictions)', fontsize=13)
 
             ax1.grid(which='both', linestyle='--', linewidth=0.5)
             ax2.grid(which='both', linestyle='--', linewidth=0.5)
