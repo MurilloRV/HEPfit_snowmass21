@@ -169,7 +169,8 @@ def find_tex_label_par(par_tex, par):
     elif par == "CHW":            tex_label = r"$C_{HW}$"  # Rotated!!
     elif par == "CHB":            tex_label = r"$C_{HB}$"  # Rotated!!
     elif par == "CHD":            tex_label = r"$C_{HD}$"
-    elif par == "CHbox":          tex_label = r"$C_{H\boxdot}$"
+    # elif par == "CHbox":          tex_label = r"$C_{H\boxdot}$"
+    elif par == "CHbox":          tex_label = "$C_{H\u25A1}$"
     elif par == "CH":             tex_label = r"$C_{H}$"
     elif par == "CHL1_11":        tex_label = r"$(C_{HL}^{(1)})_{11}$"
     elif par == "CHL1_22":        tex_label = r"$(C_{HL}^{(1)})_{22}$"
@@ -450,6 +451,8 @@ def find_configuration_files(
         "_no_HLLHC_Higgs",
         "_no_C_HG",
         "_all_EW_mods",
+        "_noLoopH3d6Quad",
+        "_all_EW_mods_noLoopH3d6Quad",
     ]
     priors_flag_list = [
         "",
