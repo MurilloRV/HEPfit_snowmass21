@@ -18,7 +18,7 @@ BP_others="BP_lambda1"
 # Exclusive flag
 no_1L_BSM_sqrt_s="false" # Excludes the momentum dependence of the BSM k_Zh coupling
 no_1L_BSM="false" # Excludes the full BSM contribution to the k_Zh coupling
-pure_1L_BSM="true" # Only includes strictly 1L BSM contributions, no SM-like diagrams with insertions of kappa_lambda
+pure_1L_BSM="false" # Only includes strictly 1L BSM contributions, no SM-like diagrams with insertions of kappa_lambda
 no_quad="false" # Excludes the quadratic term in the scaling of the Zh cross-section coming from the 1L BSM contribution
 smeft_formula="false" # Using the HEPfit SMEFT expression for sigma_Zh, along with dkappaf
 smeft_formula_sqrt="false" # Using the HEPfit SMEFT expression for sigma_Zh, including dkappaf**2 inside of the square root (not correct)
@@ -29,6 +29,7 @@ WFR_kala2_input="false" # Include the WFR contribution, proportional to kappa_la
 WFR_kala2_input_all="false" # Include the WFR contribution, proportional to kappa_lambda**2, into the IDM predictions for all the XS and BR
 use_HEPfit_C1_values_WFR_kala2_input_all="false" # Use the HEPfit C1 values, instead of the IDM values. Activates WFR_kala2_input_all as well
 use_HEPfit_C1_values_decayrates_WFR_kala2_input_all="false" # Use the HEPfit C1 values, also for the Higgs decay rates, instead of the Z2SSM values. Activates WFR_kala2_input_all as well
+use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all="true" # Includes higher-order contributions to the ZZh vertex, beyond the 1L BSM contribution
 
 # Additional, independent flags
 modify_all_ewpos="true" # Modify also the EWPO central values for *current* observables, not just future ones
@@ -83,6 +84,7 @@ EXCLUSIVE_FLAGS=(
     "$WFR_kala2_input_all"
     "$use_HEPfit_C1_values_WFR_kala2_input_all"
     "$use_HEPfit_C1_values_decayrates_WFR_kala2_input_all"
+    "$use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all"
 )
 
 # Count how many flags are set to "true"
@@ -147,6 +149,7 @@ for BP_Name in "${BP_Names_Total[@]}"; do
         if [ "$WFR_kala2_input_all" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_WFR_kala2_input_all"; fi
         if [ "$use_HEPfit_C1_values_WFR_kala2_input_all" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_use_HEPfit_C1_values_WFR_kala2_input_all"; fi
         if [ "$use_HEPfit_C1_values_decayrates_WFR_kala2_input_all" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_use_HEPfit_C1_values_decayrates_WFR_kala2_input_all"; fi
+        if [ "$use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all"; fi
 
         if [ "$modify_all_ewpos" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_all_EW_mods"; fi
         if [ "$noLoopH3d6Quad" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_noLoopH3d6Quad"; fi
@@ -366,7 +369,8 @@ for BP_Name in "${BP_Names_Total[@]}"; do
               "$WFR_kala2_input" == "true" ||
               "$WFR_kala2_input_all" == "true" ||
               "$use_HEPfit_C1_values_WFR_kala2_input_all" == "true" ||
-              "$use_HEPfit_C1_values_decayrates_WFR_kala2_input_all" == "true" ]]; then
+              "$use_HEPfit_C1_values_decayrates_WFR_kala2_input_all" == "true" ||
+              "$use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all" == "true" ]]; then
 
             FLAG_ARRAY=("no_1L_BSM_sqrt_s" 
                         "no_1L_BSM" 
@@ -381,6 +385,7 @@ for BP_Name in "${BP_Names_Total[@]}"; do
                         "WFR_kala2_input_all"
                         "use_HEPfit_C1_values_WFR_kala2_input_all"
                         "use_HEPfit_C1_values_decayrates_WFR_kala2_input_all"
+                        "use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all"
                        )
 
             for FLAG in "${FLAG_ARRAY[@]}"; do

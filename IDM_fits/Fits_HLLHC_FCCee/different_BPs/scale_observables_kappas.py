@@ -24,6 +24,7 @@ parser.add_argument("--WFR_kala2_input", help = "Include the WFR contribution, p
 parser.add_argument("--WFR_kala2_input_all", help = "Include the WFR contribution, proportional to kappa_lambda**2, into the IDM predictions for all the XS and BR", action="store_true")
 parser.add_argument("--use_HEPfit_C1_values_WFR_kala2_input_all", help = "Use the HEPfit C1 values, instead of the IDM values. Activates WFR_kala2_input_all as well", action="store_true")
 parser.add_argument("--use_HEPfit_C1_values_decayrates_WFR_kala2_input_all", help = "Use the HEPfit C1 values, also for the Higgs decay rates, instead of the Z2SSM values. Activates WFR_kala2_input_all as well", action="store_true")
+parser.add_argument("--use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all", help = "Include higher-order contributions to the ZZh vertex, beyond the 1L BSM contribution", action="store_true")
 parser.add_argument("--higgsconf", help = "Name of the ObsevablesHiggs configuration file", type=str, default=None)
 
 
@@ -45,14 +46,15 @@ WFR_kala2_input                                     = args.WFR_kala2_input
 WFR_kala2_input_all                                 = args.WFR_kala2_input_all
 use_HEPfit_C1_values_WFR_kala2_input_all            = args.use_HEPfit_C1_values_WFR_kala2_input_all
 use_HEPfit_C1_values_decayrates_WFR_kala2_input_all = args.use_HEPfit_C1_values_decayrates_WFR_kala2_input_all
+use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all  = args.use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all
 higgsconf                                           = args.higgsconf
 
 exclusive_flag_count = sum([
     no_1L_BSM_sqrt_s, 
     no_1L_BSM, 
     pure_1L_BSM,
-    smeft_formula, 
     no_quad,
+    smeft_formula, 
     smeft_formula_sqrt, 
     smeft_formula_no_cross, 
     smeft_formula_external_leg, 
@@ -61,6 +63,7 @@ exclusive_flag_count = sum([
     WFR_kala2_input_all,
     use_HEPfit_C1_values_WFR_kala2_input_all,
     use_HEPfit_C1_values_decayrates_WFR_kala2_input_all,
+    use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all,
 ])
 
 # These flags are mutually exclusive, and can only be used one at a time
@@ -80,6 +83,7 @@ if exclusive_flag_count > 1:
         --WFR_kala2_input_all
         --use_HEPfit_C1_values_WFR_kala2_input_all
         --use_HEPfit_C1_values_decayrates_WFR_kala2_input_all
+        --use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all,
         """)
 
 # Use of these flags is not currently possible without use of the realistic HL-LHC kappa_lambda uncertainties
@@ -99,6 +103,7 @@ elif exclusive_flag_count == 1 and not realistic_HL_LHC_k_lambda_uncertainties:
         --WFR_kala2_input_all
         --use_HEPfit_C1_values_WFR_kala2_input_all
         --use_HEPfit_C1_values_decayrates_WFR_kala2_input_all
+        --use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all,
         """)
 
 
@@ -313,6 +318,7 @@ elif BP == "BP_7":
 
 
 
+
 elif BP == "BPO_0":
     kappas['uu'] = 0.9818547810617284
     kappas['dd'] = 0.9818547810617284
@@ -369,6 +375,9 @@ elif BP == "BPO_0":
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0215075131871578
     kappas['ZZ_365_use_HEPfit_C1_values'] = 1.006161719593712
     kappas['ZZ_500_use_HEPfit_C1_values'] = 1.0017209156873719
+    kappas['ZZ_240_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.0632181330721528
+    kappas['ZZ_365_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.0183733195284168
+    kappas['ZZ_500_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.0051539080044611
     kappas['gg_HEPfit_C1'] = 1.0009544366905418
     kappas['ZZ_HEPfit_C1'] = 1.002596804964073
     kappas['WW_HEPfit_C1'] = 1.0010802747358802
@@ -445,6 +454,9 @@ elif BP == "BPO_1":
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0034424665596777
     kappas['ZZ_365_use_HEPfit_C1_values'] = 1.0039492517522552
     kappas['ZZ_500_use_HEPfit_C1_values'] = 1.0076575856113832
+    kappas['ZZ_240_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.0102922107420755
+    kappas['ZZ_365_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.0118015122946495
+    kappas['ZZ_500_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.0228007770433527
     kappas['gg_HEPfit_C1'] = 0.9982256932082572
     kappas['ZZ_HEPfit_C1'] = 0.9993694271240505
     kappas['WW_HEPfit_C1'] = 0.9992500626036445
@@ -521,6 +533,9 @@ elif BP == "BPB_0":
     kappas['ZZ_240_use_HEPfit_C1_values'] = 0.9988410497488983
     kappas['ZZ_365_use_HEPfit_C1_values'] = 0.9985301470423177
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9988416851022752
+    kappas['ZZ_240_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 0.9965191056825974
+    kappas['ZZ_365_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 0.9955839309958039
+    kappas['ZZ_500_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 0.9965210161827289
     kappas['gg_HEPfit_C1'] = 0.9991472718704654
     kappas['ZZ_HEPfit_C1'] = 0.9970531268838531
     kappas['WW_HEPfit_C1'] = 0.9969924929719356
@@ -597,6 +612,9 @@ elif BP == "BPB_1":
     kappas['ZZ_240_use_HEPfit_C1_values'] = 0.9999488105858648
     kappas['ZZ_365_use_HEPfit_C1_values'] = 0.9999944237598942
     kappas['ZZ_500_use_HEPfit_C1_values'] = 1.0008624781876416
+    kappas['ZZ_240_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 0.9998464238953185
+    kappas['ZZ_365_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 0.9999832711863976
+    kappas['ZZ_500_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.0025852087138143
     kappas['gg_HEPfit_C1'] = 0.9988424115117444
     kappas['ZZ_HEPfit_C1'] = 0.9983670972711519
     kappas['WW_HEPfit_C1'] = 0.9983110311251299
@@ -673,6 +691,9 @@ elif BP == "BPB_2":
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0068213860748716
     kappas['ZZ_365_use_HEPfit_C1_values'] = 0.9996321876372681
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9973467531881702
+    kappas['ZZ_240_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.020327354515783
+    kappas['ZZ_365_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 0.9988961566055858
+    kappas['ZZ_500_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 0.9920189707283601
     kappas['gg_HEPfit_C1'] = 1.0002409603006601
     kappas['ZZ_HEPfit_C1'] = 0.9978290652350243
     kappas['WW_HEPfit_C1'] = 0.9971339464687761
@@ -749,6 +770,9 @@ elif BP == "BPB_3":
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0085993395094819
     kappas['ZZ_365_use_HEPfit_C1_values'] = 1.0017199676173572
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9993122390369574
+    kappas['ZZ_240_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.0255817290576548
+    kappas['ZZ_365_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.0051510735058478
+    kappas['ZZ_500_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 0.9979352951304867
     kappas['gg_HEPfit_C1'] = 1.0006537870165462
     kappas['ZZ_HEPfit_C1'] = 1.0018455641720172
     kappas['WW_HEPfit_C1'] = 1.0011981806221033
@@ -825,6 +849,9 @@ elif BP == "BPB_4":
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0133558053282368
     kappas['ZZ_365_use_HEPfit_C1_values'] = 1.0008766984717623
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9964195435197634
+    kappas['ZZ_240_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.0395527714249615
+    kappas['ZZ_365_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.0026277956605856
+    kappas['ZZ_500_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 0.989219753201684
     kappas['gg_HEPfit_C1'] = 1.0019395120835062
     kappas['ZZ_HEPfit_C1'] = 0.9993442390514924
     kappas['WW_HEPfit_C1'] = 0.9981704454668101
@@ -901,6 +928,9 @@ elif BP == "BPB_5":
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0160606131668226
     kappas['ZZ_365_use_HEPfit_C1_values'] = 1.0035299011700685
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9987735387903312
+    kappas['ZZ_240_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.0474433201308884
+    kappas['ZZ_365_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.0105527139279884
+    kappas['ZZ_500_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 0.9963160870744202
     kappas['gg_HEPfit_C1'] = 1.0026945628802895
     kappas['ZZ_HEPfit_C1'] = 1.0043941463558252
     kappas['WW_HEPfit_C1'] = 1.0032392163176722
@@ -977,6 +1007,9 @@ elif BP == "BPB_6":
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0206205957905823
     kappas['ZZ_365_use_HEPfit_C1_values'] = 1.002779262406923
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9961557883332115
+    kappas['ZZ_240_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.0606597954366748
+    kappas['ZZ_365_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.008314805673366
+    kappas['ZZ_500_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 0.9884225128401752
     kappas['gg_HEPfit_C1'] = 1.0037141020004705
     kappas['ZZ_HEPfit_C1'] = 1.001582395346287
     kappas['WW_HEPfit_C1'] = 0.9999173514344851
@@ -1053,6 +1086,9 @@ elif BP == "BPB_7":
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0229661070552436
     kappas['ZZ_365_use_HEPfit_C1_values'] = 1.0052132874030593
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9986281817875683
+    kappas['ZZ_240_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.0674169609629032
+    kappas['ZZ_365_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.0155595795003836
+    kappas['ZZ_500_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 0.9958788763604908
     kappas['gg_HEPfit_C1'] = 1.0035741554535051
     kappas['ZZ_HEPfit_C1'] = 1.0054747796676187
     kappas['WW_HEPfit_C1'] = 1.003820328791675
@@ -1129,6 +1165,9 @@ elif BP == "BPB_8":
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0281959386017996
     kappas['ZZ_365_use_HEPfit_C1_values'] = 1.004611068542431
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9955906775771884
+    kappas['ZZ_240_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.0823865596318658
+    kappas['ZZ_365_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.0137702881392288
+    kappas['ZZ_500_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 0.9867129227064048
     kappas['gg_HEPfit_C1'] = 1.00589083111123
     kappas['ZZ_HEPfit_C1'] = 1.0038548509439813
     kappas['WW_HEPfit_C1'] = 1.0016654098068065
@@ -1205,6 +1244,9 @@ elif BP == "BPB_9":
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0304199508254335
     kappas['ZZ_365_use_HEPfit_C1_values'] = 1.007304806201831
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9983057374369962
+    kappas['ZZ_240_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.0887129213788485
+    kappas['ZZ_365_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.0217577588606437
+    kappas['ZZ_500_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 0.9949085567020091
     kappas['gg_HEPfit_C1'] = 1.0061354619125524
     kappas['ZZ_HEPfit_C1'] = 1.0089573662572882
     kappas['WW_HEPfit_C1'] = 1.0068292111969095
@@ -1281,6 +1323,9 @@ elif BP == "BPB_10":
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0351908448775666
     kappas['ZZ_365_use_HEPfit_C1_values'] = 1.0064235117994058
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9953278506615736
+    kappas['ZZ_240_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.1022069932435516
+    kappas['ZZ_365_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.019149083945988
+    kappas['ZZ_500_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 0.9859171318664479
     kappas['gg_HEPfit_C1'] = 1.007642978236911
     kappas['ZZ_HEPfit_C1'] = 1.0056007069635713
     kappas['WW_HEPfit_C1'] = 1.0029270898434728
@@ -1357,6 +1402,9 @@ elif BP == "BPB_11":
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0376429141548693
     kappas['ZZ_365_use_HEPfit_C1_values'] = 1.0092200021448645
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.997929669772392
+    kappas['ZZ_240_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.1091025434500763
+    kappas['ZZ_365_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.0274118152853025
+    kappas['ZZ_500_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 0.9937760700661419
     kappas['gg_HEPfit_C1'] = 1.0084864642720994
     kappas['ZZ_HEPfit_C1'] = 1.0116846256663303
     kappas['WW_HEPfit_C1'] = 1.0090764103144547
@@ -1433,6 +1481,9 @@ elif BP == "BPB_12":
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0432516761045383
     kappas['ZZ_365_use_HEPfit_C1_values'] = 1.0083083768422563
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9945130439986215
+    kappas['ZZ_240_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.1247765018370472
+    kappas['ZZ_365_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.0247230593827759
+    kappas['ZZ_500_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 0.983447296020591
     kappas['gg_HEPfit_C1'] = 1.0104235405617579
     kappas['ZZ_HEPfit_C1'] = 1.0081931673026352
     kappas['WW_HEPfit_C1'] = 1.0049565166309051
@@ -1509,6 +1560,9 @@ elif BP == "BPB_13":
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0458375066283774
     kappas['ZZ_365_use_HEPfit_C1_values'] = 1.011091205374564
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9971733346852643
+    kappas['ZZ_240_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.1319577160000212
+    kappas['ZZ_365_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.032916393885471
+    kappas['ZZ_500_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 0.991495828645784
     kappas['gg_HEPfit_C1'] = 1.010978037573136
     kappas['ZZ_HEPfit_C1'] = 1.0135946774435918
     kappas['WW_HEPfit_C1'] = 1.0104000006933884
@@ -1585,6 +1639,9 @@ elif BP == "BPB_14":
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0513493810758867
     kappas['ZZ_365_use_HEPfit_C1_values'] = 1.010677002433265
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9944856425298773
+    kappas['ZZ_240_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.1471732926048923
+    kappas['ZZ_365_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.0316995733945373
+    kappas['ZZ_500_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 0.9833641642820774
     kappas['gg_HEPfit_C1'] = 1.0126838131942453
     kappas['ZZ_HEPfit_C1'] = 1.0108311613292718
     kappas['WW_HEPfit_C1'] = 1.0070591728670655
@@ -1661,6 +1718,9 @@ elif BP == "BPB_15":
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0531538851791662
     kappas['ZZ_365_use_HEPfit_C1_values'] = 1.0133414391337519
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9974568214104397
+    kappas['ZZ_240_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.1521281689134752
+    kappas['ZZ_365_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.0395107583844383
+    kappas['ZZ_500_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 0.9923509115905792
     kappas['gg_HEPfit_C1'] = 1.012443601787523
     kappas['ZZ_HEPfit_C1'] = 1.015555834446652
     kappas['WW_HEPfit_C1'] = 1.0118764203502884
@@ -1737,6 +1797,9 @@ elif BP == "BPB_16":
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0568880081437206
     kappas['ZZ_365_use_HEPfit_C1_values'] = 1.0127740940600591
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9954137718180324
+    kappas['ZZ_240_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.162341079577765
+    kappas['ZZ_365_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.0378507102649783
+    kappas['ZZ_500_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 0.9861773326207642
     kappas['gg_HEPfit_C1'] = 1.0134197061922674
     kappas['ZZ_HEPfit_C1'] = 1.0115991442380339
     kappas['WW_HEPfit_C1'] = 1.0074786919726872
@@ -1813,6 +1876,9 @@ elif BP == "BPB_17":
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0628045998368727
     kappas['ZZ_365_use_HEPfit_C1_values'] = 1.0155994756196123
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9966290459139281
+    kappas['ZZ_240_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.1784145502764491
+    kappas['ZZ_365_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.0461008004186279
+    kappas['ZZ_500_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 0.9898526988789392
     kappas['gg_HEPfit_C1'] = 1.0154134794179484
     kappas['ZZ_HEPfit_C1'] = 1.017386739997205
     kappas['WW_HEPfit_C1'] = 1.013008868546767
@@ -1889,6 +1955,9 @@ elif BP == "BPB_18":
     kappas['ZZ_240_use_HEPfit_C1_values'] = 1.0712469635812127
     kappas['ZZ_365_use_HEPfit_C1_values'] = 1.0172428988294235
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.9957011135308628
+    kappas['ZZ_240_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.2011287070692735
+    kappas['ZZ_365_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 1.0508802717991554
+    kappas['ZZ_500_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 0.9870471733710604
     kappas['gg_HEPfit_C1'] = 1.0176448783401941
     kappas['ZZ_HEPfit_C1'] = 1.0159827197872768
     kappas['WW_HEPfit_C1'] = 1.0109239852359118
@@ -2263,6 +2332,9 @@ elif BP == "BP_lambda1":
     kappas['ZZ_240_use_HEPfit_C1_values'] = 0.9997517809389181
     kappas['ZZ_365_use_HEPfit_C1_values'] = 0.999333764397566
     kappas['ZZ_500_use_HEPfit_C1_values'] = 0.999327944752674
+    kappas['ZZ_240_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 0.9992551578408869
+    kappas['ZZ_365_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 0.9979999589153448
+    kappas['ZZ_500_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all'] = 0.9979824765449592
     kappas['gg_HEPfit_C1'] = 0.999538879408386
     kappas['ZZ_HEPfit_C1'] = 0.9987965588591575
     kappas['WW_HEPfit_C1'] = 0.9987464852126646
@@ -2316,7 +2388,13 @@ if use_HEPfit_C1_values_WFR_kala2_input_all or \
     kappas['ZZ_365'] = kappas['ZZ_365_use_HEPfit_C1_values']
     kappas['ZZ_500'] = kappas['ZZ_500_use_HEPfit_C1_values']
 
-if use_HEPfit_C1_values_decayrates_WFR_kala2_input_all:
+if use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all:
+    kappas['ZZ_240'] = kappas['ZZ_240_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all']
+    kappas['ZZ_365'] = kappas['ZZ_365_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all']
+    kappas['ZZ_500'] = kappas['ZZ_500_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all']
+
+if use_HEPfit_C1_values_decayrates_WFR_kala2_input_all or \
+    use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all:
     kappas['ZZ']   = kappas['ZZ_HEPfit_C1']
     kappas['ZZ_0'] = kappas['ZZ_HEPfit_C1'] # Used for the Zh cross-section at HL-LHC
     kappas['WW']   = kappas['WW_HEPfit_C1']
@@ -2755,7 +2833,9 @@ if WFR_kala2_input:
 
 if WFR_kala2_input_all or \
     use_HEPfit_C1_values_WFR_kala2_input_all or \
-    use_HEPfit_C1_values_decayrates_WFR_kala2_input_all:
+    use_HEPfit_C1_values_decayrates_WFR_kala2_input_all or \
+    use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all:
+    ###########################################################################################
     # Adds the external-leg correction (the contribution proportional to kappa_lambda**2) to 
     # the all Higgs cross-sections and decay rates
     coupling_list = [
@@ -2862,6 +2942,7 @@ output_file_flag_map = {
     WFR_kala2_input_all: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_WFR_kala2_input_all.conf",
     use_HEPfit_C1_values_WFR_kala2_input_all: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_use_HEPfit_C1_values_WFR_kala2_input_all.conf",
     use_HEPfit_C1_values_decayrates_WFR_kala2_input_all: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_use_HEPfit_C1_values_decayrates_WFR_kala2_input_all.conf",
+    use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all.conf",
 }
 
 for condition, filename in output_file_flag_map.items():
@@ -2963,6 +3044,7 @@ if (scenario == "IDM_FCCee240_FCCee365"
         WFR_kala2_input_all: "ObservablesHiggs_FCCee_365_kappa_scaled_WFR_kala2_input_all.conf",
         use_HEPfit_C1_values_WFR_kala2_input_all: "ObservablesHiggs_FCCee_365_kappa_scaled_use_HEPfit_C1_values_WFR_kala2_input_all.conf",
         use_HEPfit_C1_values_decayrates_WFR_kala2_input_all: "ObservablesHiggs_FCCee_365_kappa_scaled_use_HEPfit_C1_values_decayrates_WFR_kala2_input_all.conf",
+        use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all: "ObservablesHiggs_FCCee_365_kappa_scaled_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all.conf",
     }
 
     for condition, filename in output_file_flag_map.items():
@@ -3091,6 +3173,7 @@ output_file_flag_map = {
     WFR_kala2_input_all: "ObservablesHiggs_HLLHC_SM_kappa_scaled_WFR_kala2_input_all.conf",
     use_HEPfit_C1_values_WFR_kala2_input_all: "ObservablesHiggs_HLLHC_SM_kappa_scaled_use_HEPfit_C1_values_WFR_kala2_input_all.conf",
     use_HEPfit_C1_values_decayrates_WFR_kala2_input_all: "ObservablesHiggs_HLLHC_SM_kappa_scaled_use_HEPfit_C1_values_decayrates_WFR_kala2_input_all.conf",
+    use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all: "ObservablesHiggs_HLLHC_SM_kappa_scaled_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all.conf",
 }
 
 for condition, filename in output_file_flag_map.items():
@@ -3304,6 +3387,7 @@ if scenario == "IDM_FCCee240_FCCee365_HLLHClambda":
             WFR_kala2_input_all: "_WFR_kala2_input_all",
             use_HEPfit_C1_values_WFR_kala2_input_all: "_use_HEPfit_C1_values_WFR_kala2_input_all",
             use_HEPfit_C1_values_decayrates_WFR_kala2_input_all: "_use_HEPfit_C1_values_decayrates_WFR_kala2_input_all",
+            use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all: "_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all",
         }
 
         for condition, flag in flag_map.items():
