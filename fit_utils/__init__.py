@@ -3,3 +3,4 @@
 from . import utils
 from . import pullplots
 from . import parser
+from . import EFT_matching

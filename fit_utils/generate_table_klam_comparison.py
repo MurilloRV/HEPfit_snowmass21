@@ -5,6 +5,8 @@ import math
 import subprocess
 import os.path
 
+# Old script, to be implemented in new package
+
 
 plt.rcParams.update({
 #   "text.usetex": True,
