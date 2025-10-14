@@ -1,4 +1,5 @@
 import numpy as np
+from abc import ABC, abstractmethod
 
 vev = 246.
 Mh = 125
@@ -45,28 +46,31 @@ full_WC_list = [
     "CLL_1221",
 ]
 
-from abc import ABC, abstractmethod
 
 class BSMModel(ABC):
     @abstractmethod
-    def get_coefficients(self, lamNP=None):
+    def get_coefficients(self, lamNP=None, dimensionless=False):
+        # Obtain the values for the Wilson coefficients divided by the new physics scale squared. To obtain 
+        # dimensionless coefficients, set dimensionless=True and the desired energy scale in lamNP (in GeV).
         pass
 
     def get_kappa_lambda(self, lamNP=None):
-        if lamNP is None:
-            lamNP = self.muS
-
         WCs = self.get_coefficients(lamNP=lamNP)
 
-        kappa_lambda = 1 + (vev**2 / lamNP**2) * (
+        # Coefficients already include the 1/lambda_NP^2 factor
+        kappa_lambda = 1 + (vev**2) * (
             - 2 * vev**2 / Mh**2 * WCs["CH"]
             + 3 * (WCs["CHbox"] - 1/4 * WCs["CHD"])
         )
-
         return kappa_lambda
 
 class Z2SSM(BSMModel):
     def __init__(self, muS, lamS, lamSH):
+        if len(muS) != len(lamS) or len(muS) != len(lamSH):
+            raise ValueError("Input parameters must have the same length.")
+        else:
+            self.N = len(muS)
+
         self.muS = muS
         self.lamS = lamS
         self.lamSH = lamSH
@@ -85,12 +89,12 @@ class Z2SSM(BSMModel):
         lamphi = 4*3*lamS
         return - 1 / 24 * hbar * kappa**2 / muS**2
 
-    def get_coefficients(self, lamNP=None):
+    def get_coefficients(self, lamNP=None, dimensionless=False):
         if lamNP is None:
             lamNP = self.muS
 
-        CH_val    = Z2SSM.CH    (self.muS, self.lamS, self.lamSH) * (self.muS ** 2)
-        CHbox_val = Z2SSM.CHbox (self.muS, self.lamS, self.lamSH) * (self.muS ** 2)
+        CH_val    = Z2SSM.CH    (self.muS, self.lamS, self.lamSH)
+        CHbox_val = Z2SSM.CHbox (self.muS, self.lamS, self.lamSH)
 
         WC_dict = {
             "CH": CH_val, 
@@ -99,21 +103,31 @@ class Z2SSM(BSMModel):
 
         for WC in full_WC_list:
             if WC not in WC_dict:
-                WC_dict[WC] = 0.
+                WC_dict[WC] = np.zeros(self.N)
+
+        if dimensionless:
+            for key in WC_dict:
+                WC_dict[key] = WC_dict[key] * lamNP**2
 
         return WC_dict
 
-
-    
-
-
 class IDM(BSMModel):
-    def __init__(self, mH, mA, mHp, mu2):
+    def __init__(self, l1, l3, l4, l5, mu2):
+        if len(l1) != len(l3) or len(l1) != len(l4) or len(l1) != len(l5) or len(l1) != len(mu2):
+            raise ValueError("Input parameters must have the same length.")
+        else:
+            self.N = len(l1)
 
-        self.mH = mH
-        self.mA = mA
-        self.mHp = mHp
+        self.l1 = l1
+        self.l3 = l3
+        self.l4 = l4
+        self.l5 = l5
         self.mu2 = mu2
+
+    @classmethod
+    def from_masses(cls, mH, mA, mHp, mu2):
+        if len(mH) != len(mA) or len(mH) != len(mHp) or len(mH) != len(mu2):
+            raise ValueError("Input parameters must have the same length.")
 
         lam1 = Mh**2 / vev**2
         lam3 = 2 * (mHp**2 - mu2**2) / vev**2
@@ -122,12 +136,7 @@ class IDM(BSMModel):
         lam4 = 1 / 2 * (lamH + lamA) - lam3
         lam5 = 1 / 2 * (lamH - lamA)
 
-        self.lam1 = lam1
-        self.lam3 = lam3
-        self.lam4 = lam4
-        self.lam5 = lam5
-        self.lamH = lamH
-        self.lamA = lamA
+        return cls(lam1, lam3, lam4, lam5, mu2)
 
     @staticmethod
     def CH(l1, l3, l4, l5, mu2):
@@ -170,16 +179,16 @@ class IDM(BSMModel):
         return 1 / 24 * hbar * gL * gy * l4 / mu2**2
 
 
-    def get_coefficients(self, lamNP=None):
+    def get_coefficients(self, lamNP=None, dimensionless=False):
         if lamNP is None:
-            lamNP = self.muS
+            lamNP = self.mu2
 
-        CH_val     = IDM.CH    (self.lam1, self.lam3, self.lam4, self.lam5, self.mu2) * (self.muS ** 2)
-        CHbox_val  = IDM.CHbox (self.lam1, self.lam3, self.lam4, self.lam5, self.mu2) * (self.muS ** 2)
-        CHD_val    = IDM.CHD   (self.lam1, self.lam3, self.lam4, self.lam5, self.mu2) * (self.muS ** 2)
-        CHW_val    = IDM.CHW   (self.lam1, self.lam3, self.lam4, self.lam5, self.mu2) * (self.muS ** 2)
-        CHB_val    = IDM.CHB   (self.lam1, self.lam3, self.lam4, self.lam5, self.mu2) * (self.muS ** 2)
-        CHWB_val   = IDM.CHWB  (self.lam1, self.lam3, self.lam4, self.lam5, self.mu2) * (self.muS ** 2)
+        CH_val     = IDM.CH    (self.l1, self.l3, self.l4, self.l5, self.mu2)
+        CHbox_val  = IDM.CHbox (self.l1, self.l3, self.l4, self.l5, self.mu2)
+        CHD_val    = IDM.CHD   (self.l1, self.l3, self.l4, self.l5, self.mu2)
+        CHW_val    = IDM.CHW   (self.l1, self.l3, self.l4, self.l5, self.mu2)
+        CHB_val    = IDM.CHB   (self.l1, self.l3, self.l4, self.l5, self.mu2)
+        CHWB_val   = IDM.CHWB  (self.l1, self.l3, self.l4, self.l5, self.mu2)
 
         WC_dict = {
             "CH": CH_val, 
@@ -192,6 +201,10 @@ class IDM(BSMModel):
     
         for WC in full_WC_list:
             if WC not in WC_dict:
-                WC_dict[WC] = 0.
+                WC_dict[WC] = np.zeros(self.N)
+
+        if dimensionless:
+            for key in WC_dict:
+                WC_dict[key] = WC_dict[key] * lamNP**2
 
         return WC_dict
