@@ -167,6 +167,8 @@ def generate_klam_comparison_plot(
     y_lim_ax1=None,
     y_lim_ax2=None,
     leg_fontsize=9,
+    spec_distance=0.1,
+    upper_right_text=None,
 ):
     r"""
     Compare the fit results for kappa_lambda between the benchmark points
@@ -224,6 +226,11 @@ def generate_klam_comparison_plot(
         determined automatically.
     leg_fontsize : float, optional
         Font size for the legend. Default is 9.
+    spec_distance : float, optional
+        Horizontal distance between the markers for different model specifications, when
+        grouping model specifications in the same plot. Default is 0.1.
+    upper_right_text: str, optional
+        Text to be shown in the upper right corner of the plot. Default is None.
 
     Returns
     -------
@@ -266,7 +273,7 @@ def generate_klam_comparison_plot(
         files=files,
     )
 
-    spec_distance = 0.1
+    spec_distance = spec_distance
     for scenario in scenarios:
         n_specs = len(model_specs[scenario])
         if group_model_specs:
@@ -342,6 +349,17 @@ def generate_klam_comparison_plot(
             ax1.grid(which='both', linestyle='--', linewidth=0.5)
             ax2.grid(which='both', linestyle='--', linewidth=0.5)
             ax1.legend(loc='best', fontsize=leg_fontsize)
+
+            if not upper_right_text is None:
+                ax1.text(
+                    1,
+                    1,
+                    upper_right_text,
+                    horizontalalignment="right",
+                    verticalalignment="bottom",
+                    transform=ax1.transAxes,
+                    fontsize=8,
+                )
 
             if plot_titles is not None and scenario in plot_titles and model_spec in plot_titles[scenario]:
                 ax1.set_title(plot_titles[scenario][model_spec], fontsize=10)
