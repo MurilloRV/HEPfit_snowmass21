@@ -169,6 +169,7 @@ def generate_klam_comparison_plot(
     leg_fontsize=9,
     spec_distance=0.1,
     upper_right_text=None,
+    no_bottom_axis=False,
 ):
     r"""
     Compare the fit results for kappa_lambda between the benchmark points
@@ -231,6 +232,9 @@ def generate_klam_comparison_plot(
         grouping model specifications in the same plot. Default is 0.1.
     upper_right_text: str, optional
         Text to be shown in the upper right corner of the plot. Default is None.
+    no_bottom_axis : bool, optional
+        Whether to only show the top part of the plot, and not plot the difference in
+        a bottom subplot. Default is False.
 
     Returns
     -------
@@ -277,12 +281,18 @@ def generate_klam_comparison_plot(
     for scenario in scenarios:
         n_specs = len(model_specs[scenario])
         if group_model_specs:
-            fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, figsize=figsize, height_ratios=[0.7, 0.3], gridspec_kw=dict(hspace=0.), **fig_kwargs)
+            if not no_bottom_axis:
+                fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, figsize=figsize, height_ratios=[0.7, 0.3], gridspec_kw=dict(hspace=0.), **fig_kwargs)
+            else:
+                fig, ax1 = plt.subplots(1, 1, figsize=figsize, **fig_kwargs)
 
         for spec_idx, (model_spec, results_dir) in enumerate(zip(model_specs[scenario], results_dirs)):
             x = BP_lambdas
             if not group_model_specs:
-                fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, figsize=figsize, height_ratios=[0.7, 0.3], gridspec_kw=dict(hspace=0.), **fig_kwargs)
+                if not no_bottom_axis:
+                    fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, figsize=figsize, height_ratios=[0.7, 0.3], gridspec_kw=dict(hspace=0.), **fig_kwargs)
+                else:
+                    fig, ax1 = plt.subplots(1, 1, figsize=figsize, **fig_kwargs)
             elif n_specs != 1:
                 x = np.array(BP_lambdas) + spec_distance * (-0.5*(n_specs-1) + spec_idx)/(n_specs-1)
 
@@ -310,16 +320,17 @@ def generate_klam_comparison_plot(
                             label=label,
                             color=colors[idx])
 
-                ax2.errorbar(x=x[i],
-                            y=means[BP] - BP_lambdas[i],
-                            yerr=(errors[BP],), 
-                            fmt='o', 
-                            linewidth=1.5, 
-                            capsize=3.5, 
-                            markersize=4, 
-                            color=colors[idx])
+                if not no_bottom_axis:
+                    ax2.errorbar(x=x[i],
+                                y=means[BP] - BP_lambdas[i],
+                                yerr=(errors[BP],), 
+                                fmt='o', 
+                                linewidth=1.5, 
+                                capsize=3.5, 
+                                markersize=4, 
+                                color=colors[idx])
                 
-            plt.axhline(y=0, c='0.6', linewidth=1)
+                    ax2.axhline(y=0, c='0.6', linewidth=1)
 
             if plot_true_klam is not None:
                 if "s" not in plot_true_klam:     plot_true_klam["s"] = 25
@@ -338,17 +349,21 @@ def generate_klam_comparison_plot(
                 ax1.set_xlim(x_lim)
             if y_lim_ax1 is not None:
                 ax1.set_ylim(y_lim_ax1)
-            if y_lim_ax2 is not None:
-                ax2.set_ylim(y_lim_ax2)
 
             ax1.set_ylabel(r'$\kappa_{\lambda}^\text{fit}$', fontsize=15)
-            ax2.set_ylabel(r'$\kappa_{\lambda}^\text{fit} - \kappa_{\lambda}^\text{true}$', fontsize=15)
-
-            ax2.set_xlabel(rf'$\kappa_{{\lambda}}^\text{{true}}$ ({model} predictions)', fontsize=13)
-
             ax1.grid(which='both', linestyle='--', linewidth=0.5)
-            ax2.grid(which='both', linestyle='--', linewidth=0.5)
             ax1.legend(loc='best', fontsize=leg_fontsize)
+
+            if not no_bottom_axis:
+                if y_lim_ax2 is not None:
+                    ax2.set_ylim(y_lim_ax2)
+                ax2.set_ylabel(r'$\kappa_{\lambda}^\text{fit} - \kappa_{\lambda}^\text{true}$', fontsize=15)
+                ax2.set_xlabel(rf'$\kappa_{{\lambda}}^\text{{true}}$ ({model} predictions)', fontsize=13)
+                ax2.grid(which='both', linestyle='--', linewidth=0.5)
+            else:
+                ax1.set_xlabel(rf'$\kappa_{{\lambda}}^\text{{true}}$ ({model} predictions)', fontsize=13)
+
+                
 
             if not upper_right_text is None:
                 ax1.text(
@@ -365,7 +380,10 @@ def generate_klam_comparison_plot(
                 ax1.set_title(plot_titles[scenario][model_spec], fontsize=10)
             fig.tight_layout()   # Makes sure labels are not cut off
 
-            fig.savefig(working_dir + f'/comparison_plots/results_{results_dir}/kappa_lambda_results_{scenario}.pdf')
+            if not no_bottom_axis:
+                fig.savefig(working_dir + f'/comparison_plots/results_{results_dir}/kappa_lambda_results_{scenario}.pdf')
+            else:
+                fig.savefig(working_dir + f'/comparison_plots/results_{results_dir}/kappa_lambda_results_{scenario}_no_bottom_axis.pdf')
 
     if show_plots:
         plt.show()
