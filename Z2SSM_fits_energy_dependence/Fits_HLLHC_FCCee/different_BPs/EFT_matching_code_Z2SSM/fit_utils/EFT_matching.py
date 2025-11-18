@@ -67,11 +67,11 @@ class BSMModel(ABC):
         WCs = self.get_coefficients(lamNP=lamNP)
 
         # Coefficients already include the 1/lambda_NP^2 factor
-        delta_kappa_lambda = (vev**2) * (
+        kappa_lambda = 1 + (vev**2) * (
             - 2 * vev**2 / Mh**2 * WCs["CH"]
             + 3 * (WCs["CHbox"] - 1/4 * WCs["CHD"])
         )
-        return 1 + delta_kappa_lambda
+        return kappa_lambda
     
 
     def get_ZtoZH_SMEFT_match(self, sqrts=0.):
@@ -140,7 +140,7 @@ class Z2SSM(BSMModel):
         return - 1 / 24 * hbar * kappa**2 / mS**2
 
     def get_coefficients(self, lamNP=None, dimensionless=False):
-        if lamNP is None:
+        if dimensionless is True and lamNP is None:
             lamNP = self.muS
 
         CH_val    = Z2SSM.CH    (self.muS, self.lamS, self.lamSH, self.mS)
