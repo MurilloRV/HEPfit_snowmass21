@@ -6,6 +6,8 @@ B0 = np.vectorize(b0)
 C0 = np.vectorize(c0)
 A0 = np.vectorize(a0)
 
+import matplotlib.pyplot as plt
+
 vev = 246.
 Mh = 125
 MZ = 91.1876
@@ -102,12 +104,63 @@ class BSMModel(ABC):
         # SM_kin = b_SM**2 * ZtoZH_kin(sqrts)
         # return SMEFT_kin / SM_kin - 1
 
+    
+    def plot_higgs_potential_SMEFT(
+        self,
+        figsize = (4, 3.5),
+        phi_range = (-1.1*vev, 1.1*vev)
+    ):
+
+
+        WCs = self.get_coefficients()
+
+        CH = WCs["CH"]
+        # CHbox = WCs["CHbox"]
+        # CHD = WCs["CHD"]
+
+        phi = np.linspace(*phi_range, 200)
+
+        mu2 = Mh**2 / 2 + (3/4) * CH * vev**4
+        lam = Mh**2 / (2 * vev**2) + 3 * CH * vev**2 / 2
+        V_phi_SMEFT = -mu2 * phi**2 + lam * phi**4 - CH * phi**6 # + 0.25 * CHD * vev**2 * phi**4 - CHbox * vev**2 * phi**4
+
+        # V_SM = lamSM * (v_vals**2 - vev**2)**2
+        # V_SMEFT = (
+        #     lamSM * (v_vals**2 - vev**2)**2
+        #     + CH * (v_vals**6 - vev**6)
+        #     + 0.25 * CHD * vev**2 * (v_vals**2 - vev**2)**2
+        #     - CHbox * vev**2 * (v_vals**2 - vev**2)**2
+        # )
+
+        mu2_SM = Mh**2 / 2
+        lam_SM = Mh**2 / (2 * vev**2)
+        V_phi_SM = -mu2_SM * phi**2 + lam_SM * phi**4
+
+        kappa_lambda = self.get_kappa_lambda_SMEFT_match()[0]
+        # print(CH, kappa_lambda)
+
+        plt.figure(figsize=figsize)
+        plt.plot(phi, V_phi_SM, label="SM Potential", color="blue")
+        plt.plot(phi, V_phi_SMEFT, label="SMEFT Potential", color="red", linestyle="--")
+        plt.xlabel(r"Higgs Field Value $|\phi_0|$ [GeV]")
+        plt.ylabel(r"Higgs Potential $V(\phi_0)$ [GeV$^4$]")
+        plt.title("Higgs Potential in SM and SMEFT\n"+rf"$C_H=${CH:.3g} GeV$^{{-2}}$, $\kappa_\lambda={kappa_lambda:.3g}$", fontsize=10)
+        plt.axvline(+vev/np.sqrt(2), color='green', linestyle=':', label=r'$\pm\nu/\sqrt{2}$')
+        plt.axvline(-vev/np.sqrt(2), color='green', linestyle=':')
+        plt.legend()
+        plt.grid()
+        # plt.ylim(top=2e9)
+        plt.show()
+
 class Z2SSM(BSMModel):
     def __init__(self, muS, lamS, lamSH, mS=None):
-        if len(muS) != len(lamS) or len(muS) != len(lamSH) or (mS is not None and len(muS) != len(mS)):
-            raise ValueError("Input parameters must have the same length.")
+        if not np.all( [np.isscalar(par) for par in (muS, lamS, lamSH)] ):
+            if len(muS) != len(lamS) or len(muS) != len(lamSH) or (mS is not None and len(muS) != len(mS)):
+                raise ValueError("Input parameters must have the same length.")
+            else:
+                self.N = len(muS)
         else:
-            self.N = len(muS)
+            self.N = 1
 
         self.muS = muS
         self.lamS = lamS
