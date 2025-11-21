@@ -7,6 +7,9 @@ C0 = np.vectorize(c0)
 A0 = np.vectorize(a0)
 
 import matplotlib.pyplot as plt
+from matplotlib.animation import ArtistAnimation
+from matplotlib.backends.backend_pdf import PdfPages
+import copy, subprocess
 
 vev = 246.
 Mh = 125
@@ -65,8 +68,8 @@ class BSMModel(ABC):
         """
         pass
 
-    def get_kappa_lambda_SMEFT_match(self, lamNP=None):
-        WCs = self.get_coefficients(lamNP=lamNP)
+    def get_kappa_lambda_SMEFT_match(self, lamNP_match=None):
+        WCs = self.get_coefficients(lamNP_match=lamNP_match)
 
         # Coefficients already include the 1/lambda_NP^2 factor
         delta_kappa_lambda = (vev**2) * (
@@ -76,10 +79,10 @@ class BSMModel(ABC):
         return 1 + delta_kappa_lambda
     
 
-    def get_ZtoZH_SMEFT_match(self, sqrts=0.):
+    def get_ZtoZH_SMEFT_match(self, sqrts=0., lamNP_match=None):
         # From Henning
 
-        WCs = self.get_coefficients()
+        WCs = self.get_coefficients(lamNP_match=lamNP_match)
 
         p1p2 = 0.5 * (sqrts**2 + MZ**2 - Mh**2)
         b_gmunu = (
@@ -108,49 +111,113 @@ class BSMModel(ABC):
     def plot_higgs_potential_SMEFT(
         self,
         figsize = (4, 3.5),
-        phi_range = (-1.1*vev, 1.1*vev)
+        phi_range = (-1.1*vev, 1.1*vev),
+        lamNP_match=None,
+        animation=False,
+        plot_dir=".",
+        y_range=None,
     ):
 
-
-        WCs = self.get_coefficients()
-
-        CH = WCs["CH"]
-        # CHbox = WCs["CHbox"]
-        # CHD = WCs["CHD"]
+        WCs = self.get_coefficients(lamNP_match=lamNP_match)
+        CH_values = WCs["CH"]
+        # CHbox_values = WCs["CHbox"]
+        # CHD_values = WCs["CHD"]
+        kappa_lambda_values = self.get_kappa_lambda_SMEFT_match(lamNP_match=lamNP_match)
 
         phi = np.linspace(*phi_range, 200)
-
-        mu2 = Mh**2 / 2 + (3/4) * CH * vev**4
-        lam = Mh**2 / (2 * vev**2) + 3 * CH * vev**2 / 2
-        V_phi_SMEFT = -mu2 * phi**2 + lam * phi**4 - CH * phi**6 # + 0.25 * CHD * vev**2 * phi**4 - CHbox * vev**2 * phi**4
-
-        # V_SM = lamSM * (v_vals**2 - vev**2)**2
-        # V_SMEFT = (
-        #     lamSM * (v_vals**2 - vev**2)**2
-        #     + CH * (v_vals**6 - vev**6)
-        #     + 0.25 * CHD * vev**2 * (v_vals**2 - vev**2)**2
-        #     - CHbox * vev**2 * (v_vals**2 - vev**2)**2
-        # )
-
         mu2_SM = Mh**2 / 2
         lam_SM = Mh**2 / (2 * vev**2)
         V_phi_SM = -mu2_SM * phi**2 + lam_SM * phi**4
 
-        kappa_lambda = self.get_kappa_lambda_SMEFT_match()[0]
-        # print(CH, kappa_lambda)
+        fig, ax = plt.subplots(1,1,figsize=figsize)
 
-        plt.figure(figsize=figsize)
-        plt.plot(phi, V_phi_SM, label="SM Potential", color="blue")
-        plt.plot(phi, V_phi_SMEFT, label="SMEFT Potential", color="red", linestyle="--")
-        plt.xlabel(r"Higgs Field Value $|\phi_0|$ [GeV]")
-        plt.ylabel(r"Higgs Potential $V(\phi_0)$ [GeV$^4$]")
-        plt.title("Higgs Potential in SM and SMEFT\n"+rf"$C_H=${CH:.3g} GeV$^{{-2}}$, $\kappa_\lambda={kappa_lambda:.3g}$", fontsize=10)
-        plt.axvline(+vev/np.sqrt(2), color='green', linestyle=':', label=r'$\pm\nu/\sqrt{2}$')
-        plt.axvline(-vev/np.sqrt(2), color='green', linestyle=':')
-        plt.legend()
-        plt.grid()
-        # plt.ylim(top=2e9)
-        plt.show()
+        # create a proxy artist for the SMEFT curves so it appears in the legend
+        proxy_smeft = ax.plot([], [], color="red", linestyle="--", label="SMEFT Potential")[0]
+        ax.plot([], [], label="SM Potential", color="blue")
+        ax.plot([], [], linestyle=':', label=r'$\pm\nu/\sqrt{2}$', color='green')
+        
+        ax.set_xlabel(r"Higgs Field Value $|\phi_0|$ [GeV]")
+        ax.set_ylabel(r"Higgs Potential $V(\phi_0)$ [GeV$^4$]")
+        ax.set_title("Higgs Potential in SM and SMEFT", fontsize=10)
+        ax.legend(fontsize=8)
+        ax.grid()
+
+        fig_template = copy.deepcopy(fig)
+
+        artists = []
+
+        for CH, kappa_lambda in zip(np.atleast_1d(CH_values), np.atleast_1d(kappa_lambda_values)):
+
+            mu2 = Mh**2 / 2 + (3/4) * CH * vev**4
+            lam = Mh**2 / (2 * vev**2) + 3 * CH * vev**2 / 2
+            V_phi_SMEFT = -mu2 * phi**2 + lam * phi**4 - CH * phi**6 # + 0.25 * CHD * vev**2 * phi**4 - CHbox * vev**2 * phi**4
+
+            line_sm = ax.plot(phi, V_phi_SM, color="blue")  # static background
+            line = ax.plot(phi, V_phi_SMEFT, color="red", linestyle="--")
+            text = ax.text(
+                0.5, 0.7,
+                rf"$\kappa_\lambda={kappa_lambda:.3g}$" + "\n" +
+                rf"$C_H\cdot\frac{{\nu^2}}{{\Lambda_{{NP}}^2}}={CH*vev**2:.3g}$",
+                transform=ax.transAxes,
+                fontsize=8,
+                va='top',
+                ha='center',
+                bbox=dict(boxstyle="round", fc="white", ec="0.5", alpha=1.0, pad=0.8),
+                clip_on=False,
+                zorder=10,
+            )
+            line.append(text)
+            line.append(line_sm[0])
+            vev1 = ax.axvline(+vev/np.sqrt(2), color='green', linestyle=':')
+            vev2 = ax.axvline(-vev/np.sqrt(2), color='green', linestyle=':')
+            line.append(vev1)
+            line.append(vev2)
+            artists.append(line)
+            
+
+        with PdfPages(f"{plot_dir}/Higgs_potential_frames.pdf") as pdf:
+            for i, (CH, kappa_lambda) in enumerate(zip(np.atleast_1d(CH_values), np.atleast_1d(kappa_lambda_values))):
+
+                fig_copy = copy.deepcopy(fig_template)
+                ax_copy = fig_copy.gca()
+                fig_copy.tight_layout()
+                    
+                mu2 = Mh**2 / 2 + (3/4) * CH * vev**4
+                lam = Mh**2 / (2 * vev**2) + 3 * CH * vev**2 / 2
+                V_phi_SMEFT = -mu2 * phi**2 + lam * phi**4 - CH * phi**6 # + 0.25 * CHD * vev**2 * phi**4 - CHbox * vev**2 * phi**4
+
+                line_sm = ax_copy.plot(phi, V_phi_SM, color="blue")  # static background
+                line = ax_copy.plot(phi, V_phi_SMEFT, color="red", linestyle="--")
+                text = ax_copy.text(
+                    0.5, 0.7,
+                    rf"$\kappa_\lambda={kappa_lambda:.3g}$" + "\n" +
+                    rf"$C_H\cdot\frac{{\nu^2}}{{\Lambda_{{NP}}^2}}={CH*vev**2:.3g}$",
+                    transform=ax_copy.transAxes,
+                    fontsize=8,
+                    va='top',
+                    ha='center',
+                    bbox=dict(boxstyle="round", fc="white", ec="0.5", alpha=1.0, pad=0.8),
+                    clip_on=False,
+                    zorder=10,
+                )
+                vev1 = ax_copy.axvline(+vev/np.sqrt(2), color='green', linestyle=':')
+                vev2 = ax_copy.axvline(-vev/np.sqrt(2), color='green', linestyle=':')
+
+                if y_range is not None:
+                    ax_copy.set_ylim(*y_range)
+                pdf.savefig(fig_copy)
+
+                subprocess.run(["mkdir", "-p", f"{plot_dir}/Higgs_potential_frames"])
+                fig_copy.savefig(f"{plot_dir}/Higgs_potential_frames/frame_{i}.pdf")
+
+
+        print(artists)
+        ani = ArtistAnimation(fig=fig, artists=artists, interval=400)
+        fig.tight_layout()
+        if y_range is not None:
+            ax.set_ylim(*y_range)
+
+        return fig, ax, ani, artists
 
 class Z2SSM(BSMModel):
     def __init__(self, muS, lamS, lamSH, mS=None):
@@ -177,27 +244,27 @@ class Z2SSM(BSMModel):
     # predictions now matches the SMEFT ones!
 
     @staticmethod
-    def CH(muS, lamS, lamSH, mS):
+    def CH(muS, lamS, lamSH, mS, lamNP_match):
         # Matching to conventions in [1811.08878]
         kappa = lamSH
         lamphi = 4*3*lamS
-        # return - 1 / 12 * hbar * kappa**3 / muS**2
-        return - 1 / 12 * hbar * kappa**3 / mS**2
+        return - 1 / 12 * hbar * kappa**3 / lamNP_match**2
 
     @staticmethod
-    def CHbox(muS, lamS, lamSH, mS):
+    def CHbox(muS, lamS, lamSH, mS, lamNP_match):
         # Matching to conventions in [1811.08878]
         kappa = lamSH
         lamphi = 4*3*lamS
-        # return - 1 / 24 * hbar * kappa**2 / muS**2
-        return - 1 / 24 * hbar * kappa**2 / mS**2
+        return - 1 / 24 * hbar * kappa**2 / lamNP_match**2
 
-    def get_coefficients(self, lamNP=None, dimensionless=False):
+    def get_coefficients(self, lamNP_match=None, lamNP=None, dimensionless=False):
         if lamNP is None:
             lamNP = self.muS
+        if lamNP_match is None:
+            lamNP_match = self.muS
 
-        CH_val    = Z2SSM.CH    (self.muS, self.lamS, self.lamSH, self.mS)
-        CHbox_val = Z2SSM.CHbox (self.muS, self.lamS, self.lamSH, self.mS)
+        CH_val    = Z2SSM.CH    (self.muS, self.lamS, self.lamSH, self.mS, lamNP_match)
+        CHbox_val = Z2SSM.CHbox (self.muS, self.lamS, self.lamSH, self.mS, lamNP_match)
 
         WC_dict = {
             "CH": CH_val, 
@@ -248,56 +315,57 @@ class IDM(BSMModel):
         return mH, mA, mHp
 
     @staticmethod
-    def CH(l1, l3, l4, l5, mu2):
+    def CH(l1, l3, l4, l5, mu2, lamNP_match):
         return (
-            -1 / 3 * hbar * l3**3 / mu2**2
-            - 1 / 2 * hbar * l4 * l3**2 / mu2**2
-            + 1 / 6 * hbar * l1 * l4**2 / mu2**2
-            - 1 / 2 * hbar * l3 * l4**2 / mu2**2
-            - 1 / 6 * hbar * l4**3 / mu2**2
-            + 1 / 6 * hbar * l1 * l5**2 / mu2**2
-            - 1 / 2 * hbar * l3 * l5**2 / mu2**2
-            - 1 / 2 * hbar * l4 * l5**2 / mu2**2
+            -1 / 3 * hbar * l3**3 / lamNP_match**2
+            - 1 / 2 * hbar * l4 * l3**2 / lamNP_match**2
+            + 1 / 6 * hbar * l1 * l4**2 / lamNP_match**2
+            - 1 / 2 * hbar * l3 * l4**2 / lamNP_match**2
+            - 1 / 6 * hbar * l4**3 / lamNP_match**2
+            + 1 / 6 * hbar * l1 * l5**2 / lamNP_match**2
+            - 1 / 2 * hbar * l3 * l5**2 / lamNP_match**2
+            - 1 / 2 * hbar * l4 * l5**2 / lamNP_match**2
         )
     
     @staticmethod
-    def CHbox(l1, l3, l4, l5, mu2):
+    def CHbox(l1, l3, l4, l5, mu2, lamNP_match):
         return (
-            -1 / 6 * hbar * l3**2 / mu2**2
-            - 1 / 6 * hbar * l3 * l4 / mu2**2
-            + 1 / 12 * hbar * l5**2 / mu2**2
+            -1 / 6 * hbar * l3**2 / lamNP_match**2
+            - 1 / 6 * hbar * l3 * l4 / lamNP_match**2
+            + 1 / 12 * hbar * l5**2 / lamNP_match**2
         )
 
     @staticmethod
-    def CHD(l1, l3, l4, l5, mu2):
+    def CHD(l1, l3, l4, l5, mu2, lamNP_match):
         return (
-            - 1 / 6 * hbar * l4**2 / mu2**2
-            + 1 / 6 * hbar * l5**2 / mu2**2
+            - 1 / 6 * hbar * l4**2 / lamNP_match**2
+            + 1 / 6 * hbar * l5**2 / lamNP_match**2
         )
 
     @staticmethod
-    def CHW(l1, l3, l4, l5, mu2):
-        return 1 / 48 * hbar * gL**2 * (2 * l3 + l4) / mu2**2
+    def CHW(l1, l3, l4, l5, mu2, lamNP_match):
+        return 1 / 48 * hbar * gL**2 * (2 * l3 + l4) / lamNP_match**2
 
     @staticmethod
-    def CHB(l1, l3, l4, l5, mu2):
-        return 1 / 48 * hbar * gy**2 * (2 * l3 + l4) / mu2**2
+    def CHB(l1, l3, l4, l5, mu2, lamNP_match):
+        return 1 / 48 * hbar * gy**2 * (2 * l3 + l4) / lamNP_match**2
     
     @staticmethod
-    def CHWB(l1, l3, l4, l5, mu2):
-        return 1 / 24 * hbar * gL * gy * l4 / mu2**2
+    def CHWB(l1, l3, l4, l5, mu2, lamNP_match):
+        return 1 / 24 * hbar * gL * gy * l4 / lamNP_match**2
 
-
-    def get_coefficients(self, lamNP=None, dimensionless=False):
+    def get_coefficients(self, lamNP_match=None, lamNP=None, dimensionless=False):
         if lamNP is None:
             lamNP = self.mu2
+        if lamNP_match is None:
+            lamNP_match = self.mu2
 
-        CH_val     = IDM.CH    (self.l1, self.l3, self.l4, self.l5, self.mu2)
-        CHbox_val  = IDM.CHbox (self.l1, self.l3, self.l4, self.l5, self.mu2)
-        CHD_val    = IDM.CHD   (self.l1, self.l3, self.l4, self.l5, self.mu2)
-        CHW_val    = IDM.CHW   (self.l1, self.l3, self.l4, self.l5, self.mu2)
-        CHB_val    = IDM.CHB   (self.l1, self.l3, self.l4, self.l5, self.mu2)
-        CHWB_val   = IDM.CHWB  (self.l1, self.l3, self.l4, self.l5, self.mu2)
+        CH_val     = IDM.CH    (self.l1, self.l3, self.l4, self.l5, self.mu2, lamNP_match)
+        CHbox_val  = IDM.CHbox (self.l1, self.l3, self.l4, self.l5, self.mu2, lamNP_match)
+        CHD_val    = IDM.CHD   (self.l1, self.l3, self.l4, self.l5, self.mu2, lamNP_match)
+        CHW_val    = IDM.CHW   (self.l1, self.l3, self.l4, self.l5, self.mu2, lamNP_match)
+        CHB_val    = IDM.CHB   (self.l1, self.l3, self.l4, self.l5, self.mu2, lamNP_match)
+        CHWB_val   = IDM.CHWB  (self.l1, self.l3, self.l4, self.l5, self.mu2, lamNP_match)
 
         WC_dict = {
             "CH": CH_val, 
@@ -319,7 +387,7 @@ class IDM(BSMModel):
         return WC_dict
 
 
-    def get_ZtoZH_IDM(self, sqrts):
+    def get_ZtoZH_IDM(self, sqrts=0.):
         mH, mA, mHp = self.get_BSM_masses()
         S = sqrts**2
         lam3 = self.l3; lam4 = self.l4; lam5 = self.l5
