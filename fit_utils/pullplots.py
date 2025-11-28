@@ -16,6 +16,9 @@ def generate_pull_plots_pars(
     show_plots=False,
     nvar_per_plot=15,
     figsize=(5, 7),
+    normalize_pulls=True,
+    true_values=None,
+    file_suffix="",
 ):
     """
     Generate pull plots for the model parameters.
@@ -45,6 +48,12 @@ def generate_pull_plots_pars(
         Whether to show the plots or not. Default is False.
     nvar_per_plot : int, optional
         The number of variables per plot. Default is 15.
+    figsize : tuple, optional
+        Figure size for the plots. Default is (5, 7).
+    normalize_pulls : bool, optional
+        If True, normalize the pulls to the uncertainties. Default is True.
+    true_values : dict, optional
+        A dictionary containing the true values of the Wilson coefficients for each BP
 
     Returns
     -------
@@ -112,7 +121,10 @@ def generate_pull_plots_pars(
     n_model_specs = len(list(model_specs.values())[0])
     w = 1.0
     dimw = w / 2
-    y_shift = np.linspace(+dimw/2, -dimw/2, n_model_specs) 
+    if n_model_specs > 1:
+        y_shift = np.linspace(+dimw/2, -dimw/2, n_model_specs) 
+    else:
+        y_shift = np.array([0])
 
     print(f"\n")
     num_fig = 0
@@ -134,8 +146,18 @@ def generate_pull_plots_pars(
                 labels[j] = par
 
             for model_spec in model_specs[scenario]:
-                results[BP][scenario][model_spec][:,0] = np.copy((results[BP][scenario][model_spec][:,0] - central_values_obs[BP][scenario][model_spec]) / results[BP][scenario][model_spec][:,1] )
-                results[BP][scenario][model_spec][:,1] = np.copy( results[BP][scenario][model_spec][:,1] / results[BP][scenario][model_spec][:,1] )
+                if true_values is None or true_values["subtract_true_values"] is False:
+                    subtract_values = central_values_obs[BP][scenario][model_spec]
+                else:
+                    subtract_values = np.array([true_values['values'][WC[:-5]][i] for WC in aligned_parameters[BP][scenario]])
+                    # print(f"Subtracting true values: {subtract_values}")
+
+                if normalize_pulls:
+                    results[BP][scenario][model_spec][:,0] = np.copy((results[BP][scenario][model_spec][:,0] - subtract_values) / results[BP][scenario][model_spec][:,1] )
+                    results[BP][scenario][model_spec][:,1] = np.copy( results[BP][scenario][model_spec][:,1] / results[BP][scenario][model_spec][:,1] )
+                else:
+                    results[BP][scenario][model_spec][:,0] = np.copy(results[BP][scenario][model_spec][:,0] - subtract_values)
+                    results[BP][scenario][model_spec][:,1] = np.copy(results[BP][scenario][model_spec][:,1])
 
             for k in range(len(param_breaks) - 1):
 
@@ -161,6 +183,20 @@ def generate_pull_plots_pars(
                                 label=model_specs_labels[scenario][spec_index],
                                 # alpha=alphas[i],
                                 )
+                    
+                if true_values is not None:
+                    if true_values['subtract_true_values'] is False:
+                        for y_value in y:
+                            WC = aligned_parameters[BP][scenario][y_value]
+                            if normalize_pulls:
+                                plotted_true_value = (true_values['values'][WC[:-5]][i] - central_values_obs[BP][scenario][model_specs[scenario][0]][y_value]) / results[BP][scenario][model_spec][y_value,1]
+                            else:
+                                plotted_true_value = true_values['values'][WC[:-5]][i]
+                            ax.scatter(plotted_true_value, -y_value, **true_values['style'])
+                    else: 
+                        ax.scatter(np.zeros_like(y), -y, **true_values['style'])
+
+                ax.scatter([], [], label=true_values['label'], **true_values['style'])
 
                 # ax.set_yticks(-y-dimw/2.)
                 ax.set_yticks(-y)
@@ -170,11 +206,17 @@ def generate_pull_plots_pars(
                 ax.set_xlim(*x_limits)
                 ax.tick_params(axis='x', size=10, labelsize=11)
                 ax.tick_params(axis='x', which='minor', size=6)
-                ax.set_xlabel(r'Pulls', fontsize=15)
-                ax.legend(loc='best', fontsize=12)
-                ax.set_title(plot_titles[BP][scenario], fontsize=12)
+                if normalize_pulls:
+                    x_label = r'Pulls'
+                else:
+                    x_label = r'Wilson coefficients'
+                if true_values is not None and true_values['subtract_true_values'] is True:
+                    x_label = x_label + f' (w.r.t. {true_values["label"]})'
+                ax.set_xlabel(x_label, fontsize=11)
+                ax.legend(loc='best', fontsize=10)
+                ax.set_title(plot_titles[BP][scenario], fontsize=10)
                 plt.tight_layout()   # Makes sure labels are not cut off
-                plt.savefig(f"{working_dir}/comparison_plots/results_{results_dir}/pull_pars_{BP}_{scenario}_compare_{k}.pdf")
+                plt.savefig(f"{working_dir}/comparison_plots/results_{results_dir}/pull_pars_{BP}_{scenario}_compare_{k}{file_suffix}.pdf")
 
     if show_plots:
         plt.show()

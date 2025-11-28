@@ -1,5 +1,6 @@
 import numpy as np
 import copy
+import re
 
 def parameter_order(par):
     """
@@ -781,6 +782,94 @@ def read_fit_results(
                 results[BP][scenario][model_spec] = np.array(results[BP][scenario][model_spec])
 
     return results
+
+
+
+
+def read_fit_results_dim6Ops_correlations(
+    BPs,
+    model_specs,
+    files,
+):
+    """
+    Read and store the fit results for the correlation matrix of the Wilson coefficients, given 
+    certain benchmark points, model specifications, and observables. The path to the files to be 
+    read must be stored in the {files} dictionary.
+
+    Parameters
+    ----------
+    BPs : list
+        List of benchmark point names. Must correspond to the directory name for the BP
+    model_specs : dict
+        Dictionary mapping scenarios to a list of model specifications.
+    files : dict
+        Dictionary mapping BPs, scenarios, and model specifications to the Statistics.txt file 
+        containing the fit results
+
+    Returns
+    -------
+    results : dict
+        Dictionary mapping benchmark points, scenarios, and model specifications, 
+        to the covariance matrix of the Wilson coefficients.
+
+    """
+    scenarios = list(model_specs.keys())
+
+    
+    observables = {BP: {scenario: {model_spec: [] for model_spec in model_specs[scenario]} for scenario in scenarios} for BP in BPs}
+
+    corr_matrices = {}
+    for BP in BPs:
+
+        corr_matrices[BP] = {}
+        for scenario in scenarios:
+
+            corr_matrices[BP][scenario] = {}
+            for model_spec in model_specs[scenario]:
+
+                file_path = files[BP][scenario][model_spec]
+                print(f"Reading file: {file_path}")
+                with open(file_path, 'r') as file:
+                    lines = file.readlines()
+                    
+                    line_nrs = [np.nan for obs in observables[BP][scenario][model_spec]]
+                    for n, line in enumerate(lines):
+                        columns = line.split()
+                        if len(columns) < 2:
+                            continue
+                        
+                        # Finding the names of the Wilson coefficients in the correlation matrix
+                        if (columns[1] == "Observable" \
+                            or columns[1] == "AsyGausObservable") \
+                            and re.search("^C.*_corr$", columns[2][1:-2]):
+
+                            observables[BP][scenario][model_spec].append(columns[2][1:-2])
+
+                        # Finding the start of the correlation matrix
+                        if line.startswith("The correlation matrix for dim6Ops is given by the"):
+                            start_line_nr = n + 4
+
+                    n_obs = len(observables[BP][scenario][model_spec])
+                    print(f"Found {n_obs} observables in the correlation matrix\n\n")
+                    corr_matrix = np.eye(n_obs)
+
+                    for n, line in enumerate(lines[start_line_nr:]):
+                        columns = line.split()
+
+                        # Reached the end of the correlation matrix
+                        if len(columns) < 2:
+                            end_line_nr = start_line_nr + n
+                            break
+                        else:
+                            row_nr = n
+                            for col_nr in range(0, row_nr):
+                                # print(f"Setting corr_matrix[{row_nr}, {col_nr}] to {float(columns[col_nr + 2])}")
+                                corr_matrix[row_nr, col_nr] = float(columns[col_nr + 2])
+                                corr_matrix[col_nr, row_nr] = float(columns[col_nr + 2])
+
+                corr_matrices[BP][scenario][model_spec] = corr_matrix
+
+    return corr_matrices
 
 
 def align_observables(

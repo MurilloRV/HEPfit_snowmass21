@@ -350,18 +350,18 @@ def generate_klam_comparison_plot(
             if y_lim_ax1 is not None:
                 ax1.set_ylim(y_lim_ax1)
 
-            ax1.set_ylabel(r'$\kappa_{\lambda}^\text{fit}$', fontsize=15)
+            ax1.set_ylabel(r'$\kappa_{\lambda}^\mathrm{fit}$', fontsize=15)
             ax1.grid(which='both', linestyle='--', linewidth=0.5)
             ax1.legend(loc='best', fontsize=leg_fontsize)
 
             if not no_bottom_axis:
                 if y_lim_ax2 is not None:
                     ax2.set_ylim(y_lim_ax2)
-                ax2.set_ylabel(r'$\kappa_{\lambda}^\text{fit} - \kappa_{\lambda}^\text{true}$', fontsize=15)
-                ax2.set_xlabel(rf'$\kappa_{{\lambda}}^\text{{true}}$ ({model} predictions)', fontsize=13)
+                ax2.set_ylabel(r'$\kappa_{\lambda}^\mathrm{fit} - \kappa_{\lambda}^\mathrm{true}$', fontsize=15)
+                ax2.set_xlabel(rf'$\kappa_{{\lambda}}^\mathrm{{true}}$ ({model} predictions)', fontsize=13)
                 ax2.grid(which='both', linestyle='--', linewidth=0.5)
             else:
-                ax1.set_xlabel(rf'$\kappa_{{\lambda}}^\text{{true}}$ ({model} predictions)', fontsize=13)
+                ax1.set_xlabel(rf'$\kappa_{{\lambda}}^\mathrm{{true}}$ ({model} predictions)', fontsize=13)
 
                 
 
@@ -387,6 +387,268 @@ def generate_klam_comparison_plot(
 
     if show_plots:
         plt.show()
+
+
+
+
+
+def generate_obs_comparison_plot(
+    observable,
+    observable_label,
+    observable_text,
+    true_obs_values,
+    # observable='deltalHHH_HLLHC',
+    # observable_label=r'$\kappa_{\lambda}$',
+    # observable_text='kappa_lambda',
+    # true_obs_values,
+    BPs,
+    model_specs,
+    working_dir,
+    results_dirs,
+    BP_names,
+    BP_lambdas,
+    model,
+    plot_labels=None,
+    plot_titles=None,
+    plot_true_obs=None,
+    colors=None,
+    show_plots=False,
+    group_model_specs=False,
+    figsize=(3.5, 4),
+    fig_kwargs={},
+    x_lim=None,
+    y_lim_ax1=None,
+    y_lim_ax2=None,
+    leg_fontsize=9,
+    spec_distance=0.1,
+    upper_right_text=None,
+    no_bottom_axis=False,
+    file_suffix='',
+):
+    r"""
+    Compare the fit results for kappa_lambda between the benchmark points
+
+    Parameters
+    ----------
+    BPs : list of str
+        List of benchmark point names. Must correspond to the directory name for the BP
+    model_specs : dict
+        Dictionary mapping collider scenarios to a list of model specifications.
+    working_dir : str
+        Working directory path, containing subdirectories for each benchmark point.
+    results_dirs : list or list of str
+        List of suffixes for the result directories. For each {results_dir} in this list,
+        the corresponding results will be stored in the directory
+        '{working_dir}/comparison_plots/results_{results_dir}/'. Can also be a single string,
+        in which case all plots are stored in the same directory.
+    BP_names : list of str
+        List with the names for the benchmark point, used in plots.
+    BP_lambdas : list of float
+        List of the corresponding BSM model prediction for kappa_lambda for each BP.
+    model : str
+        The BSM model considered. Currently can be either "IDM" or "Z2SSM"
+    plot_labels : list of str
+        List with the labels for each model benchmark point. Must have the same length as 
+        the BP_names and BP_lambdas lists. If not set, labels will default to the 
+        "{BP_name} $(\kappa_\lambda={klam})$" format, where "klam" is the corresponding
+        prediction for kappa_lambda.
+    plot_titles : dict, optional
+        A dictionary in the form plot_titles[scenario][model_spec] containing the titles 
+        for the plots. If not provided, no title is shown.
+    plot_true_klam : dict, optional
+        Whether to plot markers showing the UV model predictions for kappa_lambda and 
+        respective kwargs. Must be a dictionary with arguments for pyplot.scatter(). 
+        If not provided, no markers are shown.
+    colors : list, optional
+        List of colors assign to each model specification. If not set, the default 
+        matplotlib color cycle will be used.
+    show_plots : bool, optional
+        Whether to show the plots or not. Default is False.
+    group_model_specs : bool, optional
+        Whether to generate a single plot per scenario, grouping all BPs and model specs 
+        in the same plot. Default is False.
+    figsize : tuple, optional
+        Size for the generated plot. Default is (3.5, 4).
+    fig_kwargs : dict, optional
+        Additional keyword arguments for the figure.
+    x_lim : tuple, optional
+        Limits for the x-axis. If not set, the limits will be determined automatically.
+    y_lim_ax1 : tuple, optional
+        Limits for the y-axis of the upper subplot. If not set, the limits will be 
+        determined automatically.
+    y_lim_ax2 : tuple, optional
+        Limits for the y-axis of the lower subplot. If not set, the limits will be 
+        determined automatically.
+    leg_fontsize : float, optional
+        Font size for the legend. Default is 9.
+    spec_distance : float, optional
+        Horizontal distance between the markers for different model specifications, when
+        grouping model specifications in the same plot. Default is 0.1.
+    upper_right_text: str, optional
+        Text to be shown in the upper right corner of the plot. Default is None.
+    no_bottom_axis : bool, optional
+        Whether to only show the top part of the plot, and not plot the difference in
+        a bottom subplot. Default is False.
+
+    Returns
+    -------
+    None
+
+    """
+
+    scenarios = list(model_specs.keys())
+    
+    if colors is None:
+        # Default matplotlib color cycle
+        colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+
+    if plot_labels is None:
+        plot_labels = [ rf"{BP_name} $(\kappa_\lambda={klam:.3g})$" for BP_name, klam in zip(BP_names, BP_lambdas) ]
+
+    if model not in ["IDM", "Z2SSM"]:
+        raise ValueError(f"Invalid model specified ({model}). Please choose either 'IDM' or 'Z2SSM'.")
+    
+    if isinstance(results_dirs, str):
+        results_dirs = [results_dirs for model_spec in model_specs[scenarios[0]]]
+
+    # Create the output directories, if they do not yet exist
+    for results_dir in results_dirs:
+        subprocess.run(["mkdir", "-p", f"{working_dir}/comparison_plots/results_{results_dir}"])
+
+    files = {}
+    for BP in BPs:
+        files[BP] = {}
+        for scenario in scenarios:
+            files[BP][scenario] = {}
+            for model_spec in model_specs[scenario]:
+                files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/results_{model_spec}/Observables/Statistics.txt"
+
+    print(f"\nReading fit results")
+    obs_results = read_fit_results(
+        BPs=BPs,
+        model_specs=model_specs,
+        observables=[observable],
+        files=files,
+    )
+
+    spec_distance = spec_distance
+    for scenario in scenarios:
+        n_specs = len(model_specs[scenario])
+        if group_model_specs:
+            if not no_bottom_axis:
+                fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, figsize=figsize, height_ratios=[0.7, 0.3], gridspec_kw=dict(hspace=0.), **fig_kwargs)
+            else:
+                fig, ax1 = plt.subplots(1, 1, figsize=figsize, **fig_kwargs)
+
+        for spec_idx, (model_spec, results_dir) in enumerate(zip(model_specs[scenario], results_dirs)):
+            x = BP_lambdas
+            if not group_model_specs:
+                if not no_bottom_axis:
+                    fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, figsize=figsize, height_ratios=[0.7, 0.3], gridspec_kw=dict(hspace=0.), **fig_kwargs)
+                else:
+                    fig, ax1 = plt.subplots(1, 1, figsize=figsize, **fig_kwargs)
+            elif n_specs != 1:
+                x = np.array(BP_lambdas) + spec_distance * (-0.5*(n_specs-1) + spec_idx)/(n_specs-1)
+
+            if observable=='deltalHHH_HLLHC':
+                means  = {BP : obs_results[BP][scenario][model_spec][0, 0] + 1 for BP in BPs}
+            else:
+                means  = {BP : obs_results[BP][scenario][model_spec][0, 0] for BP in BPs}
+
+            errors = {BP : obs_results[BP][scenario][model_spec][0, 1] for BP in BPs}
+            
+            for i, BP in enumerate(BPs):
+
+                if group_model_specs:
+                    idx = spec_idx
+                    if i == 0:
+                        label = plot_labels[idx]
+                    else:
+                        label = None
+                else:
+                    idx = i
+                    label = plot_labels[idx]
+
+                ax1.errorbar(x=x[i],
+                            y=means[BP],
+                            yerr=(errors[BP],), 
+                            fmt='o', 
+                            linewidth=1.5, 
+                            capsize=3.5, 
+                            markersize=4, 
+                            label=label,
+                            color=colors[idx])
+
+                if not no_bottom_axis:
+                    ax2.errorbar(x=x[i],
+                                y=means[BP] - true_obs_values[i],
+                                yerr=(errors[BP],), 
+                                fmt='o', 
+                                linewidth=1.5, 
+                                capsize=3.5, 
+                                markersize=4, 
+                                color=colors[idx])
+                
+                    ax2.axhline(y=0, c='0.6', linewidth=1)
+
+            if plot_true_obs is not None:
+                if "s" not in plot_true_obs:       plot_true_obs["s"] = 25
+                if "marker" not in plot_true_obs:  plot_true_obs["marker"] = 'x'
+                if "color" not in plot_true_obs:   plot_true_obs["color"] = 'black'
+                if "label" not in plot_true_obs:   plot_true_obs["label"] = rf'{model} prediction'
+                ax1.scatter(BP_lambdas, true_obs_values, **plot_true_obs)
+
+            # ax2.tick_params(axis='x', size=10, labelsize=12)
+            # ax2.tick_params(axis='x', which='minor', size=6)
+
+            # ax1.set_yticks(BP_lambdas)
+            # ax2.set_xticks(BP_lambdas)
+            # ax2.set_xticklabels(BP_lambdas,fontsize=16)
+            if x_lim is not None:
+                ax1.set_xlim(x_lim)
+            if y_lim_ax1 is not None:
+                ax1.set_ylim(y_lim_ax1)
+
+            ax1.set_ylabel(rf'${observable_label}^\mathrm{{fit}}$', fontsize=10)
+            ax1.grid(which='both', linestyle='--', linewidth=0.5)
+            ax1.legend(loc='best', fontsize=leg_fontsize)
+
+            if not no_bottom_axis:
+                if y_lim_ax2 is not None:
+                    ax2.set_ylim(y_lim_ax2)
+                ax2.set_ylabel(rf'${observable_label}^\mathrm{{fit}} - {observable_label}^\mathrm{{true}}$', fontsize=10)
+                ax2.set_xlabel(rf'$\kappa_{{\lambda}}^\mathrm{{true}}$ ({model} predictions)', fontsize=10)
+                ax2.grid(which='both', linestyle='--', linewidth=0.5)
+            else:
+                ax1.set_xlabel(rf'$\kappa_{{\lambda}}^\mathrm{{true}}$ ({model} predictions)', fontsize=10)
+
+                
+
+            if not upper_right_text is None:
+                ax1.text(
+                    1,
+                    1,
+                    upper_right_text,
+                    horizontalalignment="right",
+                    verticalalignment="bottom",
+                    transform=ax1.transAxes,
+                    fontsize=8,
+                )
+
+            if plot_titles is not None and scenario in plot_titles and model_spec in plot_titles[scenario]:
+                ax1.set_title(plot_titles[scenario][model_spec], fontsize=10)
+            fig.tight_layout()   # Makes sure labels are not cut off
+
+            if not no_bottom_axis:
+                fig.savefig(working_dir + f'/comparison_plots/results_{results_dir}/{observable_text}_results_{scenario}{file_suffix}.pdf')
+            else:
+                fig.savefig(working_dir + f'/comparison_plots/results_{results_dir}/{observable_text}_results_{scenario}{file_suffix}_no_bottom_axis.pdf')
+
+    if show_plots:
+        plt.show()
+
+
+
 
 
 def compare_BP_results_uproot(
