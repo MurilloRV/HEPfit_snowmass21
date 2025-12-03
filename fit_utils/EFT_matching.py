@@ -7,7 +7,7 @@ C0 = np.vectorize(c0)
 A0 = np.vectorize(a0)
 
 import matplotlib.pyplot as plt
-from matplotlib.animation import ArtistAnimation
+from matplotlib.animation import ArtistAnimation, FuncAnimation
 from matplotlib.backends.backend_pdf import PdfPages
 import copy, subprocess
 
@@ -280,6 +280,71 @@ class Z2SSM(BSMModel):
                 WC_dict[key] = WC_dict[key] * lamNP**2
 
         return WC_dict
+
+
+    def plot_higgs_potential_Z2SSM(
+        self,
+        figsize = (4, 3.5),
+        phi_range = (-1.1*vev, 1.1*vev),
+        S_range = (-500., 500.),
+        animation=False,
+        plot_dir=".",
+        z_range=None,
+        n_frames=10,
+        interval=200,
+        plot_surface_kwargs={"cmap": plt.cm.YlGnBu_r, 'alpha': 0.8, "lw":0.5, "edgecolor":"gray", "rstride":8, "cstride":8,}
+    ):
+
+
+
+        phi = np.linspace(*phi_range, 200)
+        S = np.linspace(*S_range, 200)
+
+        phi, S = np.meshgrid(phi, S)
+
+        # Following conventions in [1911.11507]
+        mu2 = - Mh**2 / 2
+        lam_H = Mh**2 / (vev**2)
+        muS = self.muS
+        lamS = self.lamS
+        lamSH = self.lamSH
+
+        V_phi_SM = mu2 * phi**2 + (1/2.)*muS**2 * S**2 + (1/2.)*lam_H * phi**4 + (1/2.)*lamSH * phi**2 * S**2 + (1/2.)*lamS * S**4 
+
+        fig = plt.figure(figsize=figsize)
+        ax = fig.add_subplot(111, projection='3d')
+        ax.plot_surface(phi, S, V_phi_SM, **plot_surface_kwargs)
+
+        # create a proxy artist for the Z2SSM curves so it appears in the legend
+        proxy_z2ssm = ax.plot([], [], color="blue", linestyle="--", label="Z2SSM Potential")[0]
+        
+        ax.set_xlabel(r"$\phi_0$ [GeV]", fontsize=10)
+        ax.set_ylabel(r"$S$ [GeV]", fontsize=10)
+        ax.set_zlabel(r"$V(\phi_0, S)$ [GeV$^4$]", fontsize=10)
+        ax.set_title("Higgs Potential in SM and Z2SSM", fontsize=10)
+        ax.legend(fontsize=8)
+        ax.grid()
+        plt.tight_layout()
+
+        # Animation function
+        def rotate(angle):
+            ax.view_init(elev=30, azim=angle*360/n_frames)
+            plt.tight_layout()
+
+        anim = FuncAnimation(fig, rotate, frames=n_frames+1, interval=interval)
+
+        with PdfPages(f"{plot_dir}/Higgs_potential_Z2SSM_frames.pdf") as pdf:
+
+            for frame in range(n_frames):
+
+                ax.view_init(elev=30, azim=frame*360/n_frames)
+                pdf.savefig(fig)   # save current frame to PDF
+                # plt.close(fig)
+
+                subprocess.run(["mkdir", "-p", f"{plot_dir}/Higgs_potential_Z2SSM_frames"])
+                fig.savefig(f"{plot_dir}/Higgs_potential_Z2SSM_frames/frame_{frame}.pdf")
+
+        return fig, ax, anim
 
 class IDM(BSMModel):
     def __init__(self, l1, l3, l4, l5, mu2):
