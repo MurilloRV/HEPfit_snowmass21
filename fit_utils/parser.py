@@ -784,6 +784,56 @@ def read_fit_results(
     return results
 
 
+def read_fit_results_pars(
+    BPs,
+    model_specs,
+    working_dir,
+    scenarios,
+    model,
+):
+
+    files = {}
+    for BP in BPs:
+        files[BP] = {}
+        for scenario in scenarios:
+            files[BP][scenario] = {}
+            for model_spec in model_specs[scenario]:
+                files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/results_{model_spec}/Observables/Statistics.txt"
+
+    print("\nFinding configuration files for the observables")
+    conf_files = find_configuration_files(model_specs, model, read_WCs=True)
+        
+    print(f"\nReading configuration files for observables")
+    parameters, parameters_tex, central_values_obs = read_configuration_files(
+        working_dir,
+        BPs,
+        model_specs,
+        conf_files,
+        only_obs=None,
+        skip_obs=None,
+        only_higgs_fccee_obs=False,
+        read_model_parameters=True,
+        compare_with_SM=False,
+    )
+    print(parameters)
+
+    print(f"\nReading fit results")
+    results = read_fit_results(
+        BPs=BPs,
+        model_specs=model_specs,
+        observables=parameters,
+        files=files,
+    )
+
+    print(f"\nParameter dictionary: \n{parameters}")
+    print(f"\nParameter latex dictionary: \n{parameters_tex}")
+
+    return (
+        parameters, 
+        parameters_tex, 
+        central_values_obs, 
+        results, 
+    )
 
 
 def read_fit_results_dim6Ops_correlations(

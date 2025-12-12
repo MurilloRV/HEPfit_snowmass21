@@ -1,7 +1,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
 import subprocess
-from .parser import observable_order, parameter_order, find_configuration_files, read_configuration_files, read_fit_results, align_observables
+from .parser import observable_order, parameter_order, find_configuration_files, read_configuration_files, read_fit_results, read_fit_results_pars, align_observables
 
 
 def generate_pull_plots_pars(
@@ -61,51 +61,23 @@ def generate_pull_plots_pars(
 
     """
 
-    scenarios = model_specs.keys()
 
     if colors is None:
         # Default matplotlib color cycle
         colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
-    files = {}
-    for BP in BPs:
-        files[BP] = {}
-        for scenario in scenarios:
-            files[BP][scenario] = {}
-            for model_spec in model_specs[scenario]:
-                files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/results_{model_spec}/Observables/Statistics.txt"
-
     # Create the output directory, if it does not yet exist
     subprocess.run(["mkdir", "-p", f"{working_dir}/comparison_plots/results_{results_dir}"])
 
+    scenarios = model_specs.keys()
 
-    print("\nFinding configuration files for the observables")
-    conf_files = find_configuration_files(model_specs, model, read_WCs=True)
-        
-    print(f"\nReading configuration files for observables")
-    parameters, parameters_tex, central_values_obs = read_configuration_files(
-        working_dir,
+    parameters, parameters_tex, central_values_obs, results = read_fit_results_pars(
         BPs,
         model_specs,
-        conf_files,
-        only_obs=None,
-        skip_obs=None,
-        only_higgs_fccee_obs=False,
-        read_model_parameters=True,
-        compare_with_SM=False,
+        working_dir,
+        scenarios,
+        model,
     )
-    print(parameters)
-
-    print(f"\nReading fit results")
-    results = read_fit_results(
-        BPs=BPs,
-        model_specs=model_specs,
-        observables=parameters,
-        files=files,
-    )
-
-    print(f"\nParameter dictionary: \n{parameters}")
-    print(f"\nParameter latex dictionary: \n{parameters_tex}")
 
     print(f"\nSorting observables")
     aligned_parameters, aligned_parameters_tex, central_values_obs, results = align_observables(

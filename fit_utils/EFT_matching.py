@@ -76,8 +76,15 @@ class BSMModel(ABC):
             - 2 * vev**2 / Mh**2 * WCs["CH"]
             + 3 * (WCs["CHbox"] - 1/4 * WCs["CHD"])
         )
-        return 1 + delta_kappa_lambda
-    
+        return self.kappa_lambda_SM + delta_kappa_lambda
+
+    @property
+    def kappa_lambda_SM(self):
+        mtop_temp = 172.5  # GeV
+        vev_temp = 246.22  # GeV
+        mH_temp = 125.1  # GeV
+        pi = 3.141592
+        return 1 -48*mtop_temp**4/(16*pi**2*vev_temp**3)/(3*mH_temp**2/vev_temp)
 
     def get_ZtoZH_SMEFT_match(self, sqrts=0., lamNP_match=None):
         # From Henning
@@ -106,6 +113,13 @@ class BSMModel(ABC):
         # SMEFT_kin = b_SMEFT**2 * ZtoZH_kin(sqrts)
         # SM_kin = b_SM**2 * ZtoZH_kin(sqrts)
         # return SMEFT_kin / SM_kin - 1
+
+
+    # def get_ZtoZH_Z2SSM(self, sqrts=0, lamNP_match=None):
+    #     S = sqrts**2
+    #     kappalam 
+    #     prediags = 3/2 - (3*(2*Mh**4 + (MZ**2 - S)**2 - Mh**2*(3*MZ**2 + S))*B0(Mh**2,Mh**2,Mh**2))/(2.*(Mh**4 + (MZ**2 - S)**2 - 2*Mh**2*(MZ**2 + S))) + (3*Mh**2*(Mh**2 - MZ**2 - S)*B0(MZ**2,Mh**2,MZ**2))/(2.*(Mh**4 + (MZ**2 - S)**2 - 2*Mh**2*(MZ**2 + S))) + (3*(Mh**4 - 2*Mh**2*MZ**2 + (MZ**2 - S)**2)*B0(S,Mh**2,MZ**2))/(2.*(Mh**4 + (MZ**2 - S)**2 - 2*Mh**2*(MZ**2 + S))) - 6*MZ**2*C0(Mh**2,MZ**2,S,Mh**2,Mh**2,MZ**2) + (3*Mh**2*(Mh**4 + (MZ**2 - S)**2 - Mh**2*(2*MZ**2 + S))*C0(S,Mh**2,MZ**2,MZ**2,Mh**2,Mh**2))/(Mh**4 + (MZ**2 - S)**2 - 2*Mh**2*(MZ**2 + S))
+    #     return np.real((kappalam-1)*Mh**2/(16*np.pi**2*vev**2)*prediags)
 
     
     def plot_higgs_potential_SMEFT(
@@ -240,8 +254,6 @@ class Z2SSM(BSMModel):
 
     # Note: Wilson coefficients already include the 1/lambda_NP^2 factor, with
     # lambda_NP = muS, following [1811.08878]. 
-    # UPDATE: Now using mS as NP scale in the denominators, as a test. Z2SSM kala 
-    # predictions now matches the SMEFT ones!
 
     @staticmethod
     def CH(muS, lamS, lamSH, mS, lamNP_match):
@@ -287,12 +299,17 @@ class Z2SSM(BSMModel):
         figsize = (4, 3.5),
         phi_range = (-1.1*vev, 1.1*vev),
         S_range = (-500., 500.),
-        animation=False,
+        V_range = None,
+        animation_rotate=False,
         plot_dir=".",
         z_range=None,
         n_frames=10,
         interval=200,
-        plot_surface_kwargs={"cmap": plt.cm.YlGnBu_r, 'alpha': 0.8, "lw":0.5, "edgecolor":"gray", "rstride":8, "cstride":8,}
+        plot_surface_kwargs={"cmap": plt.cm.YlGnBu_r, 'alpha': 0.8, "lw":0.5, "edgecolor":"gray", "rstride":8, "cstride":8,},
+        x_contour=None,
+        y_contour=None,
+        z_contour=None,
+        plot_V_minima=None,
     ):
 
 
@@ -308,43 +325,96 @@ class Z2SSM(BSMModel):
         muS = self.muS
         lamS = self.lamS
         lamSH = self.lamSH
+        kappa_lambda = self.get_kappa_lambda_SMEFT_match(lamNP_match=self.mS)
 
-        V_phi_SM = mu2 * phi**2 + (1/2.)*muS**2 * S**2 + (1/2.)*lam_H * phi**4 + (1/2.)*lamSH * phi**2 * S**2 + (1/2.)*lamS * S**4 
+        def V_phi_func(phi, S, mu2=mu2, muS=muS, lam_H=lam_H, lamSH=lamSH, lamS=lamS):
+            return mu2 * phi**2 + (1/2.)*muS**2 * S**2 + (1/2.)*lam_H * phi**4 + (1/2.)*lamSH * phi**2 * S**2 + (1/2.)*lamS * S**4 
 
-        fig = plt.figure(figsize=figsize)
+        V_scale = 1e8
+        V_scale_tex = r"$10^{8}$"
+
+        fig = plt.figure(figsize=figsize, constrained_layout=True)
         ax = fig.add_subplot(111, projection='3d')
-        ax.plot_surface(phi, S, V_phi_SM, **plot_surface_kwargs)
-
-        # create a proxy artist for the Z2SSM curves so it appears in the legend
-        proxy_z2ssm = ax.plot([], [], color="blue", linestyle="--", label="Z2SSM Potential")[0]
-        
-        ax.set_xlabel(r"$\phi_0$ [GeV]", fontsize=10)
+        ax.set_xlabel(r"$\Phi_0$ [GeV]", fontsize=10)
         ax.set_ylabel(r"$S$ [GeV]", fontsize=10)
-        ax.set_zlabel(r"$V(\phi_0, S)$ [GeV$^4$]", fontsize=10)
+        ax.set_zlabel(rf"$V(\phi_0, S)$ [{V_scale_tex} GeV$^4$]", fontsize=10)
         ax.set_title("Higgs Potential in SM and Z2SSM", fontsize=10)
+        if x_contour is not None or y_contour is not None or z_contour is not None:
+            ax.plot([], [], label="Contours at 0", color=x_contour["colors"], lw=x_contour["linewidths"], alpha=x_contour["alpha"])
+        if plot_V_minima is not None:
+            ax.scatter([], [], label="$V(\phi_0, S)$ Minima", **plot_V_minima)
         ax.legend(fontsize=8)
         ax.grid()
-        plt.tight_layout()
 
-        # Animation function
-        def rotate(angle):
-            ax.view_init(elev=30, azim=angle*360/n_frames)
-            plt.tight_layout()
+        def clear_ax(ax):
+            for c in list(ax.collections):
+                c.remove()
+            for a in list(ax.artists):
+                a.remove()
 
-        anim = FuncAnimation(fig, rotate, frames=n_frames+1, interval=interval)
+        def plot_potential(muS, lamSH, lamS, kappa_lambda, update=False):
+            if update: clear_ax(ax)
 
-        with PdfPages(f"{plot_dir}/Higgs_potential_Z2SSM_frames.pdf") as pdf:
+            V_phi_S = V_phi_func(phi, S, muS=muS, lamSH=lamSH, lamS=lamS) / V_scale
+            surface_plot = ax.plot_surface(phi, S, V_phi_S, **plot_surface_kwargs)
 
-            for frame in range(n_frames):
+            if x_contour is not None:
+                x_contours_plot = ax.contour(phi, S, V_phi_S, zdir='x', offset=ax.get_xlim()[0], **x_contour)
+            if y_contour is not None:
+                y_contours_plot = ax.contour(phi, S, V_phi_S, zdir='y', offset=ax.get_ylim()[1], **y_contour)
+            if z_contour is not None:
+                z_contours_plot = ax.contour(phi, S, V_phi_S, zdir='z', offset=ax.get_zlim()[0], **z_contour)
 
-                ax.view_init(elev=30, azim=frame*360/n_frames)
-                pdf.savefig(fig)   # save current frame to PDF
-                # plt.close(fig)
+            if plot_V_minima is not None:
+                V_min = V_phi_func(-vev/np.sqrt(2), 0, muS=muS, lamSH=lamSH, lamS=lamS) / V_scale
+                V_min_plot = ax.scatter([-vev/np.sqrt(2), +vev/np.sqrt(2)], [0,0], [V_min, V_min], **plot_V_minima)
 
-                subprocess.run(["mkdir", "-p", f"{plot_dir}/Higgs_potential_Z2SSM_frames"])
-                fig.savefig(f"{plot_dir}/Higgs_potential_Z2SSM_frames/frame_{frame}.pdf")
+            ax.set_title("Higgs Potential in SM and Z2SSM\n"+rf"$\mu_{{S}} = {muS:.3g}$ GeV, $\lambda_{{SH}} = {lamSH:.3g}$, $\lambda_{{S}} = {lamS:.3g}$, $\kappa_\lambda = {kappa_lambda:.3g}$", fontsize=10)
+            if V_range is not None:
+                ax.set_zlim(*V_range)
 
-        return fig, ax, anim
+            return surface_plot, x_contours_plot, y_contours_plot, z_contours_plot, V_min_plot
+
+        if np.ndim(muS)!=0:
+            def scan_parameter_points(point):
+                return plot_potential(muS[point], lamSH[point], lamS[point], kappa_lambda[point], update=True)
+
+            anim = FuncAnimation(fig, scan_parameter_points, frames=len(muS), interval=interval, blit=False)
+
+            with PdfPages(f"{plot_dir}/Higgs_potential_Z2SSM_parameter_points_frames.pdf") as pdf:
+                for frame, (muS_point, lamSH_point, lamS_point, kappa_lambda_point) in enumerate(zip(muS, lamSH, lamS, kappa_lambda)):
+                    plot_potential(muS_point, lamSH_point, lamS_point, kappa_lambda_point, update=True)
+                    ax.set_zlim(*V_range)
+                    pdf.savefig(fig)  
+                    subprocess.run(["mkdir", "-p", f"{plot_dir}/Higgs_potential_Z2SSM_parameter_points_frames"])
+                    fig.savefig(f"{plot_dir}/Higgs_potential_Z2SSM_parameter_points_frames/frame_{frame}.pdf")
+                    
+            return fig, ax, anim
+        else:
+            plot_potential(muS, lamSH, lamS, kappa_lambda[0])
+
+
+        if animation_rotate:
+            if np.ndim(muS)!=0:
+                raise ValueError("The 'animation_rotate' option is only valid for a single parameter point.")
+            
+            def rotate(angle):
+                ax.view_init(elev=30, azim=angle*360/n_frames)
+
+            anim = FuncAnimation(fig, rotate, frames=n_frames+1, interval=interval)
+
+            with PdfPages(f"{plot_dir}/Higgs_potential_Z2SSM_rotate_frames.pdf") as pdf:
+                for frame in range(n_frames):
+                    ax.view_init(elev=30, azim=frame*360/n_frames)
+                    pdf.savefig(fig)  
+
+                    subprocess.run(["mkdir", "-p", f"{plot_dir}/Higgs_potential_Z2SSM_rotate_frames"])
+                    fig.savefig(f"{plot_dir}/Higgs_potential_Z2SSM_rotate_frames/frame_{frame}.pdf")
+
+                return fig, ax, anim
+
+        else: 
+            return fig, ax, None
 
 class IDM(BSMModel):
     def __init__(self, l1, l3, l4, l5, mu2):
