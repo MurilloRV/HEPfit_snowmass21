@@ -21,6 +21,9 @@ gL = 2*MW/vev
 gy = np.sqrt(4*MZ**2/vev**2 - gL**2)
 hbar = 1 / (16 * np.pi**2)
 
+mtop = 172.5  # GeV
+Qren = mtop  # Renormalization scale for loop calculations
+
 full_WC_list = [
     "CW", 
     "CHG", 
@@ -292,6 +295,38 @@ class Z2SSM(BSMModel):
                 WC_dict[key] = WC_dict[key] * lamNP**2
 
         return WC_dict
+    
+    @staticmethod
+    def f_loop(x, Qren=Qren):
+            return (1/4.) * x**2 * (np.log(x/Qren**2) - 3./2)
+    
+    @staticmethod
+    def mt2(h, mt=mtop):
+        return mt**2 * ( 1 + (h/vev) )**2
+    
+    def mS2(self, h, S, muS=None, lamSH=None, lamS=None):
+        if muS   is None:  muS   = self.muS
+        if lamSH is None:  lamSH = self.lamSH
+        if lamS  is None:  lamS  = self.lamS
+        return muS**2 + 6*lamS * S**2 + (1/2.)*lamSH * (h+vev)**2
+
+
+    def V_h_S_func(self, phi, S, mu2=-Mh**2/2, muS=None, lam_H=Mh**2/(vev**2), lamSH=None, lamS=None, loop_order="0L"):
+        if muS   is None:  muS   = self.muS
+        if lamSH is None:  lamSH = self.lamSH
+        if lamS  is None:  lamS  = self.lamS
+
+        V_0L = mu2 * phi**2 + (1/2.)*muS**2 * S**2 + (1/2.)*lam_H * phi**4 + (1/2.)*lamSH * phi**2 * S**2 + (1/2.)*lamS * S**4 
+
+        h = np.sqrt(2) * phi - vev
+        V_1L = 1/(16*np.pi**2) * ( -12*Z2SSM.f_loop(Z2SSM.mt2(h)) + Z2SSM.f_loop(self.mS2(h, S, muS, lamSH, lamS)) )
+
+        if loop_order == "0L":
+            return V_0L
+        elif loop_order == "1L":
+            return V_0L + V_1L
+        else:
+            raise ValueError("loop_order must be '0L' or '1L'.")
 
 
     def plot_higgs_potential_Z2SSM(
@@ -302,48 +337,54 @@ class Z2SSM(BSMModel):
         V_range = None,
         animation_rotate=False,
         plot_dir=".",
-        z_range=None,
         n_frames=10,
         interval=200,
-        plot_surface_kwargs={"cmap": plt.cm.YlGnBu_r, 'alpha': 0.8, "lw":0.5, "edgecolor":"gray", "rstride":8, "cstride":8,},
+        plot_surface_kwargs={},
+        legend_kwargs={"fontsize": 8},
         x_contour=None,
         y_contour=None,
         z_contour=None,
         plot_V_minima=None,
+        loop_order=["0L"],
+        loop_order_txt="0L",
+        x_label_args={"fontsize": 10},
+        y_label_args={"fontsize": 10},
+        z_label_args={"fontsize": 10},
+        plot_h=False,
     ):
 
-
-
+        if plot_h:
+            x_label_args["xlabel"] = r"$h$ [GeV]"
+            y_label_args["ylabel"] = r"$S$ [GeV]"
+            z_label_args["zlabel"] = rf"$V(h, S)/\nu^4$"
+        else:
+            x_label_args["xlabel"] = r"$\Phi_0$ [GeV]"
+            y_label_args["ylabel"] = r"$S$ [GeV]"
+            z_label_args["zlabel"] = rf"$V(\Phi_0, S)/\nu^4$"
         phi = np.linspace(*phi_range, 200)
         S = np.linspace(*S_range, 200)
 
         phi, S = np.meshgrid(phi, S)
 
         # Following conventions in [1911.11507]
-        mu2 = - Mh**2 / 2
-        lam_H = Mh**2 / (vev**2)
-        muS = self.muS
-        lamS = self.lamS
+        muS   = self.muS
+        lamS  = self.lamS
         lamSH = self.lamSH
+        mS    = self.mS
         kappa_lambda = self.get_kappa_lambda_SMEFT_match(lamNP_match=self.mS)
 
-        def V_phi_func(phi, S, mu2=mu2, muS=muS, lam_H=lam_H, lamSH=lamSH, lamS=lamS):
-            return mu2 * phi**2 + (1/2.)*muS**2 * S**2 + (1/2.)*lam_H * phi**4 + (1/2.)*lamSH * phi**2 * S**2 + (1/2.)*lamS * S**4 
-
-        V_scale = 1e8
-        V_scale_tex = r"$10^{8}$"
 
         fig = plt.figure(figsize=figsize, constrained_layout=True)
         ax = fig.add_subplot(111, projection='3d')
-        ax.set_xlabel(r"$\Phi_0$ [GeV]", fontsize=10)
-        ax.set_ylabel(r"$S$ [GeV]", fontsize=10)
-        ax.set_zlabel(rf"$V(\phi_0, S)$ [{V_scale_tex} GeV$^4$]", fontsize=10)
-        ax.set_title("Higgs Potential in SM and Z2SSM", fontsize=10)
+        ax.set_xlabel(**x_label_args)
+        ax.set_ylabel(**y_label_args)
+        ax.set_zlabel(**z_label_args)
+        ax.set_title("Z2SSM Higgs Potential (tree-level)", fontsize=10)
         if x_contour is not None or y_contour is not None or z_contour is not None:
             ax.plot([], [], label="Contours at 0", color=x_contour["colors"], lw=x_contour["linewidths"], alpha=x_contour["alpha"])
         if plot_V_minima is not None:
             ax.scatter([], [], label="$V(\phi_0, S)$ Minima", **plot_V_minima)
-        ax.legend(fontsize=8)
+        ax.legend(**legend_kwargs)
         ax.grid()
 
         def clear_ax(ax):
@@ -352,46 +393,85 @@ class Z2SSM(BSMModel):
             for a in list(ax.artists):
                 a.remove()
 
-        def plot_potential(muS, lamSH, lamS, kappa_lambda, update=False):
+        def plot_potential(muS, lamSH, lamS, kappa_lambda, mS, update=False):
+
             if update: clear_ax(ax)
 
-            V_phi_S = V_phi_func(phi, S, muS=muS, lamSH=lamSH, lamS=lamS) / V_scale
-            surface_plot = ax.plot_surface(phi, S, V_phi_S, **plot_surface_kwargs)
+            surface_plots = []
+            contour_plots = []
+            V_min_plots = []
+            for order in loop_order:
+                V_phi_S = self.V_h_S_func(phi, S, muS=muS, lamSH=lamSH, lamS=lamS, loop_order=order) / vev**4
+                surface_plot = ax.plot_surface(phi, S, V_phi_S, **plot_surface_kwargs[order])
 
-            if x_contour is not None:
-                x_contours_plot = ax.contour(phi, S, V_phi_S, zdir='x', offset=ax.get_xlim()[0], **x_contour)
-            if y_contour is not None:
-                y_contours_plot = ax.contour(phi, S, V_phi_S, zdir='y', offset=ax.get_ylim()[1], **y_contour)
-            if z_contour is not None:
-                z_contours_plot = ax.contour(phi, S, V_phi_S, zdir='z', offset=ax.get_zlim()[0], **z_contour)
+                if x_contour is not None:
+                    x_contours_plot = ax.contour(phi, S, V_phi_S, zdir='x', offset=ax.get_xlim()[0], **x_contour)
+                else:
+                    x_contours_plot = None
 
-            if plot_V_minima is not None:
-                V_min = V_phi_func(-vev/np.sqrt(2), 0, muS=muS, lamSH=lamSH, lamS=lamS) / V_scale
-                V_min_plot = ax.scatter([-vev/np.sqrt(2), +vev/np.sqrt(2)], [0,0], [V_min, V_min], **plot_V_minima)
+                if y_contour is not None:
+                    y_contours_plot = ax.contour(phi, S, V_phi_S, zdir='y', offset=ax.get_ylim()[1], **y_contour)
+                else:
+                    y_contours_plot = None
+                    
+                if z_contour is not None:
+                    z_contours_plot = ax.contour(phi, S, V_phi_S, zdir='z', offset=ax.get_zlim()[0], **z_contour)
+                else:
+                    z_contours_plot = None
 
-            ax.set_title("Higgs Potential in SM and Z2SSM\n"+rf"$\mu_{{S}} = {muS:.3g}$ GeV, $\lambda_{{SH}} = {lamSH:.3g}$, $\lambda_{{S}} = {lamS:.3g}$, $\kappa_\lambda = {kappa_lambda:.3g}$", fontsize=10)
+                if plot_V_minima is not None:
+                    V_min = self.V_h_S_func(-vev/np.sqrt(2), 0, muS=muS, lamSH=lamSH, lamS=lamS, loop_order=order) / vev**4
+                    V_min_plot = ax.scatter([-vev/np.sqrt(2), +vev/np.sqrt(2)], [0,0], [V_min, V_min], **plot_V_minima)
+                else:
+                    V_min_plot = None
+
+                surface_plots.append(surface_plot)
+                contour_plots.append((x_contours_plot, y_contours_plot, z_contours_plot))
+                V_min_plots.append(V_min_plot)
+
+            ax.set_title(
+                f"Z2SSM Higgs Potential ({loop_order_txt})\n"
+                rf"$m_S={mS:.3g}$ GeV, "
+                rf"$\mu_S={muS:.3g}$ GeV, "
+                rf"$\lambda_{{SH}}={lamSH:.3g}$, "
+                rf"$\lambda_S={lamS:.3g}$, "
+                rf"$\kappa_\lambda={kappa_lambda:.3g}$",
+                fontsize=10
+            )
+
             if V_range is not None:
                 ax.set_zlim(*V_range)
+            else:
+                zmin = np.nanmin(V_phi_S)
+                zmax = np.nanmax(V_phi_S)
 
-            return surface_plot, x_contours_plot, y_contours_plot, z_contours_plot, V_min_plot
+                # add a margin (e.g. 5%)
+                margin = 0.05 * (zmax - zmin if zmax > zmin else 1.0)
+                ax.set_zlim(zmin - margin, zmax + margin)
+
+            return surface_plots, contour_plots, V_min_plots
 
         if np.ndim(muS)!=0:
             def scan_parameter_points(point):
-                return plot_potential(muS[point], lamSH[point], lamS[point], kappa_lambda[point], update=True)
+                return plot_potential(muS[point], lamSH[point], lamS[point], kappa_lambda[point], mS[point], update=True)
 
             anim = FuncAnimation(fig, scan_parameter_points, frames=len(muS), interval=interval, blit=False)
 
-            with PdfPages(f"{plot_dir}/Higgs_potential_Z2SSM_parameter_points_frames.pdf") as pdf:
-                for frame, (muS_point, lamSH_point, lamS_point, kappa_lambda_point) in enumerate(zip(muS, lamSH, lamS, kappa_lambda)):
-                    plot_potential(muS_point, lamSH_point, lamS_point, kappa_lambda_point, update=True)
-                    ax.set_zlim(*V_range)
+            with PdfPages(f"{plot_dir}/Higgs_potential_{loop_order_txt}_Z2SSM_parameter_points_frames.pdf") as pdf:
+                for frame, (muS_point, lamSH_point, lamS_point, kappa_lambda_point, mS_point) in enumerate(zip(muS, lamSH, lamS, kappa_lambda, mS)):
+                    plot_potential(muS_point, lamSH_point, lamS_point, kappa_lambda_point, mS_point, update=True)
+                    if V_range is not None:
+                        ax.set_zlim(*V_range)
+                    else:
+                        ax.relim()           # recompute data limits from artists
+                        ax.autoscale_view()  # update axis limits
                     pdf.savefig(fig)  
-                    subprocess.run(["mkdir", "-p", f"{plot_dir}/Higgs_potential_Z2SSM_parameter_points_frames"])
-                    fig.savefig(f"{plot_dir}/Higgs_potential_Z2SSM_parameter_points_frames/frame_{frame}.pdf")
+                    subprocess.run(["mkdir", "-p", f"{plot_dir}/Higgs_potential_{loop_order_txt}_Z2SSM_parameter_points_frames"])
+                    fig.savefig(f"{plot_dir}/Higgs_potential_{loop_order_txt}_Z2SSM_parameter_points_frames/frame_{frame}.pdf")
                     
             return fig, ax, anim
         else:
-            plot_potential(muS, lamSH, lamS, kappa_lambda[0])
+            plot_potential(muS, lamSH, lamS, kappa_lambda[0], mS)
 
 
         if animation_rotate:
@@ -403,18 +483,152 @@ class Z2SSM(BSMModel):
 
             anim = FuncAnimation(fig, rotate, frames=n_frames+1, interval=interval)
 
-            with PdfPages(f"{plot_dir}/Higgs_potential_Z2SSM_rotate_frames.pdf") as pdf:
+            with PdfPages(f"{plot_dir}/Higgs_potential_{loop_order_txt}_Z2SSM_rotate_frames.pdf") as pdf:
                 for frame in range(n_frames):
                     ax.view_init(elev=30, azim=frame*360/n_frames)
                     pdf.savefig(fig)  
 
-                    subprocess.run(["mkdir", "-p", f"{plot_dir}/Higgs_potential_Z2SSM_rotate_frames"])
-                    fig.savefig(f"{plot_dir}/Higgs_potential_Z2SSM_rotate_frames/frame_{frame}.pdf")
+                    subprocess.run(["mkdir", "-p", f"{plot_dir}/Higgs_potential_{loop_order_txt}_Z2SSM_rotate_frames"])
+                    fig.savefig(f"{plot_dir}/Higgs_potential_{loop_order_txt}_Z2SSM_rotate_frames/frame_{frame}.pdf")
 
                 return fig, ax, anim
 
         else: 
             return fig, ax, None
+        
+
+
+    def plot_higgs_potential_Z2SSM_projection(
+        self,
+        figsize = (4, 3.5),
+        phi_range = (-1.1*vev, 1.1*vev),
+        V_range = None,
+        plot_dir=".",
+        interval=200,
+        plot_kwargs=[{}],
+        legend_kwargs={"fontsize": 10},
+        loop_order=["0L"],
+        loop_order_txt="0L",
+        x_label_args={"fontsize": 12},
+        y_label_args={"fontsize": 12},
+        plot_h=False,
+        plot_1L_minima=False,
+    ):
+
+        if plot_h:
+            x_label_args["xlabel"] = r"$h$ [GeV]"
+            y_label_args["ylabel"] = rf"$V(h, S)/\nu^4$"
+        else:
+            x_label_args["xlabel"] = r"$\Phi_0$ [GeV]"
+            y_label_args["ylabel"] = rf"$V(\Phi_0, S)/\nu^4$"
+
+        phi = np.linspace(*phi_range, 200)
+        S = np.zeros_like(phi)
+
+        # Following conventions in [1911.11507]
+        muS   = self.muS
+        lamS  = self.lamS
+        lamSH = self.lamSH
+        mS    = self.mS
+        kappa_lambda = self.get_kappa_lambda_SMEFT_match(lamNP_match=self.mS)
+
+        fig, ax = plt.subplots(1,1,figsize=figsize)
+        ax.set_xlabel(**x_label_args)
+        ax.set_ylabel(**y_label_args)
+        for order in loop_order:
+            ax.plot([], [], label=f'Z2SSM potential ({order})', **plot_kwargs[order])
+
+        if "0L" in loop_order:
+            ax.plot([], [], linestyle=':', label=r'$V_{\mathrm{0L}}$ Minima $(\pm\nu/\sqrt{2})$', color=plot_kwargs["0L"].get("color", "green"))
+        else:
+            ax.plot([], [], linestyle=':', label=r'$\pm\nu/\sqrt{2}$', color="green")
+        if plot_1L_minima:
+            ax.plot([], [], linestyle=':', label=r'$V_{\mathrm{1L}}$ Minima', color=plot_kwargs["1L"].get("color", "green"))
+
+
+        ax.legend(**legend_kwargs)
+        ax.grid(alpha=0.3)
+        ax.axhline(0, color='black', lw=1, alpha=0.5)
+        ax.axvline(0, color='black', lw=1, alpha=0.5)
+
+        def clear_ax(ax):
+            for c in list(ax.collections):
+                c.remove()
+            for a in list(ax.artists):
+                a.remove()
+            for a in list(ax.lines):
+                a.remove()
+
+
+        def plot_potential(muS, lamSH, lamS, kappa_lambda, mS, update=False):
+
+            if update: clear_ax(ax)
+
+            plots = []
+            V_phi_S = {}
+            for order in loop_order:
+                V_phi_S[order] = self.V_h_S_func(phi, S, muS=muS, lamSH=lamSH, lamS=lamS, loop_order=order) / vev**4
+                plot = ax.plot(phi, V_phi_S[order], **plot_kwargs[order])
+                plots.append(plot)
+
+            if "0L" in loop_order:
+                vev1 = ax.axvline(+vev/np.sqrt(2), color=plot_kwargs["0L"].get("color", "green"), linestyle=':', lw=2)
+                vev2 = ax.axvline(-vev/np.sqrt(2), color=plot_kwargs["0L"].get("color", "green"), linestyle=':', lw=2)
+            else:
+                vev1 = ax.axvline(+vev/np.sqrt(2), color='green', linestyle=':', lw=2)
+                vev2 = ax.axvline(-vev/np.sqrt(2), color='green', linestyle=':', lw=2)
+            plots.append(vev1)
+            plots.append(vev2)
+
+            if plot_1L_minima:
+                min_arg = np.argmin(V_phi_S["1L"])
+                phi_min = phi[min_arg]
+                min1 = ax.axvline(+phi_min, color='red', linestyle=':', lw=2)
+                min2 = ax.axvline(-phi_min, color='red', linestyle=':', lw=2)
+                plots.append(min1)
+                plots.append(min2)
+
+            ax.set_title(
+                "Z2SSM Higgs Potential\n"
+                rf"$m_S={mS:.3g}$ GeV, "
+                rf"$\mu_S={muS:.3g}$ GeV, "
+                rf"$\lambda_{{SH}}={lamSH:.3g}$, "
+                rf"$\lambda_S={lamS:.3g}$, "
+                rf"$\kappa_\lambda={kappa_lambda:.3g}$",
+                fontsize=10
+            )
+
+            if V_range is not None:
+                ax.set_ylim(*V_range)
+            else:
+                ax.relim()           # recompute data limits from artists
+                ax.autoscale_view()  # update axis limits
+
+            fig.tight_layout()
+
+            return plots
+
+        if np.ndim(muS)!=0:
+            def scan_parameter_points(point):
+                return plot_potential(muS[point], lamSH[point], lamS[point], kappa_lambda[point], mS[point], update=True)
+
+            anim = FuncAnimation(fig, scan_parameter_points, frames=len(muS), interval=interval, blit=False)
+
+            with PdfPages(f"{plot_dir}/Higgs_potential_projection_{loop_order_txt}_Z2SSM_parameter_points_frames.pdf") as pdf:
+                for frame, (muS_point, lamSH_point, lamS_point, kappa_lambda_point, mS_point) in enumerate(zip(muS, lamSH, lamS, kappa_lambda, mS)):
+                    plot_potential(muS_point, lamSH_point, lamS_point, kappa_lambda_point, mS_point, update=True)
+                    if V_range is not None:
+                        ax.set_ylim(*V_range)
+                    pdf.savefig(fig)  
+                    subprocess.run(["mkdir", "-p", f"{plot_dir}/Higgs_potential_projection_{loop_order_txt}_Z2SSM_parameter_points_frames"])
+                    fig.savefig(f"{plot_dir}/Higgs_potential_projection_{loop_order_txt}_Z2SSM_parameter_points_frames/frame_{frame}.pdf")
+                    
+            return fig, ax, anim
+        else:
+            plot_potential(muS, lamSH, lamS, kappa_lambda[0], mS)
+            return fig, ax, None
+        
+
 
 class IDM(BSMModel):
     def __init__(self, l1, l3, l4, l5, mu2):
