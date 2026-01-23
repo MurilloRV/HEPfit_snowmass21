@@ -9,7 +9,7 @@ cmake .. -DCMAKE_INSTALL_PREFIX=./HEPfit -DMPIBAT=ON -DBAT_INSTALL=OFF
 make
 make install
 
-HEPfit_dir="/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21"
+HEPfit_dir="$BUDDY/HEPfit/HEPfit_snowmass21"
 cd /jwd
 
 tar czf ${HEPfit_dir}/code/HEPfit_snowmass_mod.tar.gz HEPfit

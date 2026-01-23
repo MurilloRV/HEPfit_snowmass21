@@ -18,6 +18,8 @@ export F2PY=$(which f2py)
 python -m pip install --no-build-isolation --no-cache-dir --verbose pyCollier # anyBSM
 
 cd /jwd
-tar czf /cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/code/python_venv_py38.tar.gz python_venv_py38
 
-cd /cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21
+HEPfit_dir="$BUDDY/HEPfit/HEPfit_snowmass21"
+tar czf ${HEPfit_dir}/code/python_venv_py38.tar.gz python_venv_py38
+
+cd $HEPfit_dir

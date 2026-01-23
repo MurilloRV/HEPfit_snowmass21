@@ -1,13 +1,13 @@
 #!/bin/bash
 source /etc/profile
-source $BUDDY/.bashrc_Rocky9
+# source $BUDDY/.bashrc_Rocky9
 
 setupATLAS
 lsetup "views LCG_105 x86_64-el9-gcc11-opt" 
 
 cd /jwd
 
-HEPfit_dir="/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21"
+HEPfit_dir="$BUDDY/HEPfit/HEPfit_snowmass21"
 
 tar xvf ${HEPfit_dir}/code/bat_mod.tar.gz
 tar xvf ${HEPfit_dir}/code/HEPfit_snowmass_mod_NPs.tar.gz
@@ -21,7 +21,8 @@ export PATH="/jwd/HEPfit/build/HEPfit/bin:$PATH"
 
 cd ${HEPfit_dir}
 
-git config --global user.name "Murillo Vellasco"
-git config --global user.email "murillovellasco@gmail.com"
+# TODO: set git user name and email
+# git config --global user.name "..."
+# git config --global user.email "..."
 
 # add line "#include <Math/Util.h>" to BCIntegrate.cxx

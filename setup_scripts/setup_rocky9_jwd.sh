@@ -1,13 +1,13 @@
 #!/bin/bash
 source /etc/profile
-source $BUDDY/.bashrc_Rocky9
+# source $BUDDY/.bashrc_Rocky9
 
 setupATLAS
 lsetup "views LCG_105 x86_64-el9-gcc11-opt" 
 
 cd /jwd
 
-HEPfit_dir="/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21"
+HEPfit_dir="$BUDDY/HEPfit/HEPfit_snowmass21"
 
 tar xvf ${HEPfit_dir}/code/bat_mod.tar.gz
 # tar xvf ${HEPfit_dir}/code/gslpp.tar.gz

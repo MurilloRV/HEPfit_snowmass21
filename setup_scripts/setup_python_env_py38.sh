@@ -8,7 +8,9 @@ unset PYTHONPATH
 
 module load miniforge/4.9.2-7-py38
 
-tar xf /cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/code/python_venv_py38.tar.gz
+HEPfit_dir="$BUDDY/HEPfit/HEPfit_snowmass21"
+
+tar xf ${HEPfit_dir}/code/python_venv_py38.tar.gz
 source ./python_venv_py38/bin/activate
 
-cd /cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21
+cd $HEPfit_dir
