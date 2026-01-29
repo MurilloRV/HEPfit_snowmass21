@@ -40,6 +40,7 @@ use_HEPfit_C1_values_WFR_kala2_input_all="false" # Use the HEPfit C1 values, ins
 use_HEPfit_C1_values_decayrates_WFR_kala2_input_all="true" # Use the HEPfit C1 values, also for the Higgs decay rates, instead of the Z2SSM values. Activates WFR_kala2_input_all as well
 
 # Additional, independent flags
+one_loop_inputs="true" # Use one-loop Z2SSM predictions for the BPs, instead of the two-loop ones
 # modify_all_ewpos="true" # Modify also the EWPO central values for *current* observables, not just future ones
 LoopHd6NoSubleading="false" # Do not include the subleading corrections (resummation) in kappa_lambda NLO effects. That is, Sets dZH1 = dZH2 = dZH
 noLoopH3d6Quad="false" # Do not include quadratic modifications in the SM loops in Higgs observables due to the dim 6 interactions that contribute to the trilinear Higgs coupling. That is, sets cLH3d62 = 0.0
@@ -105,11 +106,19 @@ for BP_Name in "${BP_Names_Total[@]}"; do
 
     mkdir -p "${BP_Name}"
 
+    if [ "$one_loop_inputs" == "true" ]; then
+        one_loop_flag="--one_loop_inputs"
+        one_loop_FLAG_CONF="_one_loop_inputs"
+    else
+        one_loop_flag=""
+        one_loop_FLAG_CONF=""
+    fi
+
     for ((j=0; j<${#Z2SSM_SCENARIOS[@]}; j++)); do
 
         MODEL_CONF_FILE="model_fits_realistic_HL_LHC"
 
-        
+
         if [ "$use_new_NPs" == "true" ]; then 
             MODEL_CONF_FILE="${MODEL_CONF_FILE}_use_new_NPs"
             scale_NPs_formatted=$(printf "%.3g" "$scale_NPs")
@@ -121,6 +130,8 @@ for BP_Name in "${BP_Names_Total[@]}"; do
                 MODEL_CONF_FILE="${MODEL_CONF_FILE}_theoerr240_${theoerr_FCCee240_path}_theoerr365_${theoerr_FCCee365_path}"
             fi
         fi
+        
+        if [ "$one_loop_inputs" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_one_loop_inputs"; fi
 
         if [ "$no_BSM" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_no_BSM"; fi
         if [ "$no_quad" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_no_quad"; fi
@@ -262,6 +273,12 @@ for BP_Name in "${BP_Names_Total[@]}"; do
             HIGGS_CONF="ObservablesHiggs"
         fi
 
+        if [ "$one_loop_inputs" == "true" ]; then
+            NEW_HIGGS_CONF="${HIGGS_CONF}_one_loop_inputs"
+            cp ${HIGGS_CONF}.conf ${NEW_HIGGS_CONF}.conf
+            HIGGS_CONF="${NEW_HIGGS_CONF}"
+        fi
+
         if [ "$noLoopH3d6Quad" == "true" ]; then
             NEW_FlagLoopH3d6Quad="ModelFlag       LoopH3d6Quad    false"
             sed -i "/ModelFlag       LoopH3d6Quad    true/c\\$NEW_FlagLoopH3d6Quad" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
@@ -318,6 +335,7 @@ for BP_Name in "${BP_Names_Total[@]}"; do
             sed -i "/ModelFlag       LoopH3d6Quad    true/a #\n\\$NEW_FlagLoopH3d6Full" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
         fi
 
+        EWPO_FLAG=""
         # if [ "$modify_all_ewpos" == "true" ]; then
         #     cp ObservablesEW.conf ObservablesEW_all_mods.conf
         #     NEW_EW_CURRENT="IncludeFile ObservablesEW_Current_SM_noLFU_kappa_scaled.conf"
@@ -331,9 +349,9 @@ for BP_Name in "${BP_Names_Total[@]}"; do
         # else
         #     EWPO_FLAG=""
         # fi
-        EWPO_FLAG=""
 
-
+        FLAG_CONF=""
+        FLAG_PYTHON=""
         if [[ "$no_BSM" == "true" || 
               "$no_quad" == "true" || 
               "$smeft_formula" == "true" || 
@@ -365,43 +383,35 @@ for BP_Name in "${BP_Names_Total[@]}"; do
                     NEW_HIGGS_CONF="${HIGGS_CONF}_${FLAG}"
                     cp ${HIGGS_CONF}.conf ${NEW_HIGGS_CONF}.conf 
                     HIGGS_CONF="${NEW_HIGGS_CONF}"
-
-                    NEW_HIGGS_240="IncludeFile ObservablesHiggs_FCCee_240_SM_kappa_scaled_${FLAG}.conf"
-                    sed -i "\/ObservablesHiggs_FCCee_240_SM_kappa_scaled.conf/c\\$NEW_HIGGS_240" ${HIGGS_CONF}.conf
-                    if [[ "${Z2SSM_SCENARIOS[j]}" != "Z2SSM_FCCee240" ]]; then
-                        NEW_HIGGS_365="IncludeFile ObservablesHiggs_FCCee_365_kappa_scaled_${FLAG}.conf"
-                        sed -i "\/ObservablesHiggs_FCCee_365_kappa_scaled.conf/c\\$NEW_HIGGS_365" ${HIGGS_CONF}.conf
-                    fi
-                    if [[ "$no_HLLHC_Higgs" != "true" ]]; then
-                        NEW_HIGGS_HLLHC="IncludeFile ObservablesHiggs_HLLHC_SM_kappa_scaled_${FLAG}.conf"
-                        sed -i "\/ObservablesHiggs_HLLHC_SM_kappa_scaled.conf/c\\$NEW_HIGGS_HLLHC" ${HIGGS_CONF}.conf
-                    fi
-
-                    NEW_MODEL_HIGGS="IncludeFile ../../${HIGGS_CONF}.conf "
-
-                    sed -i "\/IncludeFile ..\/..\/ObservablesHiggs.*/c\\$NEW_MODEL_HIGGS" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
-                    sed -i "\/IncludeFile ..\/..\/ObservablesHiggs.*/c\\$NEW_MODEL_HIGGS" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
                     
-
-                    PYTHON_ARG="--${FLAG}"
-
-                    cd $TARGET_PATH
-                    python scale_observables_kappas.py --scenario ${Z2SSM_SCENARIOS[j]} --bp ${BP_Name}
-                    python scale_observables_kappas.py --scenario ${Z2SSM_SCENARIOS[j]} --bp ${BP_Name} --realistic
-                    python scale_observables_kappas.py --scenario ${Z2SSM_SCENARIOS[j]} --bp ${BP_Name} --realistic ${PYTHON_ARG} --higgsconf ${HIGGS_CONF} ${EWPO_FLAG}
-                    # Running the script also without the flag, so that the main fits (i.e. the ones with the flag set to false) are also set up properly
-
+                    FLAG_PYTHON="--${FLAG}"
+                    FLAG_CONF="_${FLAG}"
                 fi
             done
+        fi
 
+        NEW_HIGGS_240="IncludeFile ObservablesHiggs_FCCee_240_SM_kappa_scaled${one_loop_FLAG_CONF}${FLAG_CONF}.conf"
+        sed -i "\/ObservablesHiggs_FCCee_240_SM_kappa_scaled.conf/c\\$NEW_HIGGS_240" ${HIGGS_CONF}.conf
+        if [[ "${Z2SSM_SCENARIOS[j]}" != "Z2SSM_FCCee240" ]]; then
+            NEW_HIGGS_365="IncludeFile ObservablesHiggs_FCCee_365_kappa_scaled${one_loop_FLAG_CONF}${FLAG_CONF}.conf"
+            sed -i "\/ObservablesHiggs_FCCee_365_kappa_scaled.conf/c\\$NEW_HIGGS_365" ${HIGGS_CONF}.conf
+        fi
+        if [[ "$no_HLLHC_Higgs" != "true" ]]; then
+            NEW_HIGGS_HLLHC="IncludeFile ObservablesHiggs_HLLHC_SM_kappa_scaled${one_loop_FLAG_CONF}${FLAG_CONF}.conf"
+            sed -i "\/ObservablesHiggs_HLLHC_SM_kappa_scaled.conf/c\\$NEW_HIGGS_HLLHC" ${HIGGS_CONF}.conf
+        fi
+
+        NEW_MODEL_HIGGS="IncludeFile ../../${HIGGS_CONF}.conf "
+
+        sed -i "\/IncludeFile ..\/..\/ObservablesHiggs.*/c\\$NEW_MODEL_HIGGS" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
+        sed -i "\/IncludeFile ..\/..\/ObservablesHiggs.*/c\\$NEW_MODEL_HIGGS" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
             
                 
-        else
-            cd $TARGET_PATH
-            python scale_observables_kappas.py --scenario ${Z2SSM_SCENARIOS[j]} --bp ${BP_Name}
-            python scale_observables_kappas.py --scenario ${Z2SSM_SCENARIOS[j]} --bp ${BP_Name} --realistic
-            python scale_observables_kappas.py --scenario ${Z2SSM_SCENARIOS[j]} --bp ${BP_Name} --realistic  --higgsconf ${HIGGS_CONF} ${EWPO_FLAG}
-        fi
+        cd $TARGET_PATH
+        python scale_observables_kappas.py --scenario ${Z2SSM_SCENARIOS[j]} --bp ${BP_Name}
+        python scale_observables_kappas.py --scenario ${Z2SSM_SCENARIOS[j]} --bp ${BP_Name} --realistic
+        python scale_observables_kappas.py --scenario ${Z2SSM_SCENARIOS[j]} --bp ${BP_Name} --realistic ${FLAG_PYTHON} --higgsconf ${HIGGS_CONF} ${EWPO_FLAG} ${one_loop_flag}
+        # Running the script also without the flag, so that the main fits (i.e. the ones with the flag set to false) are also set up properly
 
     done
 

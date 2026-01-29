@@ -25,6 +25,7 @@ parser.add_argument("--use_HEPfit_C1_values_WFR_kala2_input_all", help = "Use th
 parser.add_argument("--use_HEPfit_C1_values_decayrates_WFR_kala2_input_all", help = "Use the HEPfit C1 values, also for the Higgs decay rates, instead of the Z2SSM values. Activates WFR_kala2_input_all as well", action="store_true")
 parser.add_argument("--no_BSM_WFR_kala2_input_all", help = "Do not include corrections to Z->ZH from diagrams with BSM particles (S). Activates WFR_kala2_input_all as well", action="store_true")
 parser.add_argument("--higgsconf", help = "Name of the ObsevablesHiggs configuration file", type=str, default=None)
+parser.add_argument("--one_loop_inputs", help = "Use one-loop Z2SSM predictions for the BPs, instead of the two-loop ones", action="store_true")
 
 
 args = parser.parse_args()
@@ -45,6 +46,7 @@ use_HEPfit_C1_values_WFR_kala2_input_all            = args.use_HEPfit_C1_values_
 use_HEPfit_C1_values_decayrates_WFR_kala2_input_all = args.use_HEPfit_C1_values_decayrates_WFR_kala2_input_all
 no_BSM_WFR_kala2_input_all                          = args.no_BSM_WFR_kala2_input_all
 higgsconf                                           = args.higgsconf
+one_loop_inputs                                     = args.one_loop_inputs
 
 exclusive_flag_count = sum([
     no_BSM, 
@@ -111,7 +113,12 @@ kappas['gg'] = 1.0
 BP_Names = [f"BPBnew_{i}" for i in range(14)]
 
 if BP in BP_Names:
-    with open(f"./yaml_files_BPs/{BP}.yaml", 'r') as f:
+    if not one_loop_inputs:
+        yaml_file = f"./yaml_files_BPs/{BP}.yaml"
+    else:
+        yaml_file = f"./yaml_files_BPs/{BP}_1L.yaml"
+        
+    with open(yaml_file, 'r') as f:
         try:
             data_loaded = yaml.safe_load(f)
             for key in data_loaded['kappas']:
@@ -754,7 +761,7 @@ elif BP == "BPB_12":
     # Best scan point row: 201134 out of 203446
 
 else:
-    raise ValueError("Could not determine benchmark point!")
+    raise ValueError(f"Could not determine benchmark point: {BP}")
 
 
 
@@ -1306,29 +1313,33 @@ print(final_text)
 
 # Open the FCCee_240 input file in read mode and output file in write mode
 input_file_FCCee240 =  file_dir + "ObservablesHiggs_FCCee_240_SM.conf"
-output_file_FCCee240 = file_dir + "ObservablesHiggs_FCCee_240_SM_kappa_scaled.conf"
+output_file_FCCee240 = file_dir + "ObservablesHiggs_FCCee_240_SM_kappa_scaled"
+
+if one_loop_inputs:
+    output_file_FCCee240 = output_file_FCCee240 + "_one_loop_inputs"
 
 output_file_flag_map = {
-    no_BSM: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_no_BSM.conf",
-    no_quad: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_no_quad.conf",
-    smeft_formula: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_smeft_formula.conf",
-    smeft_formula_sqrt: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_smeft_formula_sqrt.conf",
-    smeft_formula_no_cross: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_smeft_formula_no_cross.conf",
-    smeft_formula_external_leg: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_smeft_formula_external_leg.conf",
-    smeft_formula_all: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_smeft_formula_all.conf",
-    WFR_kala2_input: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_WFR_kala2_input.conf",
-    WFR_kala2_input_all: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_WFR_kala2_input_all.conf",
-    use_HEPfit_C1_values_WFR_kala2_input_all: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_use_HEPfit_C1_values_WFR_kala2_input_all.conf",
-    use_HEPfit_C1_values_decayrates_WFR_kala2_input_all: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_use_HEPfit_C1_values_decayrates_WFR_kala2_input_all.conf",
-    no_BSM_WFR_kala2_input_all: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_no_BSM_WFR_kala2_input_all.conf",
+    no_BSM: "_no_BSM",
+    no_quad: "_no_quad",
+    smeft_formula: "_smeft_formula",
+    smeft_formula_sqrt: "_smeft_formula_sqrt",
+    smeft_formula_no_cross: "_smeft_formula_no_cross",
+    smeft_formula_external_leg: "_smeft_formula_external_leg",
+    smeft_formula_all: "_smeft_formula_all",
+    WFR_kala2_input: "_WFR_kala2_input",
+    WFR_kala2_input_all: "_WFR_kala2_input_all",
+    use_HEPfit_C1_values_WFR_kala2_input_all: "_use_HEPfit_C1_values_WFR_kala2_input_all",
+    use_HEPfit_C1_values_decayrates_WFR_kala2_input_all: "_use_HEPfit_C1_values_decayrates_WFR_kala2_input_all",
+    no_BSM_WFR_kala2_input_all: "_no_BSM_WFR_kala2_input_all",
 }
 
 for condition, filename in output_file_flag_map.items():
     if condition:
-        output_file_FCCee240 = file_dir + filename
+        output_file_FCCee240 = output_file_FCCee240 + filename
         break
 
 
+output_file_FCCee240 = output_file_FCCee240 + ".conf"
 with open(input_file_FCCee240, 'r') as infile, open(output_file_FCCee240, 'w') as outfile:
     for line in infile:
         if line.startswith("Observable"):
@@ -1406,29 +1417,33 @@ if (scenario == "Z2SSM_FCCee240_FCCee365"
     or scenario == "Z2SSM_FCCee240_FCCee365_HLLHClambda"):
     # Open the FCCee_365 input file in read mode and output file in write mode
     input_file_FCCee365 =  file_dir + "ObservablesHiggs_FCCee_365.conf"
-    output_file_FCCee365 = file_dir + "ObservablesHiggs_FCCee_365_kappa_scaled.conf"
+    output_file_FCCee365 = file_dir + "ObservablesHiggs_FCCee_365_kappa_scaled"
+
+    if one_loop_inputs:
+        output_file_FCCee365 = output_file_FCCee365 + "_one_loop_inputs"
 
     output_file_flag_map = {
-        no_BSM: "ObservablesHiggs_FCCee_365_kappa_scaled_no_BSM.conf",
-        no_quad: "ObservablesHiggs_FCCee_365_kappa_scaled_no_quad.conf",
-        smeft_formula: "ObservablesHiggs_FCCee_365_kappa_scaled_smeft_formula.conf",
-        smeft_formula_sqrt: "ObservablesHiggs_FCCee_365_kappa_scaled_smeft_formula_sqrt.conf",
-        smeft_formula_no_cross: "ObservablesHiggs_FCCee_365_kappa_scaled_smeft_formula_no_cross.conf",
-        smeft_formula_external_leg: "ObservablesHiggs_FCCee_365_kappa_scaled_smeft_formula_external_leg.conf",
-        smeft_formula_all: "ObservablesHiggs_FCCee_365_kappa_scaled_smeft_formula_all.conf",
-        WFR_kala2_input: "ObservablesHiggs_FCCee_365_kappa_scaled_WFR_kala2_input.conf",
-        WFR_kala2_input_all: "ObservablesHiggs_FCCee_365_kappa_scaled_WFR_kala2_input_all.conf",
-        use_HEPfit_C1_values_WFR_kala2_input_all: "ObservablesHiggs_FCCee_365_kappa_scaled_use_HEPfit_C1_values_WFR_kala2_input_all.conf",
-        use_HEPfit_C1_values_decayrates_WFR_kala2_input_all: "ObservablesHiggs_FCCee_365_kappa_scaled_use_HEPfit_C1_values_decayrates_WFR_kala2_input_all.conf",
-        no_BSM_WFR_kala2_input_all: "ObservablesHiggs_FCCee_365_kappa_scaled_no_BSM_WFR_kala2_input_all.conf",
+        no_BSM: "_no_BSM",
+        no_quad: "_no_quad",
+        smeft_formula: "_smeft_formula",
+        smeft_formula_sqrt: "_smeft_formula_sqrt",
+        smeft_formula_no_cross: "_smeft_formula_no_cross",
+        smeft_formula_external_leg: "_smeft_formula_external_leg",
+        smeft_formula_all: "_smeft_formula_all",
+        WFR_kala2_input: "_WFR_kala2_input",
+        WFR_kala2_input_all: "_WFR_kala2_input_all",
+        use_HEPfit_C1_values_WFR_kala2_input_all: "_use_HEPfit_C1_values_WFR_kala2_input_all",
+        use_HEPfit_C1_values_decayrates_WFR_kala2_input_all: "_use_HEPfit_C1_values_decayrates_WFR_kala2_input_all",
+        no_BSM_WFR_kala2_input_all: "_no_BSM_WFR_kala2_input_all",
     }
 
     for condition, filename in output_file_flag_map.items():
         if condition:
-            output_file_FCCee365 = file_dir + filename
+            output_file_FCCee365 = output_file_FCCee365 + filename
             break
 
 
+    output_file_FCCee365 = output_file_FCCee365 + ".conf"
     with open(input_file_FCCee365, 'r') as infile, open(output_file_FCCee365, 'w') as outfile:
         for line in infile:
             if line.startswith("Observable"):
@@ -1533,29 +1548,33 @@ if (scenario == "Z2SSM_FCCee240_FCCee365"
 
 # Open the HL-LHC input file in read mode and output file in write mode
 input_file_HLLHC =  file_dir + "ObservablesHiggs_HLLHC_SM.conf"
-output_file_HLLHC = file_dir + "ObservablesHiggs_HLLHC_SM_kappa_scaled.conf"
+output_file_HLLHC = file_dir + "ObservablesHiggs_HLLHC_SM_kappa_scaled"
+
+if one_loop_inputs:
+        output_file_HLLHC = output_file_HLLHC + "_one_loop_inputs"
 
 output_file_flag_map = {
-    no_BSM: "ObservablesHiggs_HLLHC_SM_kappa_scaled_no_BSM.conf",
-    no_quad: "ObservablesHiggs_HLLHC_SM_kappa_scaled_no_quad.conf",
-    smeft_formula: "ObservablesHiggs_HLLHC_SM_kappa_scaled_smeft_formula.conf",
-    smeft_formula_sqrt: "ObservablesHiggs_HLLHC_SM_kappa_scaled_smeft_formula_sqrt.conf",
-    smeft_formula_no_cross: "ObservablesHiggs_HLLHC_SM_kappa_scaled_smeft_formula_no_cross.conf",
-    smeft_formula_external_leg: "ObservablesHiggs_HLLHC_SM_kappa_scaled_smeft_formula_external_leg.conf",
-    smeft_formula_all: "ObservablesHiggs_HLLHC_SM_kappa_scaled_smeft_formula_all.conf",
-    WFR_kala2_input: "ObservablesHiggs_HLLHC_SM_kappa_scaled_WFR_kala2_input.conf",
-    WFR_kala2_input_all: "ObservablesHiggs_HLLHC_SM_kappa_scaled_WFR_kala2_input_all.conf",
-    use_HEPfit_C1_values_WFR_kala2_input_all: "ObservablesHiggs_HLLHC_SM_kappa_scaled_use_HEPfit_C1_values_WFR_kala2_input_all.conf",
-    use_HEPfit_C1_values_decayrates_WFR_kala2_input_all: "ObservablesHiggs_HLLHC_SM_kappa_scaled_use_HEPfit_C1_values_decayrates_WFR_kala2_input_all.conf",
-    no_BSM_WFR_kala2_input_all: "ObservablesHiggs_HLLHC_SM_kappa_scaled_no_BSM_WFR_kala2_input_all.conf",
+    no_BSM: "_no_BSM",
+    no_quad: "_no_quad",
+    smeft_formula: "_smeft_formula",
+    smeft_formula_sqrt: "_smeft_formula_sqrt",
+    smeft_formula_no_cross: "_smeft_formula_no_cross",
+    smeft_formula_external_leg: "_smeft_formula_external_leg",
+    smeft_formula_all: "_smeft_formula_all",
+    WFR_kala2_input: "_WFR_kala2_input",
+    WFR_kala2_input_all: "_WFR_kala2_input_all",
+    use_HEPfit_C1_values_WFR_kala2_input_all: "_use_HEPfit_C1_values_WFR_kala2_input_all",
+    use_HEPfit_C1_values_decayrates_WFR_kala2_input_all: "_use_HEPfit_C1_values_decayrates_WFR_kala2_input_all",
+    no_BSM_WFR_kala2_input_all: "_no_BSM_WFR_kala2_input_all",
 }
 
 for condition, filename in output_file_flag_map.items():
     if condition:
-        output_file_HLLHC = file_dir + filename
+        output_file_HLLHC = output_file_HLLHC + filename
         break
 
 
+output_file_HLLHC = output_file_HLLHC + ".conf"
 with open(input_file_HLLHC, 'r') as infile, open(output_file_HLLHC, 'w') as outfile:
     for line in infile:
         if line.startswith("Observable"):
