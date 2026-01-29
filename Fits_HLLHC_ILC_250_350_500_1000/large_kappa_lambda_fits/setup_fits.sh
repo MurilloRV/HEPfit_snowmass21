@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ORIGINAL_PATH="/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/Fits_HLLHC_ILC_250_350_500_1000/large_kappa_lambda_fits"
+ORIGINAL_PATH="$BUDDY/HEPfit/HEPfit_snowmass21/Fits_HLLHC_ILC_250_350_500_1000/large_kappa_lambda_fits"
 
 
 LAMBDAS=({-5..10})
