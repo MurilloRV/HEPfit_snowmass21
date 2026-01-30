@@ -423,6 +423,11 @@ def find_configuration_files(
         configuration files, conf_files[scenario][model_spec].
     """
 
+    loop_order_flags = [
+        "",
+        "one_loop_inputs_",
+    ]
+
     HEPfit_flags = [
         "",
         "use_new_NPs_",
@@ -513,39 +518,40 @@ def find_configuration_files(
                     conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs")] = f"ObservablesHiggs_scaled_realistic_HL_LHC"
 
             found_flag = False
-            for hepfit_flag in HEPfit_flags:
-                for exclusive_flag in exclusive_flag_list:
-                    for additional_flag in additional_flag_list:
-                        for priors_flag in priors_flag_list:
-                            for MC_flag in MC_flag_list:
-                                full_flag = hepfit_flag + exclusive_flag + additional_flag + priors_flag + MC_flag
-                                if model_spec == f"fits_realistic_HL_LHC_{full_flag}":
-                                    print(f"Full fit flag: {full_flag}")
-                                    found_flag = True
+            for loop_order_flag in loop_order_flags:
+                for hepfit_flag in HEPfit_flags:
+                    for exclusive_flag in exclusive_flag_list:
+                        for additional_flag in additional_flag_list:
+                            for priors_flag in priors_flag_list:
+                                for MC_flag in MC_flag_list:
+                                    full_flag = loop_order_flag + hepfit_flag + exclusive_flag + additional_flag + priors_flag + MC_flag
+                                    if model_spec == f"fits_realistic_HL_LHC_{full_flag}":
+                                        print(f"Full fit flag: {full_flag}")
+                                        found_flag = True
 
-                                    if read_WCs:
-                                        if additional_flag == "_no_C_HG":
-                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("d6Ops_corr")] = "d6Ops_corr_no_C_HG"
+                                        if read_WCs:
+                                            if additional_flag == "_no_C_HG":
+                                                conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("d6Ops_corr")] = "d6Ops_corr_no_C_HG"
 
-                                    else:
-                                        Higgs_flag = exclusive_flag
-                                        
-                                        if not additional_flag == "_no_HLLHC_Higgs":
-                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_HLLHC_SM_kappa_scaled")] = f"ObservablesHiggs_HLLHC_SM_kappa_scaled_{Higgs_flag}"
-                                        conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_FCCee_240_SM_kappa_scaled")] = f"ObservablesHiggs_FCCee_240_SM_kappa_scaled_{Higgs_flag}"
-                                        if scenario == f"{model}_FCCee240_FCCee365" or scenario == f"{model}_FCCee240_FCCee365_HLLHClambda":
-                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_FCCee_365_kappa_scaled")] = f"ObservablesHiggs_FCCee_365_kappa_scaled_{Higgs_flag}"
-
-                                        if additional_flag == "_no_HLLHC_Higgs":
-                                            Higgs_flag = "no_HLLHC_" + Higgs_flag
-                                        if scenario == f"{model}_FCCee240_FCCee365_HLLHClambda":
-                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_scaled_realistic_HL_LHC")] = f"ObservablesHiggs_scaled_realistic_HL_LHC_{Higgs_flag}"
                                         else:
-                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs")] = f"ObservablesHiggs_{Higgs_flag}"
+                                            Higgs_flag = loop_order_flag + exclusive_flag
+                                            
+                                            if not additional_flag == "_no_HLLHC_Higgs":
+                                                conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_HLLHC_SM_kappa_scaled")] = f"ObservablesHiggs_HLLHC_SM_kappa_scaled_{Higgs_flag}"
+                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_FCCee_240_SM_kappa_scaled")] = f"ObservablesHiggs_FCCee_240_SM_kappa_scaled_{Higgs_flag}"
+                                            if scenario == f"{model}_FCCee240_FCCee365" or scenario == f"{model}_FCCee240_FCCee365_HLLHClambda":
+                                                conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_FCCee_365_kappa_scaled")] = f"ObservablesHiggs_FCCee_365_kappa_scaled_{Higgs_flag}"
 
-                                        if additional_flag == "_all_EW_mods":
-                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesEW")] = "ObservablesEW_all_mods"
-                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesEW_Current_SM_noLFU")] = "ObservablesEW_Current_SM_noLFU_kappa_scaled"
+                                            if additional_flag == "_no_HLLHC_Higgs":
+                                                Higgs_flag = "no_HLLHC_" + Higgs_flag
+                                            if scenario == f"{model}_FCCee240_FCCee365_HLLHClambda":
+                                                conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_scaled_realistic_HL_LHC")] = f"ObservablesHiggs_scaled_realistic_HL_LHC_{Higgs_flag}"
+                                            else:
+                                                conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs")] = f"ObservablesHiggs_{Higgs_flag}"
+
+                                            if additional_flag == "_all_EW_mods":
+                                                conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesEW")] = "ObservablesEW_all_mods"
+                                                conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesEW_Current_SM_noLFU")] = "ObservablesEW_Current_SM_noLFU_kappa_scaled"
 
             if found_flag == False:
                 raise ValueError(f"Model specification {model_spec} could not be assigned flags. Make sure all flags are implemented")
