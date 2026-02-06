@@ -10,7 +10,8 @@ module load miniforge/24.7.1-0-py312
 
 python -m venv python_venv
 source ./python_venv/bin/activate
-python -m pip install numpy scipy tqdm matplotlib ipykernel uproot hist[plot]
+python -m pip install numpy scipy tqdm matplotlib ipykernel uproot hist[plot] PyYAML
+python -m pip install ipykernel ipywidgets
 
 cd /jwd
 tar czf /cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/code/python_venv.tar.gz python_venv

@@ -40,7 +40,7 @@ use_HEPfit_C1_values_WFR_kala2_input_all="false" # Use the HEPfit C1 values, ins
 use_HEPfit_C1_values_decayrates_WFR_kala2_input_all="true" # Use the HEPfit C1 values, also for the Higgs decay rates, instead of the Z2SSM values. Activates WFR_kala2_input_all as well
 
 # Additional, independent flags
-one_loop_inputs="true" # Use one-loop Z2SSM predictions for the BPs, instead of the two-loop ones
+one_loop_inputs="false" # Use one-loop Z2SSM predictions for the BPs, instead of the two-loop ones
 # modify_all_ewpos="true" # Modify also the EWPO central values for *current* observables, not just future ones
 LoopHd6NoSubleading="false" # Do not include the subleading corrections (resummation) in kappa_lambda NLO effects. That is, Sets dZH1 = dZH2 = dZH
 noLoopH3d6Quad="false" # Do not include quadratic modifications in the SM loops in Higgs observables due to the dim 6 interactions that contribute to the trilinear Higgs coupling. That is, sets cLH3d62 = 0.0
@@ -49,11 +49,11 @@ no_C_HG="false" # Exclude the C_HG operator from the fit
 no_HLLHC_Higgs="false" # Exclude the HL-LHC Higgs observables from the fit
 LoopH3d6Full="false" # Use the full expansion of the ZH cross-section in terms of C1 and dZH
 
-use_new_NPs="false" # Use newly implementent theory nuisance parameters
-# theoerr_FCCee240_input="0.001074700180397359"
-theoerr_FCCee240_input="DEFAULT"
-# theoerr_FCCee365_input="0.0010540963454747359" 
-theoerr_FCCee365_input="DEFAULT"
+use_new_NPs="true" # Use newly implementent theory nuisance parameters
+theoerr_FCCee240_input="0.01478971149465824"
+# theoerr_FCCee240_input="DEFAULT"
+theoerr_FCCee365_input="0.014717533492464643" 
+# theoerr_FCCee365_input="DEFAULT"
 
 set_theoerr() {
     local input="$1"
@@ -242,10 +242,10 @@ for BP_Name in "${BP_Names_Total[@]}"; do
             sed -i "\%IncludeFile ../../HiggsEW_Par_Corr.conf.*%a #\n$NEW_NP_CONF_INCLUDE" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
             sed -i "\%IncludeFile ../../HiggsEW_Par_Corr.conf.*%a #\n$NEW_NP_CONF_INCLUDE" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
 
-            theoerr_FCCee240=$(set_theoerr "$theoerr_FCCee240_input" "0.0023295620053664676" "$scale_NPs")
-            theoerr_FCCee365=$(set_theoerr "$theoerr_FCCee365_input" "0.0022585758048204183" "$scale_NPs")
-            NPmismatch_FCCee240=$(printf "%.20f" "$(echo "$scale_NPs * 0.006856788995512071" | bc)" )
-            NPmismatch_FCCee365=$(printf "%.20f" "$(echo "$scale_NPs * 0.0034632124670086065" | bc)" )
+            theoerr_FCCee240=$(set_theoerr "$theoerr_FCCee240_input" "0.0009754551440793161" "$scale_NPs")
+            theoerr_FCCee365=$(set_theoerr "$theoerr_FCCee365_input" "0.0008806495349948248" "$scale_NPs")
+            NPmismatch_FCCee240=$(printf "%.20f" "$(echo "$scale_NPs * 0.0" | bc)" )
+            NPmismatch_FCCee365=$(printf "%.20f" "$(echo "$scale_NPs * 0.0" | bc)" )
 
             echo "######################################################################" > $NEW_NP_CONF
             echo "# New theory nuisance parameters for FCCee Higgs production" >> $NEW_NP_CONF
