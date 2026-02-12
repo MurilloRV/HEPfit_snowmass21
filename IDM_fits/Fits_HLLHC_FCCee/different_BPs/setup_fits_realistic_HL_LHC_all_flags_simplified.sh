@@ -28,8 +28,8 @@ smeft_formula_all="false" # Using the HEPfit SMEFT expression for all XS and BR,
 WFR_kala2_input="false" # Include the WFR contribution, proportional to kappa_lambda**2, into the IDM ZH cross-section prediction
 WFR_kala2_input_all="false" # Include the WFR contribution, proportional to kappa_lambda**2, into the IDM predictions for all the XS and BR
 use_HEPfit_C1_values_WFR_kala2_input_all="false" # Use the HEPfit C1 values, instead of the IDM values. Activates WFR_kala2_input_all as well
-use_HEPfit_C1_values_decayrates_WFR_kala2_input_all="false" # Use the HEPfit C1 values, also for the Higgs decay rates, instead of the Z2SSM values. Activates WFR_kala2_input_all as well
-use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all="true" # Includes higher-order contributions to the ZZh vertex, beyond the 1L BSM contribution
+use_HEPfit_C1_values_decayrates_WFR_kala2_input_all="true" # Use the HEPfit C1 values, also for the Higgs decay rates, instead of the Z2SSM values. Activates WFR_kala2_input_all as well
+use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all="false" # Includes higher-order contributions to the ZZh vertex, beyond the 1L BSM contribution
 
 # Additional, independent flags
 modify_all_ewpos="true" # Modify also the EWPO central values for *current* observables, not just future ones
@@ -40,19 +40,43 @@ no_C_HG="false" # Exclude the C_HG operator from the fit
 no_HLLHC_Higgs="false" # Exclude the HL-LHC Higgs observables from the fit
 LoopH3d6Full="false" # Use the full expansion of the ZH cross-section in terms of C1 and dZH
 
-use_new_NPs="false" # Use newly implementent theory nuisance parameters
+use_new_NPs="true" # Use newly implementent theory nuisance parameters
+UseKlamDependentUncertainties="true" # A boolean flag that is true if using klam-dependent theoretical uncertainties in the ee->Zh cross-section predictions.
+
+# Changed default values to 1.0!
+# theoerr_FCCee240_input="1.0"
 # theoerr_FCCee240_input="0.001074700180397359" # smaller ellipses
-theoerr_FCCee240_input="0.01148860653191953"  # including blue curve (only 1/Lambda^2)
-# theoerr_FCCee240_input="DEFAULT"
+# theoerr_FCCee240_input="0.01148860653191953"  # including blue curve (only 1/Lambda^2)
+theoerr_FCCee240_input="DEFAULT"
 
+# theoerr_FCCee365_input="1.0"
 # theoerr_FCCee365_input="0.0010540963454747359" # smaller ellipses
-theoerr_FCCee365_input="0.011380169070804323"  # including blue curve (only 1/Lambda^2)
-# theoerr_FCCee365_input="DEFAULT"
+# theoerr_FCCee365_input="0.011380169070804323"  # including blue curve (only 1/Lambda^2)
+theoerr_FCCee365_input="DEFAULT"
 
-NPmismatch_FCCee240_input="0.0"
-# NPmismatch_FCCee240_input="DEFAULT"
-NPmismatch_FCCee365_input="0.0"
-# NPmismatch_FCCee365_input="DEFAULT"
+# Changed default values to 0.0!
+# NPmismatch_FCCee240_input="0.0"
+NPmismatch_FCCee240_input="DEFAULT"
+# NPmismatch_FCCee365_input="0.0"
+NPmismatch_FCCee365_input="DEFAULT"
+
+
+# Estimates EXCLUDING the O(1/Lambda_NP^2) curve
+# theoerr_FCCee240_function_x2_coef_input="0.00000841930087633563"
+# theoerr_FCCee240_function_x1_coef_input="0.00006932472446483649"
+# theoerr_FCCee240_function_x0_coef_input="0.00012365304251529146"
+# theoerr_FCCee365_function_x2_coef_input="0.00001992550937285446"
+# theoerr_FCCee365_function_x1_coef_input="-0.00002663878133908424"
+# theoerr_FCCee365_function_x0_coef_input="0.00031254668713761978"
+
+# # Estimates INCLUDING the O(1/Lambda_NP^2) curve
+theoerr_FCCee240_function_x2_coef_input="0.00076325757128542970"
+theoerr_FCCee240_function_x1_coef_input="-0.00151726083157403824"
+theoerr_FCCee240_function_x0_coef_input="0.00076121051962415318"
+theoerr_FCCee365_function_x2_coef_input="0.00079217047454317366"
+theoerr_FCCee365_function_x1_coef_input="-0.00161839280277012226"
+theoerr_FCCee365_function_x0_coef_input="0.00083463246355167890"
+
 
 set_nuisance_parameter() {
     local input="$1"
@@ -66,8 +90,8 @@ set_nuisance_parameter() {
 }
 
 
-scale_NPs=$(echo "scale=20.0; scl=2.295748928898636; scl=sqrt(scl); scl" | bc)
-# scale_NPs="1.0"  # default
+# scale_NPs=$(echo "scale=20.0; scl=2.295748928898636; scl=sqrt(scl); scl" | bc)
+scale_NPs="1.0"  # default
 
 # Check if more than one exclusive flag is set to "true"
 EXCLUSIVE_FLAGS=(
@@ -123,16 +147,43 @@ for BP_Name in "${BP_Names_Total[@]}"; do
             scale_NPs_formatted=$(printf "%.3g" "$scale_NPs")
             if [ "$scale_NPs_formatted" != "1" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_scale${scale_NPs_formatted}"; fi
 
-            if [[ "$theoerr_FCCee240_input" != "DEFAULT" || "$theoerr_FCCee365_input" != "DEFAULT" ]]; then
+            if [[ "$theoerr_FCCee240_input" != "DEFAULT" ]]; then
                 theoerr_FCCee240_path=$(printf "%.3g" "$(echo "$theoerr_FCCee240_input" | bc)" )
-                theoerr_FCCee365_path=$(printf "%.3g" "$(echo "$theoerr_FCCee365_input" | bc)" )
-                MODEL_CONF_FILE="${MODEL_CONF_FILE}_theoerr240_${theoerr_FCCee240_path}_theoerr365_${theoerr_FCCee365_path}"
+                MODEL_CONF_FILE="${MODEL_CONF_FILE}_theoerr240_${theoerr_FCCee240_path}"
             fi
 
-            if [[ "$NPmismatch_FCCee240_input" != "DEFAULT" || "$NPmismatch_FCCee365_input" != "DEFAULT" ]]; then
+            if [[ "$theoerr_FCCee365_input" != "DEFAULT" ]]; then
+                theoerr_FCCee365_path=$(printf "%.3g" "$(echo "$theoerr_FCCee365_input" | bc)" )
+                MODEL_CONF_FILE="${MODEL_CONF_FILE}_theoerr365_${theoerr_FCCee365_path}"
+            fi
+
+            if [[ "$UseKlamDependentUncertainties" == "true" ]]; then
+                if [[ "$theoerr_FCCee240_input" != "DEFAULT" || "$theoerr_FCCee365_input" != "DEFAULT" ]]; then
+                    echo "Warning: using kappa_lambda dependent uncertainties, but theoerr_FCCee240_input and theoerr_FCCee365_input are not set to DEFAULT (1.0)."
+                fi
+                MODEL_CONF_FILE="${MODEL_CONF_FILE}_klam_dependent"
+                theoerr_FCCee240_function_x2_coef_path=$(printf "%.3g" "$(echo "$theoerr_FCCee240_function_x2_coef_input" | bc)" )
+                theoerr_FCCee240_function_x1_coef_path=$(printf "%.3g" "$(echo "$theoerr_FCCee240_function_x1_coef_input" | bc)" )
+                theoerr_FCCee240_function_x0_coef_path=$(printf "%.3g" "$(echo "$theoerr_FCCee240_function_x0_coef_input" | bc)" )
+                theoerr_FCCee365_function_x2_coef_path=$(printf "%.3g" "$(echo "$theoerr_FCCee365_function_x2_coef_input" | bc)" )
+                theoerr_FCCee365_function_x1_coef_path=$(printf "%.3g" "$(echo "$theoerr_FCCee365_function_x1_coef_input" | bc)" )
+                theoerr_FCCee365_function_x0_coef_path=$(printf "%.3g" "$(echo "$theoerr_FCCee365_function_x0_coef_input" | bc)" )
+                MODEL_CONF_FILE="${MODEL_CONF_FILE}_a240_${theoerr_FCCee240_function_x2_coef_path}"
+                MODEL_CONF_FILE="${MODEL_CONF_FILE}_b240_${theoerr_FCCee240_function_x1_coef_path}"
+                MODEL_CONF_FILE="${MODEL_CONF_FILE}_c240_${theoerr_FCCee240_function_x0_coef_path}"
+                MODEL_CONF_FILE="${MODEL_CONF_FILE}_a365_${theoerr_FCCee365_function_x2_coef_path}"
+                MODEL_CONF_FILE="${MODEL_CONF_FILE}_b365_${theoerr_FCCee365_function_x1_coef_path}"
+                MODEL_CONF_FILE="${MODEL_CONF_FILE}_c365_${theoerr_FCCee365_function_x0_coef_path}"
+            fi
+
+            if [[ "$NPmismatch_FCCee240_input" != "DEFAULT" ]]; then
                 NPmismatch_FCCee240_path=$(printf "%.3g" "$(echo "$NPmismatch_FCCee240_input" | bc)" )
+                MODEL_CONF_FILE="${MODEL_CONF_FILE}_NPmismatch240_${NPmismatch_FCCee240_path}"
+            fi
+
+            if [[ "$NPmismatch_FCCee365_input" != "DEFAULT" ]]; then
                 NPmismatch_FCCee365_path=$(printf "%.3g" "$(echo "$NPmismatch_FCCee365_input" | bc)" )
-                MODEL_CONF_FILE="${MODEL_CONF_FILE}_NPmismatch240_${NPmismatch_FCCee240_path}_NPmismatch365_${NPmismatch_FCCee365_path}"
+                MODEL_CONF_FILE="${MODEL_CONF_FILE}_NPmismatch365_${NPmismatch_FCCee365_path}"
             fi
         fi
 
@@ -237,16 +288,62 @@ for BP_Name in "${BP_Names_Total[@]}"; do
             NEW_NP_CONF="FCCee_new_NPs"
             if [ "$scale_NPs_formatted" != "1" ]; then NEW_NP_CONF="${NEW_NP_CONF}_scale${scale_NPs_formatted}"; fi
 
-            if [[ "$theoerr_FCCee240_input" != "DEFAULT" || "$theoerr_FCCee365_input" != "DEFAULT" ]]; then
+            if [[ "$theoerr_FCCee240_input" != "DEFAULT" ]]; then
                 theoerr_FCCee240_path=$(printf "%.3g" "$(echo "$theoerr_FCCee240_input" | bc)" )
-                theoerr_FCCee365_path=$(printf "%.3g" "$(echo "$theoerr_FCCee365_input" | bc)" )
-                NEW_NP_CONF="${NEW_NP_CONF}_theoerr240_${theoerr_FCCee240_path}_theoerr365_${theoerr_FCCee365_path}"
+                NEW_NP_CONF="${NEW_NP_CONF}_theoerr240_${theoerr_FCCee240_path}"
             fi
 
-            if [[ "$NPmismatch_FCCee240_input" != "DEFAULT" || "$NPmismatch_FCCee365_input" != "DEFAULT" ]]; then
+            if [[ "$theoerr_FCCee365_input" != "DEFAULT" ]]; then
+                theoerr_FCCee365_path=$(printf "%.3g" "$(echo "$theoerr_FCCee365_input" | bc)" )
+                NEW_NP_CONF="${NEW_NP_CONF}_theoerr365_${theoerr_FCCee365_path}"
+            fi
+
+            if [[ "$UseKlamDependentUncertainties" == "true" ]]; then
+                NEW_NP_CONF="${NEW_NP_CONF}_klam_dependent"
+                NEW_NP_CONF="${NEW_NP_CONF}_a240_${theoerr_FCCee240_function_x2_coef_path}"
+                NEW_NP_CONF="${NEW_NP_CONF}_b240_${theoerr_FCCee240_function_x1_coef_path}"
+                NEW_NP_CONF="${NEW_NP_CONF}_c240_${theoerr_FCCee240_function_x0_coef_path}"
+                NEW_NP_CONF="${NEW_NP_CONF}_a365_${theoerr_FCCee365_function_x2_coef_path}"
+                NEW_NP_CONF="${NEW_NP_CONF}_b365_${theoerr_FCCee365_function_x1_coef_path}"
+                NEW_NP_CONF="${NEW_NP_CONF}_c365_${theoerr_FCCee365_function_x0_coef_path}"
+
+                theoerr_FCCee240_function_x2_coef=$theoerr_FCCee240_function_x2_coef_input
+                theoerr_FCCee240_function_x1_coef=$theoerr_FCCee240_function_x1_coef_input
+                theoerr_FCCee240_function_x0_coef=$theoerr_FCCee240_function_x0_coef_input
+                theoerr_FCCee365_function_x2_coef=$theoerr_FCCee365_function_x2_coef_input
+                theoerr_FCCee365_function_x1_coef=$theoerr_FCCee365_function_x1_coef_input
+                theoerr_FCCee365_function_x0_coef=$theoerr_FCCee365_function_x0_coef_input
+
+                NEW_FlagUseKlamDependentUncertainties="ModelFlag       UseKlamDependentUncertainties    true"
+                sed -i "/ModelFlag       LoopH3d6Quad    true/a #\n\\$NEW_FlagUseKlamDependentUncertainties" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
+                sed -i "/ModelFlag       LoopH3d6Quad    true/a #\n\\$NEW_FlagUseKlamDependentUncertainties" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
+
+            else
+                theoerr_FCCee240_function_x2_coef="0.0"
+                theoerr_FCCee240_function_x1_coef="0.0"
+                theoerr_FCCee240_function_x0_coef="0.0"
+                theoerr_FCCee365_function_x2_coef="0.0"
+                theoerr_FCCee365_function_x1_coef="0.0"
+                theoerr_FCCee365_function_x0_coef="0.0"
+
+                if [[ "$theoerr_FCCee240_function_x2_coef_path" != "0.0" || 
+                      "$theoerr_FCCee240_function_x1_coef_path" != "0.0" || 
+                      "$theoerr_FCCee240_function_x0_coef_path" != "0.0" || 
+                      "$theoerr_FCCee365_function_x2_coef_path" != "0.0" || 
+                      "$theoerr_FCCee365_function_x1_coef_path" != "0.0" || 
+                      "$theoerr_FCCee365_function_x0_coef_path" != "0.0" ]]; then
+                    echo "Warning: using nonzero values for the coefficients of the klam-dependent uncertainties, but UseKlamDependentUncertainties is not set to true. These coefficients will be ignored."
+                fi
+            fi
+
+            if [[ "$NPmismatch_FCCee240_input" != "DEFAULT" ]]; then
                 NPmismatch_FCCee240_path=$(printf "%.3g" "$(echo "$NPmismatch_FCCee240_input" | bc)" )
+                NEW_NP_CONF="${NEW_NP_CONF}_NPmismatch240_${NPmismatch_FCCee240_path}"
+            fi
+
+            if [[ "$NPmismatch_FCCee365_input" != "DEFAULT" ]]; then
                 NPmismatch_FCCee365_path=$(printf "%.3g" "$(echo "$NPmismatch_FCCee365_input" | bc)" )
-                NEW_NP_CONF="${NEW_NP_CONF}_NPmismatch240_${NPmismatch_FCCee240_path}_NPmismatch365_${NPmismatch_FCCee365_path}"
+                NEW_NP_CONF="${NEW_NP_CONF}_NPmismatch365_${NPmismatch_FCCee365_path}"
             fi
 
             NEW_NP_CONF="${NEW_NP_CONF}.conf"
@@ -255,10 +352,16 @@ for BP_Name in "${BP_Names_Total[@]}"; do
             sed -i "\%IncludeFile ../../HiggsEW_Par_Corr.conf.*%a #\n$NEW_NP_CONF_INCLUDE" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
             sed -i "\%IncludeFile ../../HiggsEW_Par_Corr.conf.*%a #\n$NEW_NP_CONF_INCLUDE" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
 
-            theoerr_FCCee240=$(set_nuisance_parameter "$theoerr_FCCee240_input" "0.0023295620053664676" "$scale_NPs")
-            theoerr_FCCee365=$(set_nuisance_parameter "$theoerr_FCCee365_input" "0.0022585758048204183" "$scale_NPs")
-            NPmismatch_FCCee240=$(set_nuisance_parameter "$NPmismatch_FCCee240_input" "0.006856788995512071" "$scale_NPs")
-            NPmismatch_FCCee365=$(set_nuisance_parameter "$NPmismatch_FCCee365_input" "0.0034632124670086065" "$scale_NPs")
+            # Old default values
+            # theoerr_FCCee240=$(set_nuisance_parameter "$theoerr_FCCee240_input" "0.0023295620053664676" "$scale_NPs")
+            # theoerr_FCCee365=$(set_nuisance_parameter "$theoerr_FCCee365_input" "0.0022585758048204183" "$scale_NPs")
+            # NPmismatch_FCCee240=$(set_nuisance_parameter "$NPmismatch_FCCee240_input" "0.006856788995512071" "$scale_NPs")
+            # NPmismatch_FCCee365=$(set_nuisance_parameter "$NPmismatch_FCCee365_input" "0.0034632124670086065" "$scale_NPs")
+
+            theoerr_FCCee240=$(set_nuisance_parameter "$theoerr_FCCee240_input" "1.0" "$scale_NPs")
+            theoerr_FCCee365=$(set_nuisance_parameter "$theoerr_FCCee365_input" "1.0" "$scale_NPs")
+            NPmismatch_FCCee240=$(set_nuisance_parameter "$NPmismatch_FCCee240_input" "0.0" "$scale_NPs")
+            NPmismatch_FCCee365=$(set_nuisance_parameter "$NPmismatch_FCCee365_input" "0.0" "$scale_NPs")
 
             echo "######################################################################" > $NEW_NP_CONF
             echo "# New theory nuisance parameters for FCCee Higgs production" >> $NEW_NP_CONF
@@ -270,6 +373,13 @@ for BP_Name in "${BP_Names_Total[@]}"; do
             
             echo "ModelParameter  NPmismatch_FCCee240        0.  ${NPmismatch_FCCee240}  0." >> $NEW_NP_CONF
             echo "ModelParameter  NPmismatch_FCCee365        0.  ${NPmismatch_FCCee365}  0." >> $NEW_NP_CONF
+
+            echo "ModelParameter  theoerr_FCCee240_function_x2_coef        ${theoerr_FCCee240_function_x2_coef}  0.  0." >> $NEW_NP_CONF
+            echo "ModelParameter  theoerr_FCCee240_function_x1_coef        ${theoerr_FCCee240_function_x1_coef}  0.  0." >> $NEW_NP_CONF
+            echo "ModelParameter  theoerr_FCCee240_function_x0_coef        ${theoerr_FCCee240_function_x0_coef}  0.  0." >> $NEW_NP_CONF
+            echo "ModelParameter  theoerr_FCCee365_function_x2_coef        ${theoerr_FCCee365_function_x2_coef}  0.  0." >> $NEW_NP_CONF
+            echo "ModelParameter  theoerr_FCCee365_function_x1_coef        ${theoerr_FCCee365_function_x1_coef}  0.  0." >> $NEW_NP_CONF
+            echo "ModelParameter  theoerr_FCCee365_function_x0_coef        ${theoerr_FCCee365_function_x0_coef}  0.  0." >> $NEW_NP_CONF
             echo "#" >> $NEW_NP_CONF
 
         fi
