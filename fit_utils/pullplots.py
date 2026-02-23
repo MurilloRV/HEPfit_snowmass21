@@ -194,9 +194,6 @@ def generate_pull_plots_pars(
         plt.show()
 
 
-
-
-
 def generate_pull_plots_obs(
     BPs,
     model_specs,

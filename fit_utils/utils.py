@@ -1,3 +1,5 @@
+from turtle import mode
+
 import uproot
 import subprocess
 from matplotlib import pyplot as plt
@@ -170,6 +172,7 @@ def generate_klam_comparison_plot(
     spec_distance=0.1,
     upper_right_text=None,
     no_bottom_axis=False,
+    asym_errors=False,
 ):
     r"""
     Compare the fit results for kappa_lambda between the benchmark points
@@ -235,6 +238,11 @@ def generate_klam_comparison_plot(
     no_bottom_axis : bool, optional
         Whether to only show the top part of the plot, and not plot the difference in
         a bottom subplot. Default is False.
+    asym_errors : bool, optional
+        If set to False (default), the error bars for kappa_lambda will be plotted symmetrically, 
+        using the standard deviation from the fit results. If set to True, asymmetric errors will
+        be plotted, using the 16th and 84th percentiles from the fit results, obtained from the 
+        histogram of the posterior distribution for kappa_lambda.
 
     Returns
     -------
@@ -270,12 +278,14 @@ def generate_klam_comparison_plot(
                 files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/results_{model_spec}/Observables/Statistics.txt"
 
     print(f"\nReading klam fit results")
-    kappa_lambda_results = read_fit_results(
-        BPs=BPs,
-        model_specs=model_specs,
-        observables=["deltalHHH_HLLHC"],
-        files=files,
-    )
+    if not asym_errors:
+        kappa_lambda_results = read_fit_results(
+            BPs=BPs,
+            model_specs=model_specs,
+            observables=["deltalHHH_HLLHC"],
+            files=files,
+        )
+        
 
     spec_distance = spec_distance
     for scenario in scenarios:
@@ -296,8 +306,51 @@ def generate_klam_comparison_plot(
             elif n_specs != 1:
                 x = np.array(BP_lambdas) + spec_distance * (-0.5*(n_specs-1) + spec_idx)/(n_specs-1)
 
-            means  = {BP : kappa_lambda_results[BP][scenario][model_spec][0, 0] + 1 for BP in BPs}
-            errors = {BP : kappa_lambda_results[BP][scenario][model_spec][0, 1]     for BP in BPs}
+            if not asym_errors:
+                means  = {BP : kappa_lambda_results[BP][scenario][model_spec][0, 0] + 1 for BP in BPs}
+
+                errors = {
+                    BP : [
+                        [kappa_lambda_results[BP][scenario][model_spec][0, 1]], 
+                        [kappa_lambda_results[BP][scenario][model_spec][0, 1]]
+                    ] for BP in BPs
+                }
+
+            else:
+                means = {}
+                errors = {}
+                for BP in BPs:
+                    hist_lmbd_x, hist_lmbd_y = read_klam_hist_uproot(
+                        working_dir=working_dir,
+                        BP=BP,
+                        scenario=scenario,
+                        spec=model_spec,
+                    )
+
+                    bin_centers = 0.5 * (hist_lmbd_x[1:] + hist_lmbd_x[:-1])
+                    mean = np.sum(bin_centers * hist_lmbd_y) / np.sum(hist_lmbd_y)
+                    mode = bin_centers[np.argmax(hist_lmbd_y)]
+
+                    hist_lmbd_y_norm = hist_lmbd_y[:] / np.sum(hist_lmbd_y)
+                    bin_indices_sort_by_prob = np.argsort(hist_lmbd_y_norm)[::-1]
+                    bins_within_CI = bin_centers[bin_indices_sort_by_prob][np.cumsum(hist_lmbd_y_norm[bin_indices_sort_by_prob]) <= 0.68]
+                    
+                    y_err_low = mode - np.min(bins_within_CI)
+                    y_err_high = np.max(bins_within_CI) - mode 
+
+                    if y_err_low < 0:
+                        print(f"Warning: lower error bar for {BP}, {scenario}, {model_spec} is negative. Setting it to 0.")
+                        y_err_low = 0
+
+                    if y_err_high < 0:
+                        print(f"Warning: upper error bar for {BP}, {scenario}, {model_spec} is negative. Setting it to 0.")
+                        y_err_high = 0
+
+
+                    errors[BP] = [[y_err_low], [y_err_high]]
+                    means[BP] = mode
+
+
             for i, BP in enumerate(BPs):
 
                 if group_model_specs:
@@ -312,7 +365,7 @@ def generate_klam_comparison_plot(
 
                 ax1.errorbar(x=x[i],
                             y=means[BP],
-                            yerr=(errors[BP],), 
+                            yerr=errors[BP], 
                             fmt='o', 
                             linewidth=1.5, 
                             capsize=3.5, 
@@ -323,7 +376,7 @@ def generate_klam_comparison_plot(
                 if not no_bottom_axis:
                     ax2.errorbar(x=x[i],
                                 y=means[BP] - BP_lambdas[i],
-                                yerr=(errors[BP],), 
+                                yerr=errors[BP], 
                                 fmt='o', 
                                 linewidth=1.5, 
                                 capsize=3.5, 
@@ -387,9 +440,6 @@ def generate_klam_comparison_plot(
 
     if show_plots:
         plt.show()
-
-
-
 
 
 def generate_obs_comparison_plot(
@@ -648,9 +698,6 @@ def generate_obs_comparison_plot(
         plt.show()
 
 
-
-
-
 def compare_BP_results_uproot(
     BPs,
     model_specs,
@@ -753,23 +800,20 @@ def compare_BP_results_uproot(
             ax.set_ylabel("Posterior distribution", fontsize=12)
 
             for spec, label, color_rgb in zip(model_specs[scenario], spec_labels, colors_rgb_list):
-
-                # Open the ROOT file
-                if BP == "BP_lambda1" and spec == "fits_realistic_HL_LHC_WFR_kala2_input_all_all_EW_mods_small_priors_long":
-                    file_path = f"{working_dir}/{BP}/{scenario}/results_{spec[:-5]}_strict/MCout.root"
-                else:
-                    file_path = f"{working_dir}/{BP}/{scenario}/results_{spec}/MCout.root"
-                with uproot.open(file_path) as file:
-
-                    hist_lmbd_y, hist_lmbd_x = file["deltalHHH_HLLHC"].to_numpy()
-                    hist_lmbd_x = hist_lmbd_x + 1 
-                    plt.hist(hist_lmbd_x[:-1], hist_lmbd_x, weights=hist_lmbd_y, label=label, density=True, histtype="step", edgecolor=(*color_rgb, 1.0), facecolor=(*color_rgb, 0.5), linewidth=1.5, fill=True)
+                hist_lmbd_x, hist_lmbd_y = read_klam_hist_uproot(
+                    working_dir,
+                    BP,
+                    scenario,
+                    spec,
+                )
+                plt.hist(hist_lmbd_x[:-1], hist_lmbd_x, weights=hist_lmbd_y, label=label, density=True, histtype="step", edgecolor=(*color_rgb, 1.0), facecolor=(*color_rgb, 0.5), linewidth=1.5, fill=True)
 
             scale = 1.2
             ylow, yhigh = ax.get_ylim()
             ax.set_ylim(ylow, yhigh + (scale-1)*(yhigh-ylow))
 
-            plt.axvline(BP_lambda, color="black", linestyle="--", label=rf"{model} {BP_name} value"+"\n"+rf"($\kappa_{{\lambda}}$ = {BP_lambda:.2f})")
+            # plt.axvline(BP_lambda, color="black", linestyle="--", label=rf"{model} {BP_name} value"+"\n"+rf"($\kappa_{{\lambda}}$ = {BP_lambda:.2f})")
+            plt.axvline(BP_lambda, color="black", linestyle="--", label=rf"{model} {BP_name} value ($\kappa_{{\lambda}}$ = {BP_lambda:.2f})")
             plt.legend(fontsize=legend_fontsize, loc="best")
             plt.tight_layout()
             plt.savefig(f"{working_dir}/comparison_plots/results_{results_dir}/{model}_{BP}_{scenario}_final.pdf")
@@ -857,3 +901,24 @@ def generate_klam_latex_table(
         # print("\\hline\n\\end{tabular}", file=out_file)
 
     print(f"Saved summary latex table onto file {table_tex_output_file}")
+
+
+def read_klam_hist_uproot(
+    working_dir,
+    BP,
+    scenario,
+    spec,
+):
+
+    # Open the ROOT file
+    if BP == "BP_lambda1" and spec == "fits_realistic_HL_LHC_WFR_kala2_input_all_all_EW_mods_small_priors_long":
+        file_path = f"{working_dir}/{BP}/{scenario}/results_{spec[:-5]}_strict/MCout.root"
+    else:
+        file_path = f"{working_dir}/{BP}/{scenario}/results_{spec}/MCout.root"
+    with uproot.open(file_path) as file:
+
+        hist_lmbd_y, hist_lmbd_x = file["deltalHHH_HLLHC"].to_numpy()
+        hist_lmbd_x = hist_lmbd_x + 1 
+
+        return hist_lmbd_x, hist_lmbd_y
+
