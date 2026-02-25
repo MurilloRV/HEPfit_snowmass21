@@ -1,5 +1,6 @@
 #!/bin/bash
 
+mkdir -p /jwd/HEPfit
 cd /jwd/HEPfit
 
 rm -rf build
