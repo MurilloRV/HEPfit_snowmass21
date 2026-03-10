@@ -22,7 +22,7 @@ BP_others=("BP_lambda1")
 BP_Names_Total=("${BP_Names[@]}" "${BPO_Names[@]}" "${BPB_Names[@]}" "${BP_New_Names[@]}" "${BP_others[@]}")
 
 
-# Using realistic HL-LHC observables
+# Using realistic HL-LHC observabless
 
 # Default behavior: all flags set to false
 # Exclusive flag
@@ -38,8 +38,8 @@ smeft_formula_all="false" # Using the HEPfit SMEFT expression for all XS and BR,
 WFR_kala2_input="false" # Include the WFR contribution, proportional to kappa_lambda**2, into the IDM ZH cross-section prediction
 WFR_kala2_input_all="false" # Include the WFR contribution, proportional to kappa_lambda**2, into the IDM predictions for all the XS and BR
 use_HEPfit_C1_values_WFR_kala2_input_all="false" # Use the HEPfit C1 values, instead of the IDM values. Activates WFR_kala2_input_all as well
-use_HEPfit_C1_values_decayrates_WFR_kala2_input_all="false" # Use the HEPfit C1 values, also for the Higgs decay rates, instead of the Z2SSM values. Activates WFR_kala2_input_all as well
-use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all="true" # Includes higher-order contributions to the ZZh vertex, beyond the 1L BSM contribution
+use_HEPfit_C1_values_decayrates_WFR_kala2_input_all="true" # Use the HEPfit C1 values, also for the Higgs decay rates, instead of the Z2SSM values. Activates WFR_kala2_input_all as well
+use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all="false" # Includes higher-order contributions to the ZZh vertex, beyond the 1L BSM contribution
 
 # Additional, independent flags
 modify_all_ewpos="true" # Modify also the EWPO central values for *current* observables, not just future ones
@@ -168,10 +168,34 @@ for BP_Name in "${BP_Names_Total[@]}"; do
 
         mkdir -p "${BP_Name}/${IDM_SCENARIOS[j]}/Globalfits/AllOps"
         cd "${BP_Name}/${IDM_SCENARIOS[j]}"
-        cp ${ORIGINAL_PATH}/${IDM_SCENARIOS[j]}/*.conf .
-        cp ${ORIGINAL_PATH}/${IDM_SCENARIOS[j]}/Globalfits/AllOps/d6Ops_corr.conf Globalfits/AllOps/
-        cp ${ORIGINAL_PATH}/${IDM_SCENARIOS[j]}/Globalfits/AllOps/model_fits.conf Globalfits/AllOps/${MODEL_CONF_FILE}.conf
-        # cp ${ORIGINAL_PATH}/${IDM_SCENARIOS[j]}/Globalfits/AllOps/model_fits_small_priors.conf Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
+        # cp ${ORIGINAL_PATH}/${IDM_SCENARIOS[j]}/*.conf .
+        cp ${ORIGINAL_PATH}/*.conf .
+        cp ${ORIGINAL_PATH}/Globalfits/AllOps/d6Ops_corr.conf Globalfits/AllOps/
+        cp ${ORIGINAL_PATH}/Globalfits/AllOps/model.conf Globalfits/AllOps/${MODEL_CONF_FILE}.conf
+
+        sed -i "\/IncludeFile ObservablesEW_ILC_250_SM.conf/c\\IncludeFile ObservablesEW_ILC_250_IDM.conf" ObservablesEW_all_mods.conf
+        sed -i "\/IncludeFile ObservablesEW_ILC_tt.conf/c\\IncludeFile ObservablesEW_ILC_tt_IDM.conf" ObservablesEW_all_mods.conf
+        sed -i "\/IncludeFile ObservablesEW_HLLHC.conf/c\\IncludeFile ObservablesEW_HLLHC_IDM.conf" ObservablesEW_all_mods.conf
+
+        if [[ "${IDM_SCENARIOS[j]}" != "IDM_ILC_250_350" ]] && \
+           [[ "${IDM_SCENARIOS[j]}" != "IDM_ILC_250_350_500" ]] && \
+           [[ "${IDM_SCENARIOS[j]}" != "IDM_ILC_250_350_500_1000" ]]; then
+            # Remove 350 GeV observables
+            sed -i "/IncludeFile ObservablesHiggs_ILC_350_SM.conf/c\# IncludeFile ObservablesHiggs_ILC_350_SM.conf" ObservablesHiggs.conf
+            sed -i "/IncludeFile ObservablesVV_OO_ILC_350.conf/c\# IncludeFile ObservablesVV_OO_ILC_350.conf" ObservablesVV.conf
+        fi
+        if [[ "${IDM_SCENARIOS[j]}" != "IDM_ILC_250_350_500" ]] && \
+           [[ "${IDM_SCENARIOS[j]}" != "IDM_ILC_250_350_500_1000" ]]; then
+            # Remove 500 GeV observables
+            sed -i "/IncludeFile ObservablesHiggs_ILC_500_SM.conf/c\# IncludeFile ObservablesHiggs_ILC_500_SM.conf" ObservablesHiggs.conf
+            sed -i "/IncludeFile ObservablesVV_OO_ILC_500.conf/c\# IncludeFile ObservablesVV_OO_ILC_500.conf" ObservablesVV.conf
+            sed -i "/IncludeFile ObservablesEW_ILC_tt.conf/c\# IncludeFile ObservablesEW_ILC_tt.conf" ObservablesEW.conf
+        fi
+        if [[ "${IDM_SCENARIOS[j]}" != "IDM_ILC_250_350_500_1000" ]]; then
+            # Remove 1000 GeV observables
+            sed -i "/IncludeFile ObservablesHiggs_ILC_1000_SM.conf/c\# IncludeFile ObservablesHiggs_ILC_1000_SM.conf" ObservablesHiggs.conf
+            sed -i "/IncludeFile ObservablesVV_OO_ILC_1000.conf/c\# IncludeFile ObservablesVV_OO_ILC_1000.conf" ObservablesVV.conf
+        fi
 
         # Increase prior for CuH_33r to avoid cutoff
         sed -i "/ModelParameter  CuH_33r   0.  0. .*/c ModelParameter  CuH_33r   0.  0.  8.0" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
@@ -283,7 +307,7 @@ for BP_Name in "${BP_Names_Total[@]}"; do
         # fi
 
 
-        if [[ "${IDM_SCENARIOS[j]}" == "IDM_FCCee240_FCCee365_HLLHClambda" ]]; then
+        if [[ "${IDM_SCENARIOS[j]}" == "IDM_ILC_250_350_500_1000_HLLHClambda" ]]; then
             MODEL_HIGGS="IncludeFile ../../ObservablesHiggs_scaled_realistic_HL_LHC.conf"
             sed -i "\/IncludeFile ..\/..\/ObservablesHiggs.conf/c\\$MODEL_HIGGS" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
             sed -i "\/IncludeFile ..\/..\/ObservablesHiggs.conf/c\\$MODEL_HIGGS" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
@@ -330,8 +354,8 @@ for BP_Name in "${BP_Names_Total[@]}"; do
             cp ${HIGGS_CONF}.conf ${NEW_HIGGS_CONF}.conf
             HIGGS_CONF="${NEW_HIGGS_CONF}"
 
-            NEW_HIGGS_HLLHC="# IncludeFile ObservablesHiggs_HLLHC_SM_kappa_scaled.conf"
-            sed -i "\/ObservablesHiggs_HLLHC_SM_kappa_scaled.*/c\\$NEW_HIGGS_HLLHC" ${HIGGS_CONF}.conf
+            NEW_HIGGS_HLLHC="# IncludeFile ObservablesHiggs_HLLHC_SM_IDM.conf"
+            sed -i "\/ObservablesHiggs_HLLHC_SM_IDM.*/c\\$NEW_HIGGS_HLLHC" ${HIGGS_CONF}.conf
 
             NEW_MODEL_HIGGS="IncludeFile ../../${HIGGS_CONF}.conf "
             sed -i "\/IncludeFile ..\/..\/ObservablesHiggs.*/c\\$NEW_MODEL_HIGGS" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
@@ -352,12 +376,20 @@ for BP_Name in "${BP_Names_Total[@]}"; do
 
         if [ "$modify_all_ewpos" == "true" ]; then
             cp ObservablesEW.conf ObservablesEW_all_mods.conf
-            NEW_EW_CURRENT="IncludeFile ObservablesEW_Current_SM_noLFU_kappa_scaled.conf"
+            NEW_EW_CURRENT="IncludeFile ObservablesEW_Current_SM_noLFU_IDM.conf"
             sed -i "\/IncludeFile ObservablesEW_Current_SM_noLFU.conf/c\\$NEW_EW_CURRENT" ObservablesEW_all_mods.conf
 
             NEW_MODEL_EWS="IncludeFile ../../ObservablesEW_all_mods.conf "
             sed -i "\/IncludeFile ..\/..\/ObservablesEW.conf /c\\$NEW_MODEL_EWS" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
             sed -i "\/IncludeFile ..\/..\/ObservablesEW.conf /c\\$NEW_MODEL_EWS" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
+
+            sed -i "\/IncludeFile ObservablesEW_ILC_250_SM.conf/c\\IncludeFile ObservablesEW_ILC_250_IDM.conf" ObservablesEW_all_mods.conf
+            sed -i "\/IncludeFile ObservablesEW_HLLHC.conf/c\\IncludeFile ObservablesEW_HLLHC_IDM.conf" ObservablesEW_all_mods.conf
+            
+             if [[ "${IDM_SCENARIOS[j]}" == "IDM_ILC_250_350_500" ]] || \
+                [[ "${IDM_SCENARIOS[j]}" == "IDM_ILC_250_350_500_1000" ]]; then
+                sed -i "\/IncludeFile ObservablesEW_ILC_tt.conf/c\\IncludeFile ObservablesEW_ILC_tt_IDM.conf" ObservablesEW_all_mods.conf
+            fi
 
             EWPO_FLAG="--ewpos_all"
         else
@@ -402,15 +434,21 @@ for BP_Name in "${BP_Names_Total[@]}"; do
                     cp ${HIGGS_CONF}.conf ${NEW_HIGGS_CONF}.conf 
                     HIGGS_CONF="${NEW_HIGGS_CONF}"
 
-                    NEW_HIGGS_240="IncludeFile ObservablesHiggs_FCCee_240_SM_kappa_scaled_${FLAG}.conf"
-                    sed -i "\/ObservablesHiggs_FCCee_240_SM_kappa_scaled.conf/c\\$NEW_HIGGS_240" ${HIGGS_CONF}.conf
-                    if [[ "${IDM_SCENARIOS[j]}" != "IDM_FCCee240" ]]; then
-                        NEW_HIGGS_365="IncludeFile ObservablesHiggs_FCCee_365_kappa_scaled_${FLAG}.conf"
-                        sed -i "\/ObservablesHiggs_FCCee_365_kappa_scaled.conf/c\\$NEW_HIGGS_365" ${HIGGS_CONF}.conf
+                    NEW_HIGGS_250="IncludeFile ObservablesHiggs_ILC_250_IDM_${FLAG}.conf"
+                    sed -i "\/ObservablesHiggs_ILC_250_SM.conf/c\\$NEW_HIGGS_250" ${HIGGS_CONF}.conf
+                    if [[ "${IDM_SCENARIOS[j]}" != "IDM_ILC_250" ]]; then
+                        NEW_HIGGS_350="IncludeFile ObservablesHiggs_ILC_350_IDM_${FLAG}.conf"
+                        sed -i "\/ObservablesHiggs_ILC_350_SM.conf/c\\$NEW_HIGGS_350" ${HIGGS_CONF}.conf
+                    fi
+
+                    if [[ "${IDM_SCENARIOS[j]}" == "IDM_ILC_250_350_500" || 
+                          "${IDM_SCENARIOS[j]}" == "IDM_ILC_250_350_500_1000" ]]; then
+                        NEW_HIGGS_500="IncludeFile ObservablesHiggs_ILC_500_IDM_${FLAG}.conf"
+                        sed -i "\/ObservablesHiggs_ILC_500_SM.conf/c\\$NEW_HIGGS_500" ${HIGGS_CONF}.conf
                     fi
                     if [[ "$no_HLLHC_Higgs" != "true" ]]; then
-                        NEW_HIGGS_HLLHC="IncludeFile ObservablesHiggs_HLLHC_SM_kappa_scaled_${FLAG}.conf"
-                        sed -i "\/ObservablesHiggs_HLLHC_SM_kappa_scaled.conf/c\\$NEW_HIGGS_HLLHC" ${HIGGS_CONF}.conf
+                        NEW_HIGGS_HLLHC="IncludeFile ObservablesHiggs_HLLHC_IDM_${FLAG}.conf"
+                        sed -i "\/ObservablesHiggs_HLLHC_SM.conf/c\\$NEW_HIGGS_HLLHC" ${HIGGS_CONF}.conf
                     fi
 
                     NEW_MODEL_HIGGS="IncludeFile ../../${HIGGS_CONF}.conf "

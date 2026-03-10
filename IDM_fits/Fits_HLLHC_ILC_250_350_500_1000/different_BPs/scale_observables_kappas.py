@@ -3,26 +3,113 @@
 
 import subprocess
 import argparse
+import numpy as np
+import yaml
 
 # Initialize parser
 parser = argparse.ArgumentParser()
 parser.add_argument("-s", "--scenario", help = "Name of the scenario (e.g. IDM_FCCee240)", type=str)
 parser.add_argument("-b", "--bp", help = "Which benchmark point to use", type=str)
-# parser.add_argument("--noHLLHClambda", help = "No on-shell kappa_lambda constraint", action="store_true")
-parser.add_argument("--fast", help = "Run faster, using less points and a looser criterium for convergence", action="store_true")
+parser.add_argument("--realistic", help = "Use realistic, asymmetric uncertainties for the on-shell kappa_lambda measurement at HL-LHC", action="store_true")
 parser.add_argument("--ewpos_all", help = "Modify also the EWPO central values for current observables", action="store_true")
 parser.add_argument("--no_1L_BSM_sqrt_s", help = "Do not include momentum dependent BSM 1L corrections to Z->ZH", action="store_true")
+parser.add_argument("--no_1L_BSM", help = "Do not include ANY BSM 1L corrections to Z->ZH", action="store_true")
+parser.add_argument("--pure_1L_BSM", help = "Only includes strictly 1L BSM contributions, no SM-like diagrams with insertions of kappa_lambda", action="store_true")
 parser.add_argument("--no_quad", help = "Do not include quadratic momentum dependent BSM 1L corrections to Z->ZH", action="store_true")
+#updated from the CLC script
+parser.add_argument("--smeft_formula", help = "Use the HEPfit SMEFT expression for the Zh cross-section, plus vertex corrections", action="store_true")
+parser.add_argument("--smeft_formula_sqrt", help = "Use the HEPfit SMEFT expression for the Zh cross-section, with dkappaf**2 inside the square root", action="store_true")
+parser.add_argument("--smeft_formula_no_cross", help = "Use the HEPfit SMEFT expression for the Zh cross-section, without cross terms", action="store_true")
+parser.add_argument("--smeft_formula_external_leg", help = "Use the HEPfit SMEFT expression for the Zh cross-section, without vertex corrections", action="store_true")
+parser.add_argument("--smeft_formula_all", help = "Use the HEPfit SMEFT expression for all XS and BR, including 2*dkappaf in the square root to stand in for C_Hbox (as \"_no_cross\")", action="store_true")
+parser.add_argument("--WFR_kala2_input", help = "Include the WFR contribution, proportional to kappa_lambda**2, into the IDM ZH cross-section prediction", action="store_true")
+parser.add_argument("--WFR_kala2_input_all", help = "Include the WFR contribution, proportional to kappa_lambda**2, into the IDM predictions for all the XS and BR", action="store_true")
+parser.add_argument("--use_HEPfit_C1_values_WFR_kala2_input_all", help = "Use the HEPfit C1 values, instead of the IDM values. Activates WFR_kala2_input_all as well", action="store_true")
+parser.add_argument("--use_HEPfit_C1_values_decayrates_WFR_kala2_input_all", help = "Use the HEPfit C1 values, also for the Higgs decay rates, instead of the Z2SSM values. Activates WFR_kala2_input_all as well", action="store_true")
+parser.add_argument("--use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all", help = "Include higher-order contributions to the ZZh vertex, beyond the 1L BSM contribution", action="store_true")
+parser.add_argument("--higgsconf", help = "Name of the ObsevablesHiggs configuration file", type=str, default=None)
 
 
 args = parser.parse_args()
-scenario = args.scenario
-BP = args.bp
-# noHLLHClambda = args.noHLLHClambda
-fast = args.fast
-modify_all_ewpos = args.ewpos_all
-no_1L_BSM_sqrt_s = args.no_1L_BSM_sqrt_s
-no_quad = args.no_quad
+scenario                                            = args.scenario
+BP                                                  = args.bp
+realistic_HL_LHC_k_lambda_uncertainties             = args.realistic
+modify_all_ewpos                                    = args.ewpos_all
+no_1L_BSM_sqrt_s                                    = args.no_1L_BSM_sqrt_s
+no_1L_BSM                                           = args.no_1L_BSM
+pure_1L_BSM                                         = args.pure_1L_BSM
+no_quad                                             = args.no_quad
+smeft_formula                                       = args.smeft_formula
+smeft_formula_sqrt                                  = args.smeft_formula_sqrt
+smeft_formula_no_cross                              = args.smeft_formula_no_cross
+smeft_formula_external_leg                          = args.smeft_formula_external_leg
+smeft_formula_all                                   = args.smeft_formula_all
+WFR_kala2_input                                     = args.WFR_kala2_input
+WFR_kala2_input_all                                 = args.WFR_kala2_input_all
+use_HEPfit_C1_values_WFR_kala2_input_all            = args.use_HEPfit_C1_values_WFR_kala2_input_all
+use_HEPfit_C1_values_decayrates_WFR_kala2_input_all = args.use_HEPfit_C1_values_decayrates_WFR_kala2_input_all
+use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all  = args.use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all
+higgsconf                                           = args.higgsconf
+
+exclusive_flag_count = sum([
+    no_1L_BSM_sqrt_s, 
+    no_1L_BSM, 
+    pure_1L_BSM,
+    no_quad,
+    smeft_formula, 
+    smeft_formula_sqrt, 
+    smeft_formula_no_cross, 
+    smeft_formula_external_leg, 
+    smeft_formula_all, 
+    WFR_kala2_input,
+    WFR_kala2_input_all,
+    use_HEPfit_C1_values_WFR_kala2_input_all,
+    use_HEPfit_C1_values_decayrates_WFR_kala2_input_all,
+    use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all,
+])
+
+#UPDATED FLAGS
+
+# These flags are mutually exclusive, and can only be used one at a time
+if exclusive_flag_count > 1:
+    raise ValueError("""You can only use at most one of the following options:
+        --ewpos_all,
+        --no_1L_BSM_sqrt_s,
+        --no_1L_BSM,
+        --pure_1L_BSM,
+        --no_quad,
+        --smeft_formula,
+        --smeft_formula_sqrt,
+        --smeft_formula_no_cross,
+        --smeft_formula_external_leg,
+        --smeft_formula_all,
+        --WFR_kala2_input
+        --WFR_kala2_input_all
+        --use_HEPfit_C1_values_WFR_kala2_input_all
+        --use_HEPfit_C1_values_decayrates_WFR_kala2_input_all
+        --use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all,
+        """)
+
+# Use of these flags is not currently possible without use of the realistic HL-LHC kappa_lambda uncertainties
+elif exclusive_flag_count == 1 and not realistic_HL_LHC_k_lambda_uncertainties:
+    raise ValueError("""The following options are only be currently used along with the --realistic option:
+        --ewpos_all,
+        --no_1L_BSM_sqrt_s,
+        --no_1L_BSM,
+        --pure_1L_BSM,
+        --no_quad,
+        --smeft_formula,
+        --smeft_formula_sqrt,
+        --smeft_formula_no_cross,
+        --smeft_formula_external_leg,
+        --smeft_formula_all,
+        --WFR_kala2_input
+        --WFR_kala2_input_all
+        --use_HEPfit_C1_values_WFR_kala2_input_all
+        --use_HEPfit_C1_values_decayrates_WFR_kala2_input_all
+        --use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all,
+        """)
+
 
 
 # file_dir = "/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/Fits_HLLHC_ILC_250/Z2SSM_BenchmarkPoint_fits_HLLHC_ILC_250"
@@ -33,7 +120,27 @@ kappas={}
 # Definition of IDM benchmark point:
 kappas['gg'] = 1.0
 
-if BP == "BP_0":
+
+# Main benchmark points, for which data is stored in yaml files
+BP_Names = [f"BPB_{i}" for i in range(19)] + \
+           [f"BPO_{i}" for i in range(2)] + \
+           ["BP_lambda1"]
+
+if BP in BP_Names:
+    with open(f"./yaml_files_BPs/{BP}.yaml", 'r') as f:
+        try:
+            data_loaded = yaml.safe_load(f)
+            for key in data_loaded['kappas']:
+                kappas[key] = float(data_loaded['kappas'][key])
+
+            EWPOs = data_loaded['EWPOs']
+            Mw           = float(EWPOs['Mw'])
+            sin2thetaEff = float(EWPOs['sin2thetaEff'])
+            GammaZ       = float(EWPOs['GammaZ'])
+        except yaml.YAMLError as exc:
+            print(exc)
+
+elif BP == "BP_0":
     kappas['uu'] = 0.9951626506866794
     kappas['dd'] = 0.9951626506866794
     kappas['ss'] = 0.9951626506866794
@@ -234,677 +341,677 @@ elif BP == "BP_7":
     GammaZ = 2.4956912542658984
 
 
-elif BP == "BPO_0":
-    kappas['uu'] = 0.9818547810617284
-    kappas['dd'] = 0.9818547810617284
-    kappas['ss'] = 0.9818547810617284
-    kappas['cc'] = 0.9818547810617284
-    kappas['bb'] = 0.9818547810617284
-    kappas['tt'] = 0.9818547810617284
-    kappas['ee'] = 0.9818547810617284
-    kappas['mumu'] = 0.9818547810617284
-    kappas['tautau'] = 0.9818547810617284
-    kappas['ZZ_0'] = 1.007141704579298
-    kappas['ZZ_240'] = 1.0237693288776533
-    kappas['ZZ_365'] = 1.0074536101415776
-    kappas['ZZ_500'] = 1.0026988104523176
-    kappas['ZZ_550'] = 1.0021232678597285
-    kappas['ZZ_0_no_1L_BSM'] = 1.0023378651272847
-    kappas['ZZ_240_no_1L_BSM'] = 1.0177981665211153
-    kappas['ZZ_365_no_1L_BSM'] = 0.9998722462932628
-    kappas['ZZ_500_no_1L_BSM'] = 0.9924197633264032
-    kappas['ZZ_550_no_1L_BSM'] = 0.9905262353724729
-    kappas['ZZ'] = 0.9899392240917029
-    kappas['WW'] = 0.9899392240917029
-    kappas['lam'] = 4.038636858901748
-    kappas['gamgam'] = 0.9514322699531608
-    kappas['Zgam'] = 0.9820015140523058
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.6864189906268178
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.016315718736075624
-    Mw = 80.35863800163634
-    sin2thetaEff = 0.2314855517673455
-    GammaZ = 2.49430915768778
-    # Best scan point row: 4992 out of 14054
+# elif BP == "BPO_0":
+#     kappas['uu'] = 0.9818547810617284
+#     kappas['dd'] = 0.9818547810617284
+#     kappas['ss'] = 0.9818547810617284
+#     kappas['cc'] = 0.9818547810617284
+#     kappas['bb'] = 0.9818547810617284
+#     kappas['tt'] = 0.9818547810617284
+#     kappas['ee'] = 0.9818547810617284
+#     kappas['mumu'] = 0.9818547810617284
+#     kappas['tautau'] = 0.9818547810617284
+#     kappas['ZZ_0'] = 1.007141704579298
+#     kappas['ZZ_240'] = 1.0237693288776533
+#     kappas['ZZ_365'] = 1.0074536101415776
+#     kappas['ZZ_500'] = 1.0026988104523176
+#     kappas['ZZ_550'] = 1.0021232678597285
+#     kappas['ZZ_0_no_1L_BSM'] = 1.0023378651272847
+#     kappas['ZZ_240_no_1L_BSM'] = 1.0177981665211153
+#     kappas['ZZ_365_no_1L_BSM'] = 0.9998722462932628
+#     kappas['ZZ_500_no_1L_BSM'] = 0.9924197633264032
+#     kappas['ZZ_550_no_1L_BSM'] = 0.9905262353724729
+#     kappas['ZZ'] = 0.9899392240917029
+#     kappas['WW'] = 0.9899392240917029
+#     kappas['lam'] = 4.038636858901748
+#     kappas['gamgam'] = 0.9514322699531608
+#     kappas['Zgam'] = 0.9820015140523058
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.6864189906268178
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.016315718736075624
+#     Mw = 80.35863800163634
+#     sin2thetaEff = 0.2314855517673455
+#     GammaZ = 2.49430915768778
+#     # Best scan point row: 4992 out of 14054
 
-elif BP == "BPO_1":
-    kappas['uu'] = 0.9948800104857921
-    kappas['dd'] = 0.9948800104857921
-    kappas['ss'] = 0.9948800104857921
-    kappas['cc'] = 0.9948800104857921
-    kappas['bb'] = 0.9948800104857921
-    kappas['tt'] = 0.9948800104857921
-    kappas['ee'] = 0.9948800104857921
-    kappas['mumu'] = 0.9948800104857921
-    kappas['tautau'] = 0.9948800104857921
-    kappas['ZZ_0'] = 1.0012233525483671
-    kappas['ZZ_240'] = 1.0036078092756757
-    kappas['ZZ_365'] = 1.0040569863550053
-    kappas['ZZ_500'] = 1.0077635634642326
-    kappas['ZZ_550'] = 1.009112592294324
-    kappas['ZZ_0_no_1L_BSM'] = 0.9993516901502957
-    kappas['ZZ_240_no_1L_BSM'] = 1.0005654828751926
-    kappas['ZZ_365_no_1L_BSM'] = 0.9991581137039593
-    kappas['ZZ_500_no_1L_BSM'] = 0.9985730171151438
-    kappas['ZZ_550_no_1L_BSM'] = 0.9984243556889322
-    kappas['ZZ'] = 0.9983782692638437
-    kappas['WW'] = 0.9983782692638437
-    kappas['lam'] = 1.2385642568656816
-    kappas['gamgam'] = 0.9519204100128348
-    kappas['Zgam'] = 0.982125765438694
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.12450133724029452
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.00044917707932956574
-    Mw = 80.35797476859611
-    sin2thetaEff = 0.2314895715713228
-    GammaZ = 2.4942679684662425
-    # Best scan point row: 1473 out of 14054
+# elif BP == "BPO_1":
+#     kappas['uu'] = 0.9948800104857921
+#     kappas['dd'] = 0.9948800104857921
+#     kappas['ss'] = 0.9948800104857921
+#     kappas['cc'] = 0.9948800104857921
+#     kappas['bb'] = 0.9948800104857921
+#     kappas['tt'] = 0.9948800104857921
+#     kappas['ee'] = 0.9948800104857921
+#     kappas['mumu'] = 0.9948800104857921
+#     kappas['tautau'] = 0.9948800104857921
+#     kappas['ZZ_0'] = 1.0012233525483671
+#     kappas['ZZ_240'] = 1.0036078092756757
+#     kappas['ZZ_365'] = 1.0040569863550053
+#     kappas['ZZ_500'] = 1.0077635634642326
+#     kappas['ZZ_550'] = 1.009112592294324
+#     kappas['ZZ_0_no_1L_BSM'] = 0.9993516901502957
+#     kappas['ZZ_240_no_1L_BSM'] = 1.0005654828751926
+#     kappas['ZZ_365_no_1L_BSM'] = 0.9991581137039593
+#     kappas['ZZ_500_no_1L_BSM'] = 0.9985730171151438
+#     kappas['ZZ_550_no_1L_BSM'] = 0.9984243556889322
+#     kappas['ZZ'] = 0.9983782692638437
+#     kappas['WW'] = 0.9983782692638437
+#     kappas['lam'] = 1.2385642568656816
+#     kappas['gamgam'] = 0.9519204100128348
+#     kappas['Zgam'] = 0.982125765438694
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.12450133724029452
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.00044917707932956574
+#     Mw = 80.35797476859611
+#     sin2thetaEff = 0.2314895715713228
+#     GammaZ = 2.4942679684662425
+#     # Best scan point row: 1473 out of 14054
 
-elif BP == "BPB_0":
-    kappas['uu'] = 0.997497286095468
-    kappas['dd'] = 0.997497286095468
-    kappas['ss'] = 0.997497286095468
-    kappas['cc'] = 0.997497286095468
-    kappas['bb'] = 0.997497286095468
-    kappas['tt'] = 0.997497286095468
-    kappas['ee'] = 0.997497286095468
-    kappas['mumu'] = 0.997497286095468
-    kappas['tautau'] = 0.997497286095468
-    kappas['ZZ_0'] = 0.99803003617002
-    kappas['ZZ_240'] = 0.9989225157021105
-    kappas['ZZ_365'] = 0.9985818760113092
-    kappas['ZZ_500'] = 0.9988812072771296
-    kappas['ZZ_550'] = 0.9990824850147142
-    kappas['ZZ_0_no_1L_BSM'] = 0.9970430932347498
-    kappas['ZZ_240_no_1L_BSM'] = 0.9976582557060288
-    kappas['ZZ_365_no_1L_BSM'] = 0.996944986727216
-    kappas['ZZ_500_no_1L_BSM'] = 0.996648453838091
-    kappas['ZZ_550_no_1L_BSM'] = 0.996573110718581
-    kappas['ZZ'] = 0.9965497536506333
-    kappas['WW'] = 0.9965497536506333
-    kappas['lam'] = 1.1209067864736006
-    kappas['gamgam'] = 0.9821975068074829
-    kappas['Zgam'] = 0.9934043522024448
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.31614353125012806
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.0003406396908013365
-    Mw = 80.3914079929351
-    sin2thetaEff = 0.2313357603551311
-    GammaZ = 2.4962175514601705
-    # Best scan point row: 5534 out of 14054
+# elif BP == "BPB_0":
+#     kappas['uu'] = 0.997497286095468
+#     kappas['dd'] = 0.997497286095468
+#     kappas['ss'] = 0.997497286095468
+#     kappas['cc'] = 0.997497286095468
+#     kappas['bb'] = 0.997497286095468
+#     kappas['tt'] = 0.997497286095468
+#     kappas['ee'] = 0.997497286095468
+#     kappas['mumu'] = 0.997497286095468
+#     kappas['tautau'] = 0.997497286095468
+#     kappas['ZZ_0'] = 0.99803003617002
+#     kappas['ZZ_240'] = 0.9989225157021105
+#     kappas['ZZ_365'] = 0.9985818760113092
+#     kappas['ZZ_500'] = 0.9988812072771296
+#     kappas['ZZ_550'] = 0.9990824850147142
+#     kappas['ZZ_0_no_1L_BSM'] = 0.9970430932347498
+#     kappas['ZZ_240_no_1L_BSM'] = 0.9976582557060288
+#     kappas['ZZ_365_no_1L_BSM'] = 0.996944986727216
+#     kappas['ZZ_500_no_1L_BSM'] = 0.996648453838091
+#     kappas['ZZ_550_no_1L_BSM'] = 0.996573110718581
+#     kappas['ZZ'] = 0.9965497536506333
+#     kappas['WW'] = 0.9965497536506333
+#     kappas['lam'] = 1.1209067864736006
+#     kappas['gamgam'] = 0.9821975068074829
+#     kappas['Zgam'] = 0.9934043522024448
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.31614353125012806
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.0003406396908013365
+#     Mw = 80.3914079929351
+#     sin2thetaEff = 0.2313357603551311
+#     GammaZ = 2.4962175514601705
+#     # Best scan point row: 5534 out of 14054
 
-elif BP == "BPB_1":
-    kappas['uu'] = 0.9969473191210583
-    kappas['dd'] = 0.9969473191210583
-    kappas['ss'] = 0.9969473191210583
-    kappas['cc'] = 0.9969473191210583
-    kappas['bb'] = 0.9969473191210583
-    kappas['tt'] = 0.9969473191210583
-    kappas['ee'] = 0.9969473191210583
-    kappas['mumu'] = 0.9969473191210583
-    kappas['tautau'] = 0.9969473191210583
-    kappas['ZZ_0'] = 0.9989621944276256
-    kappas['ZZ_240'] = 1.000023618370414
-    kappas['ZZ_365'] = 1.0000413187916326
-    kappas['ZZ_500'] = 1.0008988220698813
-    kappas['ZZ_550'] = 1.0013781536705735
-    kappas['ZZ_0_no_1L_BSM'] = 0.9983584296416149
-    kappas['ZZ_240_no_1L_BSM'] = 0.9989280007074098
-    kappas['ZZ_365_no_1L_BSM'] = 0.9982675940808219
-    kappas['ZZ_500_no_1L_BSM'] = 0.997993038070682
-    kappas['ZZ_550_no_1L_BSM'] = 0.9979232788397744
-    kappas['ZZ'] = 0.9979016528292391
-    kappas['WW'] = 0.9979016528292391
-    kappas['lam'] = 1.1119460475058272
-    kappas['gamgam'] = 0.9745673696771745
-    kappas['Zgam'] = 0.9905664142164403
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.749434482912224
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 1.7700421218513895e-05
-    Mw = 80.35622948679458
-    sin2thetaEff = 0.2315231828248444
-    GammaZ = 2.4942665435951
-    # Best scan point row: 7982 out of 14054
+# elif BP == "BPB_1":
+#     kappas['uu'] = 0.9969473191210583
+#     kappas['dd'] = 0.9969473191210583
+#     kappas['ss'] = 0.9969473191210583
+#     kappas['cc'] = 0.9969473191210583
+#     kappas['bb'] = 0.9969473191210583
+#     kappas['tt'] = 0.9969473191210583
+#     kappas['ee'] = 0.9969473191210583
+#     kappas['mumu'] = 0.9969473191210583
+#     kappas['tautau'] = 0.9969473191210583
+#     kappas['ZZ_0'] = 0.9989621944276256
+#     kappas['ZZ_240'] = 1.000023618370414
+#     kappas['ZZ_365'] = 1.0000413187916326
+#     kappas['ZZ_500'] = 1.0008988220698813
+#     kappas['ZZ_550'] = 1.0013781536705735
+#     kappas['ZZ_0_no_1L_BSM'] = 0.9983584296416149
+#     kappas['ZZ_240_no_1L_BSM'] = 0.9989280007074098
+#     kappas['ZZ_365_no_1L_BSM'] = 0.9982675940808219
+#     kappas['ZZ_500_no_1L_BSM'] = 0.997993038070682
+#     kappas['ZZ_550_no_1L_BSM'] = 0.9979232788397744
+#     kappas['ZZ'] = 0.9979016528292391
+#     kappas['WW'] = 0.9979016528292391
+#     kappas['lam'] = 1.1119460475058272
+#     kappas['gamgam'] = 0.9745673696771745
+#     kappas['Zgam'] = 0.9905664142164403
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.749434482912224
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 1.7700421218513895e-05
+#     Mw = 80.35622948679458
+#     sin2thetaEff = 0.2315231828248444
+#     GammaZ = 2.4942665435951
+#     # Best scan point row: 7982 out of 14054
 
-elif BP == "BPB_2":
-    kappas['uu'] = 0.991329519562304
-    kappas['dd'] = 0.991329519562304
-    kappas['ss'] = 0.991329519562304
-    kappas['cc'] = 0.991329519562304
-    kappas['bb'] = 0.991329519562304
-    kappas['tt'] = 0.991329519562304
-    kappas['ee'] = 0.991329519562304
-    kappas['mumu'] = 0.991329519562304
-    kappas['tautau'] = 0.991329519562304
-    kappas['ZZ_0'] = 1.000248738282997
-    kappas['ZZ_240'] = 1.0077713199799205
-    kappas['ZZ_365'] = 1.0002131692051668
-    kappas['ZZ_500'] = 0.997795877018984
-    kappas['ZZ_550'] = 0.9973832902199067
-    kappas['ZZ_0_no_1L_BSM'] = 0.9977031653428668
-    kappas['ZZ_240_no_1L_BSM'] = 1.0047587501412416
-    kappas['ZZ_365_no_1L_BSM'] = 0.9965779361302687
-    kappas['ZZ_500_no_1L_BSM'] = 0.9931768623612863
-    kappas['ZZ_550_no_1L_BSM'] = 0.9923127170444053
-    kappas['ZZ'] = 0.9920448239572286
-    kappas['WW'] = 0.9920448239572286
-    kappas['lam'] = 2.3867362274064843
-    kappas['gamgam'] = 0.974955131015653
-    kappas['Zgam'] = 0.9907251332792432
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.972569755753518
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.007558150774753747
-    Mw = 80.37905036636042
-    sin2thetaEff = 0.2314001454658894
-    GammaZ = 2.495528985557726
-    # Best scan point row: 12535 out of 14054
+# elif BP == "BPB_2":
+#     kappas['uu'] = 0.991329519562304
+#     kappas['dd'] = 0.991329519562304
+#     kappas['ss'] = 0.991329519562304
+#     kappas['cc'] = 0.991329519562304
+#     kappas['bb'] = 0.991329519562304
+#     kappas['tt'] = 0.991329519562304
+#     kappas['ee'] = 0.991329519562304
+#     kappas['mumu'] = 0.991329519562304
+#     kappas['tautau'] = 0.991329519562304
+#     kappas['ZZ_0'] = 1.000248738282997
+#     kappas['ZZ_240'] = 1.0077713199799205
+#     kappas['ZZ_365'] = 1.0002131692051668
+#     kappas['ZZ_500'] = 0.997795877018984
+#     kappas['ZZ_550'] = 0.9973832902199067
+#     kappas['ZZ_0_no_1L_BSM'] = 0.9977031653428668
+#     kappas['ZZ_240_no_1L_BSM'] = 1.0047587501412416
+#     kappas['ZZ_365_no_1L_BSM'] = 0.9965779361302687
+#     kappas['ZZ_500_no_1L_BSM'] = 0.9931768623612863
+#     kappas['ZZ_550_no_1L_BSM'] = 0.9923127170444053
+#     kappas['ZZ'] = 0.9920448239572286
+#     kappas['WW'] = 0.9920448239572286
+#     kappas['lam'] = 2.3867362274064843
+#     kappas['gamgam'] = 0.974955131015653
+#     kappas['Zgam'] = 0.9907251332792432
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.972569755753518
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.007558150774753747
+#     Mw = 80.37905036636042
+#     sin2thetaEff = 0.2314001454658894
+#     GammaZ = 2.495528985557726
+#     # Best scan point row: 12535 out of 14054
 
-elif BP == "BPB_3":
-    kappas['uu'] = 0.9927495335076485
-    kappas['dd'] = 0.9927495335076485
-    kappas['ss'] = 0.9927495335076485
-    kappas['cc'] = 0.9927495335076485
-    kappas['bb'] = 0.9927495335076485
-    kappas['tt'] = 0.9927495335076485
-    kappas['ee'] = 0.9927495335076485
-    kappas['mumu'] = 0.9927495335076485
-    kappas['tautau'] = 0.9927495335076485
-    kappas['ZZ_0'] = 1.0025946133580672
-    kappas['ZZ_240'] = 1.009502841661128
-    kappas['ZZ_365'] = 1.0022646595923244
-    kappas['ZZ_500'] = 0.9997291599866133
-    kappas['ZZ_550'] = 0.999214728766395
-    kappas['ZZ_0_no_1L_BSM'] = 1.0017506560443745
-    kappas['ZZ_240_no_1L_BSM'] = 1.0083483360548362
-    kappas['ZZ_365_no_1L_BSM'] = 1.000698453782578
-    kappas['ZZ_500_no_1L_BSM'] = 0.9975181084163243
-    kappas['ZZ_550_no_1L_BSM'] = 0.9967100458040468
-    kappas['ZZ'] = 0.9964595388770217
-    kappas['WW'] = 0.9964595388770217
-    kappas['lam'] = 2.296737570137434
-    kappas['gamgam'] = 0.9814976263381598
-    kappas['Zgam'] = 0.9931497692470427
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7616860647496536
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.007238182068803667
-    Mw = 80.35902874095682
-    sin2thetaEff = 0.2315107861005693
-    GammaZ = 2.494433653758192
-    # Best scan point row: 13367 out of 14054
+# elif BP == "BPB_3":
+#     kappas['uu'] = 0.9927495335076485
+#     kappas['dd'] = 0.9927495335076485
+#     kappas['ss'] = 0.9927495335076485
+#     kappas['cc'] = 0.9927495335076485
+#     kappas['bb'] = 0.9927495335076485
+#     kappas['tt'] = 0.9927495335076485
+#     kappas['ee'] = 0.9927495335076485
+#     kappas['mumu'] = 0.9927495335076485
+#     kappas['tautau'] = 0.9927495335076485
+#     kappas['ZZ_0'] = 1.0025946133580672
+#     kappas['ZZ_240'] = 1.009502841661128
+#     kappas['ZZ_365'] = 1.0022646595923244
+#     kappas['ZZ_500'] = 0.9997291599866133
+#     kappas['ZZ_550'] = 0.999214728766395
+#     kappas['ZZ_0_no_1L_BSM'] = 1.0017506560443745
+#     kappas['ZZ_240_no_1L_BSM'] = 1.0083483360548362
+#     kappas['ZZ_365_no_1L_BSM'] = 1.000698453782578
+#     kappas['ZZ_500_no_1L_BSM'] = 0.9975181084163243
+#     kappas['ZZ_550_no_1L_BSM'] = 0.9967100458040468
+#     kappas['ZZ'] = 0.9964595388770217
+#     kappas['WW'] = 0.9964595388770217
+#     kappas['lam'] = 2.296737570137434
+#     kappas['gamgam'] = 0.9814976263381598
+#     kappas['Zgam'] = 0.9931497692470427
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7616860647496536
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.007238182068803667
+#     Mw = 80.35902874095682
+#     sin2thetaEff = 0.2315107861005693
+#     GammaZ = 2.494433653758192
+#     # Best scan point row: 13367 out of 14054
 
-elif BP == "BPB_4":
-    kappas['uu'] = 0.9884079643889591
-    kappas['dd'] = 0.9884079643889591
-    kappas['ss'] = 0.9884079643889591
-    kappas['cc'] = 0.9884079643889591
-    kappas['bb'] = 0.9884079643889591
-    kappas['tt'] = 0.9884079643889591
-    kappas['ee'] = 0.9884079643889591
-    kappas['mumu'] = 0.9884079643889591
-    kappas['tautau'] = 0.9884079643889591
-    kappas['ZZ_0'] = 1.0025717951997075
-    kappas['ZZ_240'] = 1.0150117889437067
-    kappas['ZZ_365'] = 1.0018592821116823
-    kappas['ZZ_500'] = 0.9971793729362697
-    kappas['ZZ_550'] = 0.9962084260225224
-    kappas['ZZ_0_no_1L_BSM'] = 0.9991265995710326
-    kappas['ZZ_240_no_1L_BSM'] = 1.0110560618089828
-    kappas['ZZ_365_no_1L_BSM'] = 0.9972240812420315
-    kappas['ZZ_500_no_1L_BSM'] = 0.9914736038181186
-    kappas['ZZ_550_no_1L_BSM'] = 0.9900125216795821
-    kappas['ZZ'] = 0.9895595726245274
-    kappas['WW'] = 0.9895595726245274
-    kappas['lam'] = 3.3446699219962595
-    kappas['gamgam'] = 0.9730906099071067
-    kappas['Zgam'] = 0.9900356683423326
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.8761452003718885
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.013152506832024402
-    Mw = 80.38071823046351
-    sin2thetaEff = 0.2313900188743548
-    GammaZ = 2.4956174489103207
-    # Best scan point row: 9138 out of 14054
+# elif BP == "BPB_4":
+#     kappas['uu'] = 0.9884079643889591
+#     kappas['dd'] = 0.9884079643889591
+#     kappas['ss'] = 0.9884079643889591
+#     kappas['cc'] = 0.9884079643889591
+#     kappas['bb'] = 0.9884079643889591
+#     kappas['tt'] = 0.9884079643889591
+#     kappas['ee'] = 0.9884079643889591
+#     kappas['mumu'] = 0.9884079643889591
+#     kappas['tautau'] = 0.9884079643889591
+#     kappas['ZZ_0'] = 1.0025717951997075
+#     kappas['ZZ_240'] = 1.0150117889437067
+#     kappas['ZZ_365'] = 1.0018592821116823
+#     kappas['ZZ_500'] = 0.9971793729362697
+#     kappas['ZZ_550'] = 0.9962084260225224
+#     kappas['ZZ_0_no_1L_BSM'] = 0.9991265995710326
+#     kappas['ZZ_240_no_1L_BSM'] = 1.0110560618089828
+#     kappas['ZZ_365_no_1L_BSM'] = 0.9972240812420315
+#     kappas['ZZ_500_no_1L_BSM'] = 0.9914736038181186
+#     kappas['ZZ_550_no_1L_BSM'] = 0.9900125216795821
+#     kappas['ZZ'] = 0.9895595726245274
+#     kappas['WW'] = 0.9895595726245274
+#     kappas['lam'] = 3.3446699219962595
+#     kappas['gamgam'] = 0.9730906099071067
+#     kappas['Zgam'] = 0.9900356683423326
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.8761452003718885
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.013152506832024402
+#     Mw = 80.38071823046351
+#     sin2thetaEff = 0.2313900188743548
+#     GammaZ = 2.4956174489103207
+#     # Best scan point row: 9138 out of 14054
 
-elif BP == "BPB_5":
-    kappas['uu'] = 0.9900931243271051
-    kappas['dd'] = 0.9900931243271051
-    kappas['ss'] = 0.9900931243271051
-    kappas['cc'] = 0.9900931243271051
-    kappas['bb'] = 0.9900931243271051
-    kappas['tt'] = 0.9900931243271051
-    kappas['ee'] = 0.9900931243271051
-    kappas['mumu'] = 0.9900931243271051
-    kappas['tautau'] = 0.9900931243271051
-    kappas['ZZ_0'] = 1.0056040601626168
-    kappas['ZZ_240'] = 1.0177390096162389
-    kappas['ZZ_365'] = 1.0045074415993116
-    kappas['ZZ_500'] = 0.999519357798253
-    kappas['ZZ_550'] = 0.9983919428055029
-    kappas['ZZ_0_no_1L_BSM'] = 1.0042285694053632
-    kappas['ZZ_240_no_1L_BSM'] = 1.0160257773760775
-    kappas['ZZ_365_no_1L_BSM'] = 1.002347143072169
-    kappas['ZZ_500_no_1L_BSM'] = 0.9966604174891006
-    kappas['ZZ_550_no_1L_BSM'] = 0.9952155334275394
-    kappas['ZZ'] = 0.994767605927034
-    kappas['WW'] = 0.994767605927034
-    kappas['lam'] = 3.3186760761499228
-    kappas['gamgam'] = 0.9802217711125746
-    kappas['Zgam'] = 0.9926780357796698
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7459022968686289
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.013231568016927264
-    Mw = 80.35940143464471
-    sin2thetaEff = 0.2315081093735147
-    GammaZ = 2.4944519389039352
-    # Best scan point row: 11188 out of 14054
+# elif BP == "BPB_5":
+#     kappas['uu'] = 0.9900931243271051
+#     kappas['dd'] = 0.9900931243271051
+#     kappas['ss'] = 0.9900931243271051
+#     kappas['cc'] = 0.9900931243271051
+#     kappas['bb'] = 0.9900931243271051
+#     kappas['tt'] = 0.9900931243271051
+#     kappas['ee'] = 0.9900931243271051
+#     kappas['mumu'] = 0.9900931243271051
+#     kappas['tautau'] = 0.9900931243271051
+#     kappas['ZZ_0'] = 1.0056040601626168
+#     kappas['ZZ_240'] = 1.0177390096162389
+#     kappas['ZZ_365'] = 1.0045074415993116
+#     kappas['ZZ_500'] = 0.999519357798253
+#     kappas['ZZ_550'] = 0.9983919428055029
+#     kappas['ZZ_0_no_1L_BSM'] = 1.0042285694053632
+#     kappas['ZZ_240_no_1L_BSM'] = 1.0160257773760775
+#     kappas['ZZ_365_no_1L_BSM'] = 1.002347143072169
+#     kappas['ZZ_500_no_1L_BSM'] = 0.9966604174891006
+#     kappas['ZZ_550_no_1L_BSM'] = 0.9952155334275394
+#     kappas['ZZ'] = 0.994767605927034
+#     kappas['WW'] = 0.994767605927034
+#     kappas['lam'] = 3.3186760761499228
+#     kappas['gamgam'] = 0.9802217711125746
+#     kappas['Zgam'] = 0.9926780357796698
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7459022968686289
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.013231568016927264
+#     Mw = 80.35940143464471
+#     sin2thetaEff = 0.2315081093735147
+#     GammaZ = 2.4944519389039352
+#     # Best scan point row: 11188 out of 14054
 
-elif BP == "BPB_6":
-    kappas['uu'] = 0.9854469377667994
-    kappas['dd'] = 0.9854469377667994
-    kappas['ss'] = 0.9854469377667994
-    kappas['cc'] = 0.9854469377667994
-    kappas['bb'] = 0.9854469377667994
-    kappas['tt'] = 0.9854469377667994
-    kappas['ee'] = 0.9854469377667994
-    kappas['mumu'] = 0.9854469377667994
-    kappas['tautau'] = 0.9854469377667994
-    kappas['ZZ_0'] = 1.0055192079358077
-    kappas['ZZ_240'] = 1.0230601563636632
-    kappas['ZZ_365'] = 1.0041791687182084
-    kappas['ZZ_500'] = 0.9972340465022999
-    kappas['ZZ_550'] = 0.9957200588363064
-    kappas['ZZ_0_no_1L_BSM'] = 1.0012755439989802
-    kappas['ZZ_240_no_1L_BSM'] = 1.0182314260000087
-    kappas['ZZ_365_no_1L_BSM'] = 0.9985714090054754
-    kappas['ZZ_500_no_1L_BSM'] = 0.9903979964320847
-    kappas['ZZ_550_no_1L_BSM'] = 0.9883212945790857
-    kappas['ZZ'] = 0.98767749768558
-    kappas['WW'] = 0.98767749768558
-    kappas['lam'] = 4.332584967850238
-    kappas['gamgam'] = 0.9700106601524686
-    kappas['Zgam'] = 0.9888951932924951
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.8187710155862721
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.01888098764545476
-    Mw = 80.37348693182949
-    sin2thetaEff = 0.2314269601851323
-    GammaZ = 2.4952102702469863
-    # Best scan point row: 13296 out of 14054
+# elif BP == "BPB_6":
+#     kappas['uu'] = 0.9854469377667994
+#     kappas['dd'] = 0.9854469377667994
+#     kappas['ss'] = 0.9854469377667994
+#     kappas['cc'] = 0.9854469377667994
+#     kappas['bb'] = 0.9854469377667994
+#     kappas['tt'] = 0.9854469377667994
+#     kappas['ee'] = 0.9854469377667994
+#     kappas['mumu'] = 0.9854469377667994
+#     kappas['tautau'] = 0.9854469377667994
+#     kappas['ZZ_0'] = 1.0055192079358077
+#     kappas['ZZ_240'] = 1.0230601563636632
+#     kappas['ZZ_365'] = 1.0041791687182084
+#     kappas['ZZ_500'] = 0.9972340465022999
+#     kappas['ZZ_550'] = 0.9957200588363064
+#     kappas['ZZ_0_no_1L_BSM'] = 1.0012755439989802
+#     kappas['ZZ_240_no_1L_BSM'] = 1.0182314260000087
+#     kappas['ZZ_365_no_1L_BSM'] = 0.9985714090054754
+#     kappas['ZZ_500_no_1L_BSM'] = 0.9903979964320847
+#     kappas['ZZ_550_no_1L_BSM'] = 0.9883212945790857
+#     kappas['ZZ'] = 0.98767749768558
+#     kappas['WW'] = 0.98767749768558
+#     kappas['lam'] = 4.332584967850238
+#     kappas['gamgam'] = 0.9700106601524686
+#     kappas['Zgam'] = 0.9888951932924951
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.8187710155862721
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.01888098764545476
+#     Mw = 80.37348693182949
+#     sin2thetaEff = 0.2314269601851323
+#     GammaZ = 2.4952102702469863
+#     # Best scan point row: 13296 out of 14054
 
-elif BP == "BPB_7":
-    kappas['uu'] = 0.9852208371495629
-    kappas['dd'] = 0.9852208371495629
-    kappas['ss'] = 0.9852208371495629
-    kappas['cc'] = 0.9852208371495629
-    kappas['bb'] = 0.9852208371495629
-    kappas['tt'] = 0.9852208371495629
-    kappas['ee'] = 0.9852208371495629
-    kappas['mumu'] = 0.9852208371495629
-    kappas['tautau'] = 0.9852208371495629
-    kappas['ZZ_0'] = 1.0079531045463617
-    kappas['ZZ_240'] = 1.0254512345289055
-    kappas['ZZ_365'] = 1.0066194417575949
-    kappas['ZZ_500'] = 0.9996973232749794
-    kappas['ZZ_550'] = 0.9981907127682461
-    kappas['ZZ_0_no_1L_BSM'] = 1.005223379266794
-    kappas['ZZ_240_no_1L_BSM'] = 1.0221370066304132
-    kappas['ZZ_365_no_1L_BSM'] = 1.0025259830701059
-    kappas['ZZ_500_no_1L_BSM'] = 0.9943729389201723
-    kappas['ZZ_550_no_1L_BSM'] = 0.9923014122791617
-    kappas['ZZ'] = 0.9916592197495162
-    kappas['WW'] = 0.9916592197495162
-    kappas['lam'] = 4.324280052220163
-    kappas['gamgam'] = 0.9690970559288911
-    kappas['Zgam'] = 0.9885564514654552
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7399166728011941
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.01883179277131064
-    Mw = 80.35876824202134
-    sin2thetaEff = 0.2315037043489978
-    GammaZ = 2.494387630161727
-    # Best scan point row: 11409 out of 14054
+# elif BP == "BPB_7":
+#     kappas['uu'] = 0.9852208371495629
+#     kappas['dd'] = 0.9852208371495629
+#     kappas['ss'] = 0.9852208371495629
+#     kappas['cc'] = 0.9852208371495629
+#     kappas['bb'] = 0.9852208371495629
+#     kappas['tt'] = 0.9852208371495629
+#     kappas['ee'] = 0.9852208371495629
+#     kappas['mumu'] = 0.9852208371495629
+#     kappas['tautau'] = 0.9852208371495629
+#     kappas['ZZ_0'] = 1.0079531045463617
+#     kappas['ZZ_240'] = 1.0254512345289055
+#     kappas['ZZ_365'] = 1.0066194417575949
+#     kappas['ZZ_500'] = 0.9996973232749794
+#     kappas['ZZ_550'] = 0.9981907127682461
+#     kappas['ZZ_0_no_1L_BSM'] = 1.005223379266794
+#     kappas['ZZ_240_no_1L_BSM'] = 1.0221370066304132
+#     kappas['ZZ_365_no_1L_BSM'] = 1.0025259830701059
+#     kappas['ZZ_500_no_1L_BSM'] = 0.9943729389201723
+#     kappas['ZZ_550_no_1L_BSM'] = 0.9923014122791617
+#     kappas['ZZ'] = 0.9916592197495162
+#     kappas['WW'] = 0.9916592197495162
+#     kappas['lam'] = 4.324280052220163
+#     kappas['gamgam'] = 0.9690970559288911
+#     kappas['Zgam'] = 0.9885564514654552
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7399166728011941
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.01883179277131064
+#     Mw = 80.35876824202134
+#     sin2thetaEff = 0.2315037043489978
+#     GammaZ = 2.494387630161727
+#     # Best scan point row: 11409 out of 14054
 
-elif BP == "BPB_8":
-    kappas['uu'] = 0.9828359716154949
-    kappas['dd'] = 0.9828359716154949
-    kappas['ss'] = 0.9828359716154949
-    kappas['cc'] = 0.9828359716154949
-    kappas['bb'] = 0.9828359716154949
-    kappas['tt'] = 0.9828359716154949
-    kappas['ee'] = 0.9828359716154949
-    kappas['mumu'] = 0.9828359716154949
-    kappas['tautau'] = 0.9828359716154949
-    kappas['ZZ_0'] = 1.0085578410846359
-    kappas['ZZ_240'] = 1.031527651086288
-    kappas['ZZ_365'] = 1.0064611082906136
-    kappas['ZZ_500'] = 0.9970113612942804
-    kappas['ZZ_550'] = 0.9948793346159323
-    kappas['ZZ_0_no_1L_BSM'] = 1.0034517459492933
-    kappas['ZZ_240_no_1L_BSM'] = 1.0257925851168923
-    kappas['ZZ_365_no_1L_BSM'] = 0.9998888145150157
-    kappas['ZZ_500_no_1L_BSM'] = 0.9891196374387966
-    kappas['ZZ_550_no_1L_BSM'] = 0.9863834033641496
-    kappas['ZZ'] = 0.9855351453464578
-    kappas['WW'] = 0.9855351453464578
-    kappas['lam'] = 5.390968560325193
-    kappas['gamgam'] = 0.9681793366722093
-    kappas['Zgam'] = 0.9882174303694794
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7950653452447117
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.02506654279567444
-    Mw = 80.37609074924455
-    sin2thetaEff = 0.2314114903628951
-    GammaZ = 2.495348976439634
-    # Best scan point row: 650 out of 14054
+# elif BP == "BPB_8":
+#     kappas['uu'] = 0.9828359716154949
+#     kappas['dd'] = 0.9828359716154949
+#     kappas['ss'] = 0.9828359716154949
+#     kappas['cc'] = 0.9828359716154949
+#     kappas['bb'] = 0.9828359716154949
+#     kappas['tt'] = 0.9828359716154949
+#     kappas['ee'] = 0.9828359716154949
+#     kappas['mumu'] = 0.9828359716154949
+#     kappas['tautau'] = 0.9828359716154949
+#     kappas['ZZ_0'] = 1.0085578410846359
+#     kappas['ZZ_240'] = 1.031527651086288
+#     kappas['ZZ_365'] = 1.0064611082906136
+#     kappas['ZZ_500'] = 0.9970113612942804
+#     kappas['ZZ_550'] = 0.9948793346159323
+#     kappas['ZZ_0_no_1L_BSM'] = 1.0034517459492933
+#     kappas['ZZ_240_no_1L_BSM'] = 1.0257925851168923
+#     kappas['ZZ_365_no_1L_BSM'] = 0.9998888145150157
+#     kappas['ZZ_500_no_1L_BSM'] = 0.9891196374387966
+#     kappas['ZZ_550_no_1L_BSM'] = 0.9863834033641496
+#     kappas['ZZ'] = 0.9855351453464578
+#     kappas['WW'] = 0.9855351453464578
+#     kappas['lam'] = 5.390968560325193
+#     kappas['gamgam'] = 0.9681793366722093
+#     kappas['Zgam'] = 0.9882174303694794
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7950653452447117
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.02506654279567444
+#     Mw = 80.37609074924455
+#     sin2thetaEff = 0.2314114903628951
+#     GammaZ = 2.495348976439634
+#     # Best scan point row: 650 out of 14054
 
-elif BP == "BPB_9":
-    kappas['uu'] = 0.9839951854420015
-    kappas['dd'] = 0.9839951854420015
-    kappas['ss'] = 0.9839951854420015
-    kappas['cc'] = 0.9839951854420015
-    kappas['bb'] = 0.9839951854420015
-    kappas['tt'] = 0.9839951854420015
-    kappas['ee'] = 0.9839951854420015
-    kappas['mumu'] = 0.9839951854420015
-    kappas['tautau'] = 0.9839951854420015
-    kappas['ZZ_0'] = 1.0114054368277123
-    kappas['ZZ_240'] = 1.0337493110809932
-    kappas['ZZ_365'] = 1.0091285593961397
-    kappas['ZZ_500'] = 0.9996856607596301
-    kappas['ZZ_550'] = 0.9975045713248815
-    kappas['ZZ_0_no_1L_BSM'] = 1.008659490805412
-    kappas['ZZ_240_no_1L_BSM'] = 1.030486135139472
-    kappas['ZZ_365_no_1L_BSM'] = 1.0051785634947046
-    kappas['ZZ_500_no_1L_BSM'] = 0.994657248872197
-    kappas['ZZ_550_no_1L_BSM'] = 0.9919839917257659
-    kappas['ZZ'] = 0.9911552571416806
-    kappas['WW'] = 0.9911552571416806
-    kappas['lam'] = 5.289906405452073
-    kappas['gamgam'] = 0.9717649005806308
-    kappas['Zgam'] = 0.9895460934847392
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7295186448626314
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.02462075168485356
-    Mw = 80.36227084007066
-    sin2thetaEff = 0.2314867657126174
-    GammaZ = 2.49458857475883
-    # Best scan point row: 9586 out of 14054
+# elif BP == "BPB_9":
+#     kappas['uu'] = 0.9839951854420015
+#     kappas['dd'] = 0.9839951854420015
+#     kappas['ss'] = 0.9839951854420015
+#     kappas['cc'] = 0.9839951854420015
+#     kappas['bb'] = 0.9839951854420015
+#     kappas['tt'] = 0.9839951854420015
+#     kappas['ee'] = 0.9839951854420015
+#     kappas['mumu'] = 0.9839951854420015
+#     kappas['tautau'] = 0.9839951854420015
+#     kappas['ZZ_0'] = 1.0114054368277123
+#     kappas['ZZ_240'] = 1.0337493110809932
+#     kappas['ZZ_365'] = 1.0091285593961397
+#     kappas['ZZ_500'] = 0.9996856607596301
+#     kappas['ZZ_550'] = 0.9975045713248815
+#     kappas['ZZ_0_no_1L_BSM'] = 1.008659490805412
+#     kappas['ZZ_240_no_1L_BSM'] = 1.030486135139472
+#     kappas['ZZ_365_no_1L_BSM'] = 1.0051785634947046
+#     kappas['ZZ_500_no_1L_BSM'] = 0.994657248872197
+#     kappas['ZZ_550_no_1L_BSM'] = 0.9919839917257659
+#     kappas['ZZ'] = 0.9911552571416806
+#     kappas['WW'] = 0.9911552571416806
+#     kappas['lam'] = 5.289906405452073
+#     kappas['gamgam'] = 0.9717649005806308
+#     kappas['Zgam'] = 0.9895460934847392
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7295186448626314
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.02462075168485356
+#     Mw = 80.36227084007066
+#     sin2thetaEff = 0.2314867657126174
+#     GammaZ = 2.49458857475883
+#     # Best scan point row: 9586 out of 14054
 
-elif BP == "BPB_10":
-    kappas['uu'] = 0.9799021451854892
-    kappas['dd'] = 0.9799021451854892
-    kappas['ss'] = 0.9799021451854892
-    kappas['cc'] = 0.9799021451854892
-    kappas['bb'] = 0.9799021451854892
-    kappas['tt'] = 0.9799021451854892
-    kappas['ee'] = 0.9799021451854892
-    kappas['mumu'] = 0.9799021451854892
-    kappas['tautau'] = 0.9799021451854892
-    kappas['ZZ_0'] = 1.011345435393513
-    kappas['ZZ_240'] = 1.0393984974770443
-    kappas['ZZ_365'] = 1.0086936891072946
-    kappas['ZZ_500'] = 0.9970643338394835
-    kappas['ZZ_550'] = 0.9944257606352366
-    kappas['ZZ_0_no_1L_BSM'] = 1.0051009631840995
-    kappas['ZZ_240_no_1L_BSM'] = 1.0324231976879572
-    kappas['ZZ_365_no_1L_BSM'] = 1.0007435956099358
-    kappas['ZZ_500_no_1L_BSM'] = 0.987573186956855
-    kappas['ZZ_550_no_1L_BSM'] = 0.9842268476146259
-    kappas['ZZ'] = 0.9831894512883156
-    kappas['WW'] = 0.9831894512883156
-    kappas['lam'] = 6.370034303736775
-    kappas['gamgam'] = 0.9642362524964034
-    kappas['Zgam'] = 0.9867567059352143
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7793395772932701
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.030704808369749648
-    Mw = 80.37895112068958
-    sin2thetaEff = 0.2313927412940867
-    GammaZ = 2.495494459006496
-    # Best scan point row: 3830 out of 14054
+# elif BP == "BPB_10":
+#     kappas['uu'] = 0.9799021451854892
+#     kappas['dd'] = 0.9799021451854892
+#     kappas['ss'] = 0.9799021451854892
+#     kappas['cc'] = 0.9799021451854892
+#     kappas['bb'] = 0.9799021451854892
+#     kappas['tt'] = 0.9799021451854892
+#     kappas['ee'] = 0.9799021451854892
+#     kappas['mumu'] = 0.9799021451854892
+#     kappas['tautau'] = 0.9799021451854892
+#     kappas['ZZ_0'] = 1.011345435393513
+#     kappas['ZZ_240'] = 1.0393984974770443
+#     kappas['ZZ_365'] = 1.0086936891072946
+#     kappas['ZZ_500'] = 0.9970643338394835
+#     kappas['ZZ_550'] = 0.9944257606352366
+#     kappas['ZZ_0_no_1L_BSM'] = 1.0051009631840995
+#     kappas['ZZ_240_no_1L_BSM'] = 1.0324231976879572
+#     kappas['ZZ_365_no_1L_BSM'] = 1.0007435956099358
+#     kappas['ZZ_500_no_1L_BSM'] = 0.987573186956855
+#     kappas['ZZ_550_no_1L_BSM'] = 0.9842268476146259
+#     kappas['ZZ'] = 0.9831894512883156
+#     kappas['WW'] = 0.9831894512883156
+#     kappas['lam'] = 6.370034303736775
+#     kappas['gamgam'] = 0.9642362524964034
+#     kappas['Zgam'] = 0.9867567059352143
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7793395772932701
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.030704808369749648
+#     Mw = 80.37895112068958
+#     sin2thetaEff = 0.2313927412940867
+#     GammaZ = 2.495494459006496
+#     # Best scan point row: 3830 out of 14054
 
-elif BP == "BPB_11":
-    kappas['uu'] = 0.9822591209070276
-    kappas['dd'] = 0.9822591209070276
-    kappas['ss'] = 0.9822591209070276
-    kappas['cc'] = 0.9822591209070276
-    kappas['bb'] = 0.9822591209070276
-    kappas['tt'] = 0.9822591209070276
-    kappas['ee'] = 0.9822591209070276
-    kappas['mumu'] = 0.9822591209070276
-    kappas['tautau'] = 0.9822591209070276
-    kappas['ZZ_0'] = 1.014537115551844
-    kappas['ZZ_240'] = 1.041873404405887
-    kappas['ZZ_365'] = 1.0114703907688232
-    kappas['ZZ_500'] = 0.9996254236405407
-    kappas['ZZ_550'] = 0.9968339404214662
-    kappas['ZZ_0_no_1L_BSM'] = 1.0113339571975337
-    kappas['ZZ_240_no_1L_BSM'] = 1.0381501772434816
-    kappas['ZZ_365_no_1L_BSM'] = 1.0070572891353609
-    kappas['ZZ_500_no_1L_BSM'] = 0.9941307996681031
-    kappas['ZZ_550_no_1L_BSM'] = 0.9908464353480122
-    kappas['ZZ'] = 0.989828251855104
-    kappas['WW'] = 0.989828251855104
-    kappas['lam'] = 6.270579956517072
-    kappas['gamgam'] = 0.9716394792919597
-    kappas['Zgam'] = 0.9895001872696593
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.726069782680232
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.03040301363706388
-    Mw = 80.36604187614141
-    sin2thetaEff = 0.2314664328547996
-    GammaZ = 2.4947970488524804
-    # Best scan point row: 5888 out of 14054
+# elif BP == "BPB_11":
+#     kappas['uu'] = 0.9822591209070276
+#     kappas['dd'] = 0.9822591209070276
+#     kappas['ss'] = 0.9822591209070276
+#     kappas['cc'] = 0.9822591209070276
+#     kappas['bb'] = 0.9822591209070276
+#     kappas['tt'] = 0.9822591209070276
+#     kappas['ee'] = 0.9822591209070276
+#     kappas['mumu'] = 0.9822591209070276
+#     kappas['tautau'] = 0.9822591209070276
+#     kappas['ZZ_0'] = 1.014537115551844
+#     kappas['ZZ_240'] = 1.041873404405887
+#     kappas['ZZ_365'] = 1.0114703907688232
+#     kappas['ZZ_500'] = 0.9996254236405407
+#     kappas['ZZ_550'] = 0.9968339404214662
+#     kappas['ZZ_0_no_1L_BSM'] = 1.0113339571975337
+#     kappas['ZZ_240_no_1L_BSM'] = 1.0381501772434816
+#     kappas['ZZ_365_no_1L_BSM'] = 1.0070572891353609
+#     kappas['ZZ_500_no_1L_BSM'] = 0.9941307996681031
+#     kappas['ZZ_550_no_1L_BSM'] = 0.9908464353480122
+#     kappas['ZZ'] = 0.989828251855104
+#     kappas['WW'] = 0.989828251855104
+#     kappas['lam'] = 6.270579956517072
+#     kappas['gamgam'] = 0.9716394792919597
+#     kappas['Zgam'] = 0.9895001872696593
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.726069782680232
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.03040301363706388
+#     Mw = 80.36604187614141
+#     sin2thetaEff = 0.2314664328547996
+#     GammaZ = 2.4947970488524804
+#     # Best scan point row: 5888 out of 14054
 
-elif BP == "BPB_12":
-    kappas['uu'] = 0.9779510402945
-    kappas['dd'] = 0.9779510402945
-    kappas['ss'] = 0.9779510402945
-    kappas['cc'] = 0.9779510402945
-    kappas['bb'] = 0.9779510402945
-    kappas['tt'] = 0.9779510402945
-    kappas['ee'] = 0.9779510402945
-    kappas['mumu'] = 0.9779510402945
-    kappas['tautau'] = 0.9779510402945
-    kappas['ZZ_0'] = 1.0146601801452706
-    kappas['ZZ_240'] = 1.048541169142913
-    kappas['ZZ_365'] = 1.0110724336603367
-    kappas['ZZ_500'] = 0.996621858253727
-    kappas['ZZ_550'] = 0.9932624300476764
-    kappas['ZZ_0_no_1L_BSM'] = 1.007592375587837
-    kappas['ZZ_240_no_1L_BSM'] = 1.0407444761242528
-    kappas['ZZ_365_no_1L_BSM'] = 1.0023052572201065
-    kappas['ZZ_500_no_1L_BSM'] = 0.9863246202150712
-    kappas['ZZ_550_no_1L_BSM'] = 0.9822642576452792
-    kappas['ZZ'] = 0.9810055074760319
-    kappas['WW'] = 0.9810055074760319
-    kappas['lam'] = 7.515862276796717
-    kappas['gamgam'] = 0.964519464620997
-    kappas['Zgam'] = 0.9868624932160871
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7718960244295371
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.03746873548257623
-    Mw = 80.37475970785388
-    sin2thetaEff = 0.2314160806836613
-    GammaZ = 2.495265930828681
-    # Best scan point row: 11025 out of 14054
+# elif BP == "BPB_12":
+#     kappas['uu'] = 0.9779510402945
+#     kappas['dd'] = 0.9779510402945
+#     kappas['ss'] = 0.9779510402945
+#     kappas['cc'] = 0.9779510402945
+#     kappas['bb'] = 0.9779510402945
+#     kappas['tt'] = 0.9779510402945
+#     kappas['ee'] = 0.9779510402945
+#     kappas['mumu'] = 0.9779510402945
+#     kappas['tautau'] = 0.9779510402945
+#     kappas['ZZ_0'] = 1.0146601801452706
+#     kappas['ZZ_240'] = 1.048541169142913
+#     kappas['ZZ_365'] = 1.0110724336603367
+#     kappas['ZZ_500'] = 0.996621858253727
+#     kappas['ZZ_550'] = 0.9932624300476764
+#     kappas['ZZ_0_no_1L_BSM'] = 1.007592375587837
+#     kappas['ZZ_240_no_1L_BSM'] = 1.0407444761242528
+#     kappas['ZZ_365_no_1L_BSM'] = 1.0023052572201065
+#     kappas['ZZ_500_no_1L_BSM'] = 0.9863246202150712
+#     kappas['ZZ_550_no_1L_BSM'] = 0.9822642576452792
+#     kappas['ZZ'] = 0.9810055074760319
+#     kappas['WW'] = 0.9810055074760319
+#     kappas['lam'] = 7.515862276796717
+#     kappas['gamgam'] = 0.964519464620997
+#     kappas['Zgam'] = 0.9868624932160871
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7718960244295371
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.03746873548257623
+#     Mw = 80.37475970785388
+#     sin2thetaEff = 0.2314160806836613
+#     GammaZ = 2.495265930828681
+#     # Best scan point row: 11025 out of 14054
 
-elif BP == "BPB_13":
-    kappas['uu'] = 0.9794009347660855
-    kappas['dd'] = 0.9794009347660855
-    kappas['ss'] = 0.9794009347660855
-    kappas['cc'] = 0.9794009347660855
-    kappas['bb'] = 0.9794009347660855
-    kappas['tt'] = 0.9794009347660855
-    kappas['ee'] = 0.9794009347660855
-    kappas['mumu'] = 0.9794009347660855
-    kappas['tautau'] = 0.9794009347660855
-    kappas['ZZ_0'] = 1.017709648973257
-    kappas['ZZ_240'] = 1.0512088704608138
-    kappas['ZZ_365'] = 1.0138613710380702
-    kappas['ZZ_500'] = 0.9992550710344579
-    kappas['ZZ_550'] = 0.995797062535416
-    kappas['ZZ_0_no_1L_BSM'] = 1.0131490230128533
-    kappas['ZZ_240_no_1L_BSM'] = 1.0460474734001508
-    kappas['ZZ_365_no_1L_BSM'] = 1.0079023569344399
-    kappas['ZZ_500_no_1L_BSM'] = 0.9920439894355215
-    kappas['ZZ_550_no_1L_BSM'] = 0.988014693119591
-    kappas['ZZ'] = 0.9867655737780427
-    kappas['WW'] = 0.9867655737780427
-    kappas['lam'] = 7.466008740779396
-    kappas['gamgam'] = 0.9687124711983263
-    kappas['Zgam'] = 0.988416241175598
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7293169930651524
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.037347499422743624
-    Mw = 80.35999526714207
-    sin2thetaEff = 0.2314973566725667
-    GammaZ = 2.4944567399865565
-    # Best scan point row: 4572 out of 14054
+# elif BP == "BPB_13":
+#     kappas['uu'] = 0.9794009347660855
+#     kappas['dd'] = 0.9794009347660855
+#     kappas['ss'] = 0.9794009347660855
+#     kappas['cc'] = 0.9794009347660855
+#     kappas['bb'] = 0.9794009347660855
+#     kappas['tt'] = 0.9794009347660855
+#     kappas['ee'] = 0.9794009347660855
+#     kappas['mumu'] = 0.9794009347660855
+#     kappas['tautau'] = 0.9794009347660855
+#     kappas['ZZ_0'] = 1.017709648973257
+#     kappas['ZZ_240'] = 1.0512088704608138
+#     kappas['ZZ_365'] = 1.0138613710380702
+#     kappas['ZZ_500'] = 0.9992550710344579
+#     kappas['ZZ_550'] = 0.995797062535416
+#     kappas['ZZ_0_no_1L_BSM'] = 1.0131490230128533
+#     kappas['ZZ_240_no_1L_BSM'] = 1.0460474734001508
+#     kappas['ZZ_365_no_1L_BSM'] = 1.0079023569344399
+#     kappas['ZZ_500_no_1L_BSM'] = 0.9920439894355215
+#     kappas['ZZ_550_no_1L_BSM'] = 0.988014693119591
+#     kappas['ZZ'] = 0.9867655737780427
+#     kappas['WW'] = 0.9867655737780427
+#     kappas['lam'] = 7.466008740779396
+#     kappas['gamgam'] = 0.9687124711983263
+#     kappas['Zgam'] = 0.988416241175598
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7293169930651524
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.037347499422743624
+#     Mw = 80.35999526714207
+#     sin2thetaEff = 0.2314973566725667
+#     GammaZ = 2.4944567399865565
+#     # Best scan point row: 4572 out of 14054
 
-elif BP == "BPB_14":
-    kappas['uu'] = 0.9752928757189672
-    kappas['dd'] = 0.9752928757189672
-    kappas['ss'] = 0.9752928757189672
-    kappas['cc'] = 0.9752928757189672
-    kappas['bb'] = 0.9752928757189672
-    kappas['tt'] = 0.9752928757189672
-    kappas['ee'] = 0.9752928757189672
-    kappas['mumu'] = 0.9752928757189672
-    kappas['tautau'] = 0.9752928757189672
-    kappas['ZZ_0'] = 1.018224274903439
-    kappas['ZZ_240'] = 1.0577540179842202
-    kappas['ZZ_365'] = 1.0139224973656134
-    kappas['ZZ_500'] = 0.9969466588006025
-    kappas['ZZ_550'] = 0.9929800438002488
-    kappas['ZZ_0_no_1L_BSM'] = 1.0101407780543297
-    kappas['ZZ_240_no_1L_BSM'] = 1.048867172999423
-    kappas['ZZ_365_no_1L_BSM'] = 1.0039646676203833
-    kappas['ZZ_500_no_1L_BSM'] = 0.9852969979971153
-    kappas['ZZ_550_no_1L_BSM'] = 0.9805539137896662
-    kappas['ZZ'] = 0.979083513561544
-    kappas['WW'] = 0.979083513561544
-    kappas['lam'] = 8.611459058586306
-    kappas['gamgam'] = 0.9617556329224429
-    kappas['Zgam'] = 0.9858388012191261
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7589345667791059
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.043831520618606845
-    Mw = 80.37845879589715
-    sin2thetaEff = 0.2313933968857054
-    GammaZ = 2.495460078702212
-    # Best scan point row: 12586 out of 14054
+# elif BP == "BPB_14":
+#     kappas['uu'] = 0.9752928757189672
+#     kappas['dd'] = 0.9752928757189672
+#     kappas['ss'] = 0.9752928757189672
+#     kappas['cc'] = 0.9752928757189672
+#     kappas['bb'] = 0.9752928757189672
+#     kappas['tt'] = 0.9752928757189672
+#     kappas['ee'] = 0.9752928757189672
+#     kappas['mumu'] = 0.9752928757189672
+#     kappas['tautau'] = 0.9752928757189672
+#     kappas['ZZ_0'] = 1.018224274903439
+#     kappas['ZZ_240'] = 1.0577540179842202
+#     kappas['ZZ_365'] = 1.0139224973656134
+#     kappas['ZZ_500'] = 0.9969466588006025
+#     kappas['ZZ_550'] = 0.9929800438002488
+#     kappas['ZZ_0_no_1L_BSM'] = 1.0101407780543297
+#     kappas['ZZ_240_no_1L_BSM'] = 1.048867172999423
+#     kappas['ZZ_365_no_1L_BSM'] = 1.0039646676203833
+#     kappas['ZZ_500_no_1L_BSM'] = 0.9852969979971153
+#     kappas['ZZ_550_no_1L_BSM'] = 0.9805539137896662
+#     kappas['ZZ'] = 0.979083513561544
+#     kappas['WW'] = 0.979083513561544
+#     kappas['lam'] = 8.611459058586306
+#     kappas['gamgam'] = 0.9617556329224429
+#     kappas['Zgam'] = 0.9858388012191261
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7589345667791059
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.043831520618606845
+#     Mw = 80.37845879589715
+#     sin2thetaEff = 0.2313933968857054
+#     GammaZ = 2.495460078702212
+#     # Best scan point row: 12586 out of 14054
 
-elif BP == "BPB_15":
-    kappas['uu'] = 0.9758076122035252
-    kappas['dd'] = 0.9758076122035252
-    kappas['ss'] = 0.9758076122035252
-    kappas['cc'] = 0.9758076122035252
-    kappas['bb'] = 0.9758076122035252
-    kappas['tt'] = 0.9758076122035252
-    kappas['ee'] = 0.9758076122035252
-    kappas['mumu'] = 0.9758076122035252
-    kappas['tautau'] = 0.9758076122035252
-    kappas['ZZ_0'] = 1.020837921149283
-    kappas['ZZ_240'] = 1.059551441355437
-    kappas['ZZ_365'] = 1.0165553852124465
-    kappas['ZZ_500'] = 0.9998571224979024
-    kappas['ZZ_550'] = 0.9959414417602217
-    kappas['ZZ_0_no_1L_BSM'] = 1.0150385281300451
-    kappas['ZZ_240_no_1L_BSM'] = 1.0529931067268972
-    kappas['ZZ_365_no_1L_BSM'] = 1.00898550746493
-    kappas['ZZ_500_no_1L_BSM'] = 0.990689884158373
-    kappas['ZZ_550_no_1L_BSM'] = 0.9860413295330754
-    kappas['ZZ'] = 0.984600234354807
-    kappas['WW'] = 0.984600234354807
-    kappas['lam'] = 8.459762817722257
-    kappas['gamgam'] = 0.9626061555176816
-    kappas['Zgam'] = 0.9861539099506105
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7219985807961474
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.04299605614299051
-    Mw = 80.36644727286449
-    sin2thetaEff = 0.2314571267403946
-    GammaZ = 2.494792723813611
-    # Best scan point row: 13599 out of 14054
+# elif BP == "BPB_15":
+#     kappas['uu'] = 0.9758076122035252
+#     kappas['dd'] = 0.9758076122035252
+#     kappas['ss'] = 0.9758076122035252
+#     kappas['cc'] = 0.9758076122035252
+#     kappas['bb'] = 0.9758076122035252
+#     kappas['tt'] = 0.9758076122035252
+#     kappas['ee'] = 0.9758076122035252
+#     kappas['mumu'] = 0.9758076122035252
+#     kappas['tautau'] = 0.9758076122035252
+#     kappas['ZZ_0'] = 1.020837921149283
+#     kappas['ZZ_240'] = 1.059551441355437
+#     kappas['ZZ_365'] = 1.0165553852124465
+#     kappas['ZZ_500'] = 0.9998571224979024
+#     kappas['ZZ_550'] = 0.9959414417602217
+#     kappas['ZZ_0_no_1L_BSM'] = 1.0150385281300451
+#     kappas['ZZ_240_no_1L_BSM'] = 1.0529931067268972
+#     kappas['ZZ_365_no_1L_BSM'] = 1.00898550746493
+#     kappas['ZZ_500_no_1L_BSM'] = 0.990689884158373
+#     kappas['ZZ_550_no_1L_BSM'] = 0.9860413295330754
+#     kappas['ZZ'] = 0.984600234354807
+#     kappas['WW'] = 0.984600234354807
+#     kappas['lam'] = 8.459762817722257
+#     kappas['gamgam'] = 0.9626061555176816
+#     kappas['Zgam'] = 0.9861539099506105
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7219985807961474
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.04299605614299051
+#     Mw = 80.36644727286449
+#     sin2thetaEff = 0.2314571267403946
+#     GammaZ = 2.494792723813611
+#     # Best scan point row: 13599 out of 14054
 
-elif BP == "BPB_16":
-    kappas['uu'] = 0.972110709527596
-    kappas['dd'] = 0.972110709527596
-    kappas['ss'] = 0.972110709527596
-    kappas['cc'] = 0.972110709527596
-    kappas['bb'] = 0.972110709527596
-    kappas['tt'] = 0.972110709527596
-    kappas['ee'] = 0.972110709527596
-    kappas['mumu'] = 0.972110709527596
-    kappas['tautau'] = 0.972110709527596
-    kappas['ZZ_0'] = 1.020726628196106
-    kappas['ZZ_240'] = 1.0640655366197775
-    kappas['ZZ_365'] = 1.016340787857924
-    kappas['ZZ_500'] = 0.9980976220606489
-    kappas['ZZ_550'] = 0.9939143794605771
-    kappas['ZZ_0_no_1L_BSM'] = 1.0108193645129049
-    kappas['ZZ_240_no_1L_BSM'] = 1.0531482762759274
-    kappas['ZZ_365_no_1L_BSM'] = 1.004068722374181
-    kappas['ZZ_500_no_1L_BSM'] = 0.9836644957110771
-    kappas['ZZ_550_no_1L_BSM'] = 0.9784801868388892
-    kappas['ZZ'] = 0.9768730028600872
-    kappas['WW'] = 0.9768730028600872
-    kappas['lam'] = 9.319513844125106
-    kappas['gamgam'] = 0.9553893338375414
-    kappas['Zgam'] = 0.9834792434465481
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7449363773395835
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.04772474876185351
-    Mw = 80.37347683058418
-    sin2thetaEff = 0.2314133073810362
-    GammaZ = 2.495158402457192
-    # Best scan point row: 4560 out of 14054
+# elif BP == "BPB_16":
+#     kappas['uu'] = 0.972110709527596
+#     kappas['dd'] = 0.972110709527596
+#     kappas['ss'] = 0.972110709527596
+#     kappas['cc'] = 0.972110709527596
+#     kappas['bb'] = 0.972110709527596
+#     kappas['tt'] = 0.972110709527596
+#     kappas['ee'] = 0.972110709527596
+#     kappas['mumu'] = 0.972110709527596
+#     kappas['tautau'] = 0.972110709527596
+#     kappas['ZZ_0'] = 1.020726628196106
+#     kappas['ZZ_240'] = 1.0640655366197775
+#     kappas['ZZ_365'] = 1.016340787857924
+#     kappas['ZZ_500'] = 0.9980976220606489
+#     kappas['ZZ_550'] = 0.9939143794605771
+#     kappas['ZZ_0_no_1L_BSM'] = 1.0108193645129049
+#     kappas['ZZ_240_no_1L_BSM'] = 1.0531482762759274
+#     kappas['ZZ_365_no_1L_BSM'] = 1.004068722374181
+#     kappas['ZZ_500_no_1L_BSM'] = 0.9836644957110771
+#     kappas['ZZ_550_no_1L_BSM'] = 0.9784801868388892
+#     kappas['ZZ'] = 0.9768730028600872
+#     kappas['WW'] = 0.9768730028600872
+#     kappas['lam'] = 9.319513844125106
+#     kappas['gamgam'] = 0.9553893338375414
+#     kappas['Zgam'] = 0.9834792434465481
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7449363773395835
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.04772474876185351
+#     Mw = 80.37347683058418
+#     sin2thetaEff = 0.2314133073810362
+#     GammaZ = 2.495158402457192
+#     # Best scan point row: 4560 out of 14054
 
-elif BP == "BPB_17":
-    kappas['uu'] = 0.9723983817965866
-    kappas['dd'] = 0.9723983817965866
-    kappas['ss'] = 0.9723983817965866
-    kappas['cc'] = 0.9723983817965866
-    kappas['bb'] = 0.9723983817965866
-    kappas['tt'] = 0.9723983817965866
-    kappas['ee'] = 0.9723983817965866
-    kappas['mumu'] = 0.9723983817965866
-    kappas['tautau'] = 0.9723983817965866
-    kappas['ZZ_0'] = 1.0246178844400475
-    kappas['ZZ_240'] = 1.0707166397756804
-    kappas['ZZ_365'] = 1.0194447352171014
-    kappas['ZZ_500'] = 0.9994909949726744
-    kappas['ZZ_550'] = 0.994801503186093
-    kappas['ZZ_0_no_1L_BSM'] = 1.0167276682828614
-    kappas['ZZ_240_no_1L_BSM'] = 1.0619531108004323
-    kappas['ZZ_365_no_1L_BSM'] = 1.0095150855519197
-    kappas['ZZ_500_no_1L_BSM'] = 0.9877146153382295
-    kappas['ZZ_550_no_1L_BSM'] = 0.9821755487020472
-    kappas['ZZ'] = 0.9804583865161776
-    kappas['WW'] = 0.9804583865161776
-    kappas['lam'] = 9.888810967739037
-    kappas['gamgam'] = 0.9590465290403257
-    kappas['Zgam'] = 0.9848353795963092
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7250331000061386
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.051271904558578996
-    Mw = 80.37022469814376
-    sin2thetaEff = 0.2314338179390905
-    GammaZ = 2.494990352551212
-    # Best scan point row: 3450 out of 14054
+# elif BP == "BPB_17":
+#     kappas['uu'] = 0.9723983817965866
+#     kappas['dd'] = 0.9723983817965866
+#     kappas['ss'] = 0.9723983817965866
+#     kappas['cc'] = 0.9723983817965866
+#     kappas['bb'] = 0.9723983817965866
+#     kappas['tt'] = 0.9723983817965866
+#     kappas['ee'] = 0.9723983817965866
+#     kappas['mumu'] = 0.9723983817965866
+#     kappas['tautau'] = 0.9723983817965866
+#     kappas['ZZ_0'] = 1.0246178844400475
+#     kappas['ZZ_240'] = 1.0707166397756804
+#     kappas['ZZ_365'] = 1.0194447352171014
+#     kappas['ZZ_500'] = 0.9994909949726744
+#     kappas['ZZ_550'] = 0.994801503186093
+#     kappas['ZZ_0_no_1L_BSM'] = 1.0167276682828614
+#     kappas['ZZ_240_no_1L_BSM'] = 1.0619531108004323
+#     kappas['ZZ_365_no_1L_BSM'] = 1.0095150855519197
+#     kappas['ZZ_500_no_1L_BSM'] = 0.9877146153382295
+#     kappas['ZZ_550_no_1L_BSM'] = 0.9821755487020472
+#     kappas['ZZ'] = 0.9804583865161776
+#     kappas['WW'] = 0.9804583865161776
+#     kappas['lam'] = 9.888810967739037
+#     kappas['gamgam'] = 0.9590465290403257
+#     kappas['Zgam'] = 0.9848353795963092
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7250331000061386
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.051271904558578996
+#     Mw = 80.37022469814376
+#     sin2thetaEff = 0.2314338179390905
+#     GammaZ = 2.494990352551212
+#     # Best scan point row: 3450 out of 14054
 
-elif BP == "BPB_18":
-    kappas['uu'] = 0.9679274507368065
-    kappas['dd'] = 0.9679274507368065
-    kappas['ss'] = 0.9679274507368065
-    kappas['cc'] = 0.9679274507368065
-    kappas['bb'] = 0.9679274507368065
-    kappas['tt'] = 0.9679274507368065
-    kappas['ee'] = 0.9679274507368065
-    kappas['mumu'] = 0.9679274507368065
-    kappas['tautau'] = 0.9679274507368065
-    kappas['ZZ_0'] = 1.0273230857099533
-    kappas['ZZ_240'] = 1.0806368505032622
-    kappas['ZZ_365'] = 1.021686858342519
-    kappas['ZZ_500'] = 0.999005167283247
-    kappas['ZZ_550'] = 0.9937629124341144
-    kappas['ZZ_0_no_1L_BSM'] = 1.015036927190039
-    kappas['ZZ_240_no_1L_BSM'] = 1.0672062026301008
-    kappas['ZZ_365_no_1L_BSM'] = 1.006716937507715
-    kappas['ZZ_500_no_1L_BSM'] = 0.9815692623941105
-    kappas['ZZ_550_no_1L_BSM'] = 0.9751797374511189
-    kappas['ZZ'] = 0.973198925278522
-    kappas['WW'] = 0.973198925278522
-    kappas['lam'] = 11.2535829810942
-    kappas['gamgam'] = 0.9520472670797051
-    kappas['Zgam'] = 0.9822414834898094
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7310552407842171
-    # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.05894999216074326
-    Mw = 80.36926541455969
-    sin2thetaEff = 0.2314314564151143
-    GammaZ = 2.494908930791839
-    # Best scan point row: 13465 out of 14054
+# elif BP == "BPB_18":
+#     kappas['uu'] = 0.9679274507368065
+#     kappas['dd'] = 0.9679274507368065
+#     kappas['ss'] = 0.9679274507368065
+#     kappas['cc'] = 0.9679274507368065
+#     kappas['bb'] = 0.9679274507368065
+#     kappas['tt'] = 0.9679274507368065
+#     kappas['ee'] = 0.9679274507368065
+#     kappas['mumu'] = 0.9679274507368065
+#     kappas['tautau'] = 0.9679274507368065
+#     kappas['ZZ_0'] = 1.0273230857099533
+#     kappas['ZZ_240'] = 1.0806368505032622
+#     kappas['ZZ_365'] = 1.021686858342519
+#     kappas['ZZ_500'] = 0.999005167283247
+#     kappas['ZZ_550'] = 0.9937629124341144
+#     kappas['ZZ_0_no_1L_BSM'] = 1.015036927190039
+#     kappas['ZZ_240_no_1L_BSM'] = 1.0672062026301008
+#     kappas['ZZ_365_no_1L_BSM'] = 1.006716937507715
+#     kappas['ZZ_500_no_1L_BSM'] = 0.9815692623941105
+#     kappas['ZZ_550_no_1L_BSM'] = 0.9751797374511189
+#     kappas['ZZ'] = 0.973198925278522
+#     kappas['WW'] = 0.973198925278522
+#     kappas['lam'] = 11.2535829810942
+#     kappas['gamgam'] = 0.9520472670797051
+#     kappas['Zgam'] = 0.9822414834898094
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240'])/(kappas['ZZ_240'] - 1) = 0.7310552407842171
+#     # abs(kappas['ZZ_365'] - kappas['ZZ_240']) = 0.05894999216074326
+#     Mw = 80.36926541455969
+#     sin2thetaEff = 0.2314314564151143
+#     GammaZ = 2.494908930791839
+#     # Best scan point row: 13465 out of 14054
 
 
 elif BP == "BP_new_0":
@@ -1207,19 +1314,508 @@ elif BP == "BP_new_10":
 else:
     raise ValueError("Could not determine benchmark point!")
 
+
+if no_1L_BSM_sqrt_s:
+    kappas['ZZ_0'] = kappas['ZZ_0_no_1L_BSM_sqrt_s']
+    kappas['ZZ_240'] = kappas['ZZ_240_no_1L_BSM_sqrt_s']
+    # kappas['ZZ_125'] = kappas['ZZ_125_no_1L_BSM_sqrt_s']
+    kappas['ZZ_365'] = kappas['ZZ_365_no_1L_BSM_sqrt_s']
+    kappas['ZZ_500'] = kappas['ZZ_500_no_1L_BSM_sqrt_s']
+    kappas['ZZ_550'] = kappas['ZZ_550_no_1L_BSM_sqrt_s']
+
+if no_1L_BSM:
+    kappas['ZZ_0'] = kappas['ZZ_0_no_1L_BSM']
+    kappas['ZZ_240'] = kappas['ZZ_240_no_1L_BSM']
+    # kappas['ZZ_125'] = kappas['ZZ_125_no_1L_BSM']
+    kappas['ZZ_365'] = kappas['ZZ_365_no_1L_BSM']
+    kappas['ZZ_500'] = kappas['ZZ_500_no_1L_BSM']
+    kappas['ZZ_550'] = kappas['ZZ_550_no_1L_BSM']
+
+if pure_1L_BSM:
+    kappas['ZZ_0'] = kappas['ZZ_0_pure_1L_BSM']
+    kappas['ZZ_240'] = kappas['ZZ_240_pure_1L_BSM']
+    # kappas['ZZ_125'] = kappas['ZZ_125_pure_1L_BSM']
+    kappas['ZZ_365'] = kappas['ZZ_365_pure_1L_BSM']
+    kappas['ZZ_500'] = kappas['ZZ_500_pure_1L_BSM']
+    kappas['ZZ_550'] = kappas['ZZ_550_pure_1L_BSM']
+
+if use_HEPfit_C1_values_WFR_kala2_input_all or \
+    use_HEPfit_C1_values_decayrates_WFR_kala2_input_all:
+    kappas['ZZ_240'] = kappas['ZZ_240_use_HEPfit_C1_values']
+    kappas['ZZ_365'] = kappas['ZZ_365_use_HEPfit_C1_values']
+    kappas['ZZ_500'] = kappas['ZZ_500_use_HEPfit_C1_values']
+
+if use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all:
+    kappas['ZZ_240'] = kappas['ZZ_240_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all']
+    kappas['ZZ_365'] = kappas['ZZ_365_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all']
+    kappas['ZZ_500'] = kappas['ZZ_500_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all']
+
+if use_HEPfit_C1_values_decayrates_WFR_kala2_input_all or \
+    use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all:
+    kappas['ZZ']   = kappas['ZZ_HEPfit_C1']
+    kappas['ZZ_0'] = kappas['ZZ_HEPfit_C1'] # Used for the Zh cross-section at HL-LHC
+    kappas['WW']   = kappas['WW_HEPfit_C1']
+    kappas['gg']   = kappas['gg_HEPfit_C1']
+    kappas['gamgam'] = kappas['gamgam_HEPfit_C1']
+
+
+#NEW FUNCTIONS AND VARIABLES
+M_PI = 3.14159265358979323846
+GF = 1.1663787e-5
+mHl = 125.1
+sqrt = np.sqrt
+
+
+# Expression for the Higgs self-energy diagram
+dZH = -(9.0/16.0)*( GF*mHl*mHl/sqrt(2.0)/M_PI/M_PI )*( 2.0*M_PI/3.0/sqrt(3.0) - 1.0 )
+
+# Resummations
+dZH1 = dZH / (1.0 - dZH)
+dZH2 = dZH * (1 + 3.0 * dZH) / (1.0 - dZH) / (1.0 - dZH)
+
+# HEPfit flags
+cLHd6 = 1
+cLH3d62 = 1
+
+
+
+# e+e- cross-sections
+def smeft_mueeZH(lmbd, sqrt_s):
+    mu = 1.0
+
+    if sqrt_s == 0.240:
+        C1 = 0.017
+    elif sqrt_s == 0.365:
+        C1 = 0.0057
+    elif sqrt_s == 0.500:
+        C1 = 0.00099
+    else:
+        raise ValueError("sqrt_s for the e+e- collider must be 240, 365, or 500 GeV")
+
+    deltaG_hhhRatio = lmbd - 1
+
+    mu = mu + cLHd6*(C1 + 2.0*dZH1)*deltaG_hhhRatio
+    
+    mu = mu + cLHd6*cLH3d62*dZH2*deltaG_hhhRatio*deltaG_hhhRatio
+
+    return mu
+
+def smeft_mueeHvv(lmbd, sqrt_s):
+    mu = 1.0
+
+    if sqrt_s == 0.240:
+        C1 = 0.0064
+    elif sqrt_s == 0.365:
+        C1 = 0.0062
+    elif sqrt_s == 0.500:
+        C1 = 0.0061
+    else:
+        raise ValueError("sqrt_s for the e+e- collider must be 240, 365, or 500 GeV")
+
+    deltaG_hhhRatio = lmbd - 1
+
+    mu = mu + cLHd6*(C1 + 2.0*dZH1)*deltaG_hhhRatio
+
+    mu = mu + cLHd6*cLH3d62*dZH2*deltaG_hhhRatio*deltaG_hhhRatio
+
+    return mu
+
+# pp cross-sections
+def smeft_muggH(lmbd, sqrt_s):
+    mu = 1.0
+
+    C1 = 0.0066 # It seems to be independent of energy 
+
+    deltaG_hhhRatio = lmbd - 1
+
+    mu = mu + cLHd6*(C1 + 2.0*dZH1)*deltaG_hhhRatio
+
+    mu = mu + cLHd6*cLH3d62*dZH2*deltaG_hhhRatio*deltaG_hhhRatio
+
+    return mu
+
+def smeft_muVBF(lmbd, sqrt_s):
+    mu = 1.0
+
+    if sqrt_s == 7.0:
+        C1 = 0.0065
+    elif sqrt_s == 8.0:
+        C1 = 0.0065
+    elif sqrt_s == 13.0:
+        C1 = 0.0064
+    elif sqrt_s == 14.0:
+        C1 = 0.0064
+    else:
+        raise ValueError("sqrt_s for pp collider must be 7, 8, 13 or 14 TeV")
+
+    deltaG_hhhRatio = lmbd - 1
+
+    mu = mu + cLHd6*(C1 + 2.0*dZH1)*deltaG_hhhRatio
+
+    mu = mu + cLHd6*cLH3d62*dZH2*deltaG_hhhRatio*deltaG_hhhRatio
+
+    return mu
+
+def smeft_muZH(lmbd, sqrt_s):
+    mu = 1.0
+
+    if sqrt_s == 7.0:
+        C1 = 0.0123
+    elif sqrt_s == 8.0:
+        C1 = 0.0122
+    elif sqrt_s == 13.0:
+        C1 = 0.0119
+    elif sqrt_s == 14.0:
+        C1 = 0.0118
+    else:
+        raise ValueError("sqrt_s for pp collider must be 7, 8, 13 or 14 TeV")
+
+    deltaG_hhhRatio = lmbd - 1
+
+    mu = mu + cLHd6*(C1 + 2.0*dZH1)*deltaG_hhhRatio
+
+    mu = mu + cLHd6*cLH3d62*dZH2*deltaG_hhhRatio*deltaG_hhhRatio
+
+    return mu
+
+def smeft_muWH(lmbd, sqrt_s):
+    mu = 1.0
+
+    if sqrt_s == 7.0:
+        C1 = 0.0106
+    elif sqrt_s == 8.0:
+        C1 = 0.0105
+    elif sqrt_s == 13.0:
+        C1 = 0.0103
+    elif sqrt_s == 14.0:
+        C1 = 0.0103
+    else:
+        raise ValueError("sqrt_s for pp collider must be 7, 8, 13 or 14 TeV")
+
+    deltaG_hhhRatio = lmbd - 1
+
+    mu = mu + cLHd6*(C1 + 2.0*dZH1)*deltaG_hhhRatio
+
+    mu = mu + cLHd6*cLH3d62*dZH2*deltaG_hhhRatio*deltaG_hhhRatio
+
+    return mu
+
+def smeft_muttH(lmbd, sqrt_s):
+    mu = 1.0
+
+    if sqrt_s == 7.0:
+        C1 = 0.0387
+    elif sqrt_s == 8.0:
+        C1 = 0.0378
+    elif sqrt_s == 13.0:
+        C1 = 0.0351
+    elif sqrt_s == 14.0:
+        C1 = 0.0347
+    else:
+        raise ValueError("sqrt_s for pp collider must be 7, 8, 13 or 14 TeV")
+
+    deltaG_hhhRatio = lmbd - 1
+
+    mu = mu + cLHd6*(C1 + 2.0*dZH1)*deltaG_hhhRatio
+
+    mu = mu + cLHd6*cLH3d62*dZH2*deltaG_hhhRatio*deltaG_hhhRatio
+
+    return mu
+
+
+# Higgs branching ratios
+def smeft_deltaGammaHgagaRatio(lmbd):
+    dwidth = 0.0
+
+    C1 = 0.0049
+
+    deltaG_hhhRatio = lmbd - 1
+
+    dwidth = dwidth + cLHd6*(C1 + 2.0*dZH1)*deltaG_hhhRatio
+
+    dwidth = dwidth + cLHd6*cLH3d62*dZH2*deltaG_hhhRatio*deltaG_hhhRatio
+
+    return dwidth
+
+def smeft_deltaGammaHZgaRatio(lmbd):
+    dwidth = 0.0
+
+    C1 = 0.0
+
+    deltaG_hhhRatio = lmbd - 1
+
+    dwidth = dwidth + cLHd6*(C1 + 2.0*dZH1)*deltaG_hhhRatio
+
+    dwidth = dwidth + cLHd6*cLH3d62*dZH2*deltaG_hhhRatio*deltaG_hhhRatio
+
+    return dwidth
+
+def smeft_deltaGammaHZZ4lRatio(lmbd):
+    dwidth = 0.0
+
+    C1 = 0.0083
+
+    deltaG_hhhRatio = lmbd - 1
+
+    dwidth = dwidth + cLHd6*(C1 + 2.0*dZH1)*deltaG_hhhRatio
+
+    dwidth = dwidth + cLHd6*cLH3d62*dZH2*deltaG_hhhRatio*deltaG_hhhRatio
+
+    return dwidth
+
+def smeft_deltaGammaHZZ4fRatio(lmbd):
+    dwidth = 0.0
+
+    C1 = 0.0083
+
+    deltaG_hhhRatio = lmbd - 1
+
+    dwidth = dwidth + cLHd6*(C1 + 2.0*dZH1)*deltaG_hhhRatio
+
+    dwidth = dwidth + cLHd6*cLH3d62*dZH2*deltaG_hhhRatio*deltaG_hhhRatio
+
+    return dwidth
+
+def smeft_deltaGammaHZZRatio(lmbd):
+    return smeft_deltaGammaHZZ4fRatio(lmbd)
+
+def smeft_deltaGammaHWW2l2vRatio(lmbd):
+    dwidth = 0.0
+
+    C1 = 0.0073
+
+    deltaG_hhhRatio = lmbd - 1
+
+    dwidth = dwidth + cLHd6*(C1 + 2.0*dZH1)*deltaG_hhhRatio
+
+    dwidth = dwidth + cLHd6*cLH3d62*dZH2*deltaG_hhhRatio*deltaG_hhhRatio
+
+    return dwidth
+
+def smeft_deltaGammaHWW4fRatio(lmbd):
+    dwidth = 0.0
+
+    C1 = 0.0073
+
+    deltaG_hhhRatio = lmbd - 1
+
+    dwidth = dwidth + cLHd6*(C1 + 2.0*dZH1)*deltaG_hhhRatio
+
+    dwidth = dwidth + cLHd6*cLH3d62*dZH2*deltaG_hhhRatio*deltaG_hhhRatio
+
+    return dwidth
+
+def smeft_deltaGammaHWWRatio(lmbd):
+    return smeft_deltaGammaHWW4fRatio(lmbd)
+
+def smeft_deltaGammaHmumuRatio(lmbd):
+    dwidth = 0.0
+
+    C1 = 0.0
+
+    deltaG_hhhRatio = lmbd - 1
+
+    dwidth = dwidth + cLHd6*(C1 + 2.0*dZH1)*deltaG_hhhRatio
+
+    dwidth = dwidth + cLHd6*cLH3d62*dZH2*deltaG_hhhRatio*deltaG_hhhRatio
+
+    return dwidth
+
+def smeft_deltaGammaHtautauRatio(lmbd):
+    dwidth = 0.0
+
+    C1 = 0.0
+
+    deltaG_hhhRatio = lmbd - 1
+
+    dwidth = dwidth + cLHd6*(C1 + 2.0*dZH1)*deltaG_hhhRatio
+
+    dwidth = dwidth + cLHd6*cLH3d62*dZH2*deltaG_hhhRatio*deltaG_hhhRatio
+
+    return dwidth
+
+def smeft_deltaGammaHbbRatio(lmbd):
+    dwidth = 0.0
+
+    C1 = 0.0
+
+    deltaG_hhhRatio = lmbd - 1
+
+    dwidth = dwidth + cLHd6*(C1 + 2.0*dZH1)*deltaG_hhhRatio
+
+    dwidth = dwidth + cLHd6*cLH3d62*dZH2*deltaG_hhhRatio*deltaG_hhhRatio
+
+    return dwidth
+
+def smeft_deltaGammaHccRatio(lmbd):
+    dwidth = 0.0
+
+    C1 = 0.0
+
+    deltaG_hhhRatio = lmbd - 1
+
+    dwidth = dwidth + cLHd6*(C1 + 2.0*dZH1)*deltaG_hhhRatio
+
+    dwidth = dwidth + cLHd6*cLH3d62*dZH2*deltaG_hhhRatio*deltaG_hhhRatio
+
+    return dwidth
+
+def smeft_deltaGammaHggRatio(lmbd):
+    dwidth = 0.0
+
+    C1 = 0.0066
+
+    deltaG_hhhRatio = lmbd - 1
+
+    dwidth = dwidth + cLHd6*(C1 + 2.0*dZH1)*deltaG_hhhRatio
+
+    dwidth = dwidth + cLHd6*cLH3d62*dZH2*deltaG_hhhRatio*deltaG_hhhRatio
+
+    return dwidth
+
+
+#UPDATED PART: SMEFT FORMULA
+
+# Obs: all ZZ branching ratios have the same C1 value. Same with WW
+# Todo: ask Henning what to do with the other couplings (WW, ZZ, Zga, gaga)
+# Todo: check if all couplings are correctly assigned to the XS and BR
+
+if smeft_formula:
+    # Implements the Zh cross-section using the kappa_lambda dependent expression from HEPfit,
+    # plus the external-leg correction (~C_Hbox), taken from the coupling modifier to fermions.
+    # No BSM contributions to the ZH cross-section are included.
+    kappas['ZZ_240'] = sqrt(smeft_mueeZH(lmbd=kappas["lam"], sqrt_s=0.240)) + (kappas["uu"]-1)
+    kappas['ZZ_365'] = sqrt(smeft_mueeZH(lmbd=kappas["lam"], sqrt_s=0.365)) + (kappas["uu"]-1)
+    kappas['ZZ_500'] = sqrt(smeft_mueeZH(lmbd=kappas["lam"], sqrt_s=0.500)) + (kappas["uu"]-1)
+    
+    kappas['ZZ_0'] = kappas["ZZ"]
+
+if smeft_formula_sqrt:
+    # Implements the Zh cross-section using the kappa_lambda dependent expression from HEPfit,
+    # plus the external-leg correction (~C_Hbox), taken from the coupling modifier to fermions.
+    # No BSM contributions to the ZH cross-section are included.
+    # Cross terms are removed by including dkappaf**2 inside of the square root
+    kappas['ZZ_240'] = sqrt(smeft_mueeZH(lmbd=kappas["lam"], sqrt_s=0.240) + (kappas["uu"]-1)**2)
+    kappas['ZZ_365'] = sqrt(smeft_mueeZH(lmbd=kappas["lam"], sqrt_s=0.365) + (kappas["uu"]-1)**2)
+    kappas['ZZ_500'] = sqrt(smeft_mueeZH(lmbd=kappas["lam"], sqrt_s=0.500) + (kappas["uu"]-1)**2)
+    
+    kappas['ZZ_0'] = kappas["ZZ"]
+
+if smeft_formula_no_cross:
+    # Implements the Zh cross-section using the kappa_lambda dependent expression from HEPfit,
+    # plus the external-leg correction (~C_Hbox), taken from the coupling modifier to fermions.
+    # No BSM contributions to the ZH cross-section are included.
+    # Cross terms are removed by including 2*dkappaf inside of the square root
+    kappas['ZZ_240'] = sqrt(smeft_mueeZH(lmbd=kappas["lam"], sqrt_s=0.240) + 2*(kappas["uu"]-1))
+    kappas['ZZ_365'] = sqrt(smeft_mueeZH(lmbd=kappas["lam"], sqrt_s=0.365) + 2*(kappas["uu"]-1))
+    kappas['ZZ_500'] = sqrt(smeft_mueeZH(lmbd=kappas["lam"], sqrt_s=0.500) + 2*(kappas["uu"]-1))
+    
+    kappas['ZZ_0'] = kappas["ZZ"]
+
+if smeft_formula_external_leg:
+    # Implements the Zh cross-section using the kappa_lambda dependent expression from HEPfit,
+    # No BSM contributions to the ZH cross-section are included.
+    kappas['ZZ_240'] = sqrt(smeft_mueeZH(lmbd=kappas["lam"], sqrt_s=0.240))
+    kappas['ZZ_365'] = sqrt(smeft_mueeZH(lmbd=kappas["lam"], sqrt_s=0.365))
+    kappas['ZZ_500'] = sqrt(smeft_mueeZH(lmbd=kappas["lam"], sqrt_s=0.500))
+    
+    kappas['ZZ_0'] = kappas["ZZ"]
+
+### Still to be checked
+if smeft_formula_all:
+    # Implements all XS and BR using the kappa_lambda dependent expression from HEPfit,
+    # plus the external-leg correction (~C_Hbox), taken from the coupling modifier to fermions.
+    # No BSM contributions to the ZH cross-section are included.
+    # Cross terms are removed by including dkappaf**2 inside of the square root
+    kappas['ZZ_240'] = sqrt( smeft_mueeZH(lmbd=kappas["lam"], sqrt_s=0.240) + 2*(kappas["uu"]-1) )
+    kappas['ZZ_365'] = sqrt( smeft_mueeZH(lmbd=kappas["lam"], sqrt_s=0.365) + 2*(kappas["uu"]-1) )
+    kappas['ZZ_500'] = sqrt( smeft_mueeZH(lmbd=kappas["lam"], sqrt_s=0.500) + 2*(kappas["uu"]-1) )
+
+    kappas['WW_240'] = sqrt( smeft_mueeHvv(lmbd=kappas["lam"], sqrt_s=0.240) + 2*(kappas["uu"]-1) )
+    kappas['WW_365'] = sqrt( smeft_mueeHvv(lmbd=kappas["lam"], sqrt_s=0.365) + 2*(kappas["uu"]-1) )
+    kappas['WW_500'] = sqrt( smeft_mueeHvv(lmbd=kappas["lam"], sqrt_s=0.500) + 2*(kappas["uu"]-1) )
+
+    kappas['bb']     = sqrt( 1.0 + smeft_deltaGammaHbbRatio(lmbd=kappas["lam"])     + 2*(kappas["uu"]-1) )
+    kappas['cc']     = sqrt( 1.0 + smeft_deltaGammaHccRatio(lmbd=kappas["lam"])     + 2*(kappas["uu"]-1) )
+    kappas['gg']     = sqrt( 1.0 + smeft_deltaGammaHggRatio(lmbd=kappas["lam"])     + 2*(kappas["uu"]-1) )
+    kappas['WW']     = sqrt( 1.0 + smeft_deltaGammaHWWRatio(lmbd=kappas["lam"])     + 2*(kappas["uu"]-1) )
+    kappas['ZZ']     = sqrt( 1.0 + smeft_deltaGammaHZZRatio(lmbd=kappas["lam"])     + 2*(kappas["uu"]-1) )
+    kappas['tautau'] = sqrt( 1.0 + smeft_deltaGammaHtautauRatio(lmbd=kappas["lam"]) + 2*(kappas["uu"]-1) )
+    kappas['mumu']   = sqrt( 1.0 + smeft_deltaGammaHmumuRatio(lmbd=kappas["lam"])   + 2*(kappas["uu"]-1) )
+    kappas['gamgam'] = sqrt( 1.0 + smeft_deltaGammaHgagaRatio(lmbd=kappas["lam"])   + 2*(kappas["uu"]-1) )
+    kappas['Zgam']   = sqrt( 1.0 + smeft_deltaGammaHZgaRatio(lmbd=kappas["lam"])    + 2*(kappas["uu"]-1) )
+    
+    kappas['ZZ_0'] = kappas["ZZ"]
+    kappas['ss'] = kappas['cc'] # No information from HEPfit, but C1=0 just as for cc and bb
+    kappas['dd'] = kappas['cc'] 
+    kappas['uu'] = kappas['cc'] 
+    kappas['ee'] = kappas['cc'] 
+
+    kappas["ggH_HLLHC"] = sqrt( smeft_muggH(lmbd=kappas["lam"], sqrt_s=14.0) + 2*(kappas["uu"]-1) )
+    kappas["VBF_HLLHC"] = sqrt( smeft_muVBF(lmbd=kappas["lam"], sqrt_s=14.0) + 2*(kappas["uu"]-1) )
+    kappas["ZH_HLLHC"]  = sqrt( smeft_muZH (lmbd=kappas["lam"], sqrt_s=14.0) + 2*(kappas["uu"]-1) )
+    kappas["WH_HLLHC"]  = sqrt( smeft_muWH (lmbd=kappas["lam"], sqrt_s=14.0) + 2*(kappas["uu"]-1) )
+    kappas["ttH_HLLHC"] = sqrt( smeft_muttH(lmbd=kappas["lam"], sqrt_s=14.0) + 2*(kappas["uu"]-1) )
+
+else:
+    # Need to weigh the kappas to get the scaling factor for VBF
+    wgt_W_VBF = 10.
+    wgt_Z_VBF = 1.
+    kappas["VBF"]     = sqrt( (wgt_W_VBF*kappas["WW"]**2 + wgt_Z_VBF*kappas["ZZ"]**2    ) / (wgt_W_VBF + wgt_Z_VBF) )
+    kappas["VBF_0"]   = sqrt( (wgt_W_VBF*kappas["WW"]**2 + wgt_Z_VBF*kappas["ZZ_0"]**2  ) / (wgt_W_VBF + wgt_Z_VBF) )
+    # kappas["VBF_125"] = sqrt( (wgt_W_VBF*kappas["WW"]**2 + wgt_Z_VBF*kappas["ZZ_125"]**2) / (wgt_W_VBF + wgt_Z_VBF) )
+    kappas["VBF_240"] = sqrt( (wgt_W_VBF*kappas["WW"]**2 + wgt_Z_VBF*kappas["ZZ_240"]**2) / (wgt_W_VBF + wgt_Z_VBF) )
+    kappas["VBF_365"] = sqrt( (wgt_W_VBF*kappas["WW"]**2 + wgt_Z_VBF*kappas["ZZ_365"]**2) / (wgt_W_VBF + wgt_Z_VBF) )
+
+    kappas["WW_240"] = kappas["WW"]
+    kappas["WW_365"] = kappas["WW"]
+    kappas["WW_500"] = kappas["WW"]
+
+    kappas["ggH_HLLHC"] = kappas["gg"]
+    kappas["VBF_HLLHC"] = kappas["VBF"]
+    kappas["ZH_HLLHC"]  = kappas["ZZ_0"]
+    kappas["WH_HLLHC"]  = kappas["WW"]
+    kappas["ttH_HLLHC"] = kappas["tt"]
+
+# Johannes' formula
+Mh = 125.1
+vev = 246.21965
+def ZZh_hextleg(kala):
+    dZh = -(Mh**2*(-9 + 2*np.sqrt(3)*np.pi))/(32*np.pi**2*vev**2)
+    return (kala**2-1)*dZh
+
+if WFR_kala2_input:
+    # Adds the external-leg correction (the contribution proportional to kappa_lambda**2) to 
+    # the ZH cross-section coupling modifier
+    kappas['ZZ_0']   = sqrt( kappas["ZZ_0"]**2   + ZZh_hextleg( kappas["lam"] ) )
+    kappas['ZZ_240'] = sqrt( kappas['ZZ_240']**2 + ZZh_hextleg( kappas["lam"] ) )
+    kappas['ZZ_365'] = sqrt( kappas['ZZ_365']**2 + ZZh_hextleg( kappas["lam"] ) )
+    kappas['ZZ_500'] = sqrt( kappas['ZZ_500']**2 + ZZh_hextleg( kappas["lam"] ) )
+
+if WFR_kala2_input_all or \
+    use_HEPfit_C1_values_WFR_kala2_input_all or \
+    use_HEPfit_C1_values_decayrates_WFR_kala2_input_all or \
+    use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all:
+    ###########################################################################################
+    # Adds the external-leg correction (the contribution proportional to kappa_lambda**2) to 
+    # the all Higgs cross-sections and decay rates
+    coupling_list = [
+        'ZZ_0', 'ZZ_240', 'ZZ_365', 'ZZ_500', 'ZZ_550',
+        'WW_240', 'WW_365', 'WW_500',
+        'tt', 'bb', 'cc', 'ss', 'dd', 'uu', 'tautau', 'mumu', 'ee',
+        'gg', 'WW', 'ZZ', 'gamgam', 'Zgam',
+        'VBF_HLLHC', 'ZH_HLLHC', 'WH_HLLHC', 'ttH_HLLHC', "ggH_HLLHC", 
+    ]
+    for coup in coupling_list:
+        kappas[coup] = sqrt( kappas[coup]**2 + ZZh_hextleg( kappas["lam"] ) )
+
+
 ### For now, no values at precisely 250 and 350 GeV
 kappas['ZZ_250'] = kappas['ZZ_240']; kappas['ZZ_250_no_1L_BSM'] = kappas['ZZ_240_no_1L_BSM']; 
 kappas['ZZ_350'] = kappas['ZZ_365']; kappas['ZZ_350_no_1L_BSM'] = kappas['ZZ_365_no_1L_BSM']
 
-if no_1L_BSM_sqrt_s:
-    kappas['ZZ_0'] = kappas['ZZ_0_no_1L_BSM']
-    # kappas['ZZ_125'] = kappas['ZZ_125_no_1L_BSM']
-    kappas['ZZ_240'] = kappas['ZZ_240_no_1L_BSM']
-    kappas['ZZ_250'] = kappas['ZZ_250_no_1L_BSM']
-    kappas['ZZ_350'] = kappas['ZZ_350_no_1L_BSM']
-    kappas['ZZ_365'] = kappas['ZZ_365_no_1L_BSM']
-    kappas['ZZ_500'] = kappas['ZZ_500_no_1L_BSM']
-    kappas['ZZ_550'] = kappas['ZZ_550_no_1L_BSM']
+kappas['WW_250'] = kappas['WW_240']
+kappas['WW_350'] = kappas['WW_365']
 
 BrHinv = 0.
 BrHexo = 0.
@@ -1229,21 +1825,27 @@ for kappa in kappas.keys():
     kappas2[kappa] = kappas[kappa]**2
 
 if no_quad:
-    for kappa in ['ZZ_0', 'ZZ_240', 'ZZ_250', 'ZZ_350', 'ZZ_365', 'ZZ_500', 'ZZ_550', ]:
+    for kappa in ['ZZ_0', 'ZZ_240', 'ZZ_365', 'ZZ_500', 'ZZ_550', ]:
         kappas2[kappa] = 2*kappas[kappa] - 1
         # Only linear correction to the Z->ZH cross sections are included
 
 
-# Need to weigh the kappas to get the scaling factor for VBF
-wgt_W_VBF = 10.
-wgt_Z_VBF = 1.
-kappas2["VBF"] = (wgt_W_VBF*kappas2["WW"] + wgt_Z_VBF*kappas2["ZZ"]) / (wgt_W_VBF + wgt_Z_VBF)
-kappas2["VBF_0"] = (wgt_W_VBF*kappas2["WW"] + wgt_Z_VBF*kappas2["ZZ_0"]) / (wgt_W_VBF + wgt_Z_VBF)
-# kappas2["VBF_125"] = (wgt_W_VBF*kappas2["WW"] + wgt_Z_VBF*kappas2["ZZ_125"]) / (wgt_W_VBF + wgt_Z_VBF)
-kappas2["VBF_240"] = (wgt_W_VBF*kappas2["WW"] + wgt_Z_VBF*kappas2["ZZ_240"]) / (wgt_W_VBF + wgt_Z_VBF)
-kappas2["VBF_250"] = (wgt_W_VBF*kappas2["WW"] + wgt_Z_VBF*kappas2["ZZ_250"]) / (wgt_W_VBF + wgt_Z_VBF)
-kappas2["VBF_350"] = (wgt_W_VBF*kappas2["WW"] + wgt_Z_VBF*kappas2["ZZ_350"]) / (wgt_W_VBF + wgt_Z_VBF)
-kappas2["VBF_365"] = (wgt_W_VBF*kappas2["WW"] + wgt_Z_VBF*kappas2["ZZ_365"]) / (wgt_W_VBF + wgt_Z_VBF)
+
+
+# # Need to weigh the kappas to get the scaling factor for VBF
+# wgt_W_VBF = 10.
+# wgt_Z_VBF = 1.
+# kappas2["VBF"] = (wgt_W_VBF*kappas2["WW"] + wgt_Z_VBF*kappas2["ZZ"]) / (wgt_W_VBF + wgt_Z_VBF)
+# kappas2["VBF_0"] = (wgt_W_VBF*kappas2["WW"] + wgt_Z_VBF*kappas2["ZZ_0"]) / (wgt_W_VBF + wgt_Z_VBF)
+# # kappas2["VBF_125"] = (wgt_W_VBF*kappas2["WW"] + wgt_Z_VBF*kappas2["ZZ_125"]) / (wgt_W_VBF + wgt_Z_VBF)
+# kappas2["VBF_240"] = (wgt_W_VBF*kappas2["WW"] + wgt_Z_VBF*kappas2["ZZ_240"]) / (wgt_W_VBF + wgt_Z_VBF)
+# kappas2["VBF_250"] = (wgt_W_VBF*kappas2["WW"] + wgt_Z_VBF*kappas2["ZZ_250"]) / (wgt_W_VBF + wgt_Z_VBF)
+# kappas2["VBF_350"] = (wgt_W_VBF*kappas2["WW"] + wgt_Z_VBF*kappas2["ZZ_350"]) / (wgt_W_VBF + wgt_Z_VBF)
+# kappas2["VBF_365"] = (wgt_W_VBF*kappas2["WW"] + wgt_Z_VBF*kappas2["ZZ_365"]) / (wgt_W_VBF + wgt_Z_VBF)
+
+
+
+
 
 # From HiggsTools, based on LHCHWG
 BR_H_to_gg     = 0.08171987918280119
@@ -1273,7 +1875,7 @@ print(f"Total decay rate: {total_rate}")
 
 kappas2["H"] = kappas2["gg"]*BR_H_to_gg         + \
                kappas2["WW"]*BR_H_to_WW         + \
-               kappas2["ZZ"]*BR_H_to_ZZ     + \
+               kappas2["ZZ"]*BR_H_to_ZZ         + \
                kappas2["Zgam"]*BR_H_to_Zga      + \
                kappas2["gamgam"]*BR_H_to_gaga   + \
                kappas2["mumu"]*BR_H_to_mumu     + \
@@ -1283,13 +1885,14 @@ kappas2["H"] = kappas2["gg"]*BR_H_to_gg         + \
                kappas2["ss"]*BR_H_to_ss         ## Check this!
 
 kappas2["H"] = kappas2["H"]/(1.0 - BrHinv - BrHexo)
-print(f"kappa_H^2 = {kappas2["H"]}")
+print(f"kappa_H^2 = {kappas2['H']}")
 
 
 
 final_text = "#\n" + \
              "#\n" + \
              "# IDM Benchmark Point:\n"
+
 
 for coup, kaps in kappas.items():
     final_text = final_text + f"# kappas[{coup}] = {kaps}\n"
@@ -1307,10 +1910,33 @@ print(final_text)
 # Open the ILC_250 input file in read mode and output file in write mode
 input_file_ILC250 =  file_dir + "ObservablesHiggs_ILC_250_SM.conf"
 output_file_ILC250 = file_dir + "ObservablesHiggs_ILC_250_IDM.conf"
-if no_1L_BSM_sqrt_s:
-    output_file_ILC250 = file_dir + "ObservablesHiggs_ILC_250_IDM_no_1L_BSM_sqrt_s.conf"
-elif no_quad:
-    output_file_ILC250 = file_dir + "ObservablesHiggs_ILC_250_IDM_no_quad.conf"
+
+#if no_1L_BSM_sqrt_s:
+    #output_file_ILC250 = file_dir + "ObservablesHiggs_ILC_250_IDM_no_1L_BSM_sqrt_s.conf"
+#elif no_quad:
+    #output_file_ILC250 = file_dir + "ObservablesHiggs_ILC_250_IDM_no_quad.conf"
+
+output_file_flag_map = {
+    no_1L_BSM_sqrt_s: "ObservablesHiggs_ILC_250_IDM_no_1L_BSM_sqrt_s.conf",
+    no_1L_BSM: "ObservablesHiggs_ILC_250_IDM_no_1L_BSM.conf",
+    pure_1L_BSM: "ObservablesHiggs_ILC_250_IDM_pure_1L_BSM.conf",
+    no_quad: "ObservablesHiggs_ILC_250_IDM_no_quad.conf",
+    smeft_formula: "ObservablesHiggs_ILC_250_IDM_smeft_formula.conf",
+    smeft_formula_sqrt: "ObservablesHiggs_ILC_250_IDM_smeft_formula_sqrt.conf",
+    smeft_formula_no_cross: "ObservablesHiggs_ILC_250_IDM_smeft_formula_no_cross.conf",
+    smeft_formula_external_leg: "ObservablesHiggs_ILC_250_IDM_smeft_formula_external_leg.conf",
+    smeft_formula_all: "ObservablesHiggs_ILC_250_IDM_smeft_formula_all.conf",
+    WFR_kala2_input: "ObservablesHiggs_ILC_250_IDM_WFR_kala2_input.conf",
+    WFR_kala2_input_all: "ObservablesHiggs_ILC_250_IDM_WFR_kala2_input_all.conf",
+    use_HEPfit_C1_values_WFR_kala2_input_all: "ObservablesHiggs_ILC_250_IDM_use_HEPfit_C1_values_WFR_kala2_input_all.conf",
+    use_HEPfit_C1_values_decayrates_WFR_kala2_input_all: "ObservablesHiggs_ILC_250_IDM_use_HEPfit_C1_values_decayrates_WFR_kala2_input_all.conf",
+    use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all: "ObservablesHiggs_ILC_250_IDM_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all.conf",
+}
+
+for condition, filename in output_file_flag_map.items():
+    if condition:
+        output_file_ILC250 = file_dir + filename
+        break
 
 with open(input_file_ILC250, 'r') as infile, open(output_file_ILC250, 'w') as outfile:
     for line in infile:
@@ -1327,8 +1953,8 @@ with open(input_file_ILC250, 'r') as infile, open(output_file_ILC250, 'w') as ou
                 columns[9] = str(kappas2["ZZ_250"]*kappas2["bb"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("eeHvvbb_")):
-                columns[8] = str(kappas2["WW"]*kappas2["bb"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["WW"]*kappas2["bb"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["WW_250"]*kappas2["bb"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["WW_250"]*kappas2["bb"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("eeZHcc_")):
                 columns[8] = str(kappas2["ZZ_250"]*kappas2["cc"]*float(columns[8])/kappas2["H"])
@@ -1358,9 +1984,9 @@ with open(input_file_ILC250, 'r') as infile, open(output_file_ILC250, 'w') as ou
                 columns[8] = str(kappas2["ZZ_250"]*kappas2["mumu"]*float(columns[8])/kappas2["H"])
                 columns[9] = str(kappas2["ZZ_250"]*kappas2["mumu"]*float(columns[9])/kappas2["H"])
 
-            # elif (columns[1].startswith("eeZHZga_")):
-            #     columns[8] = str(kappas2["ZZ_250"]*kappas2["Zgam"]*float(columns[8])/kappas2["H"])
-            #     columns[9] = str(kappas2["ZZ_250"]*kappas2["Zgam"]*float(columns[9])/kappas2["H"])
+            elif (columns[1].startswith("eeZHZga_")):
+                columns[8] = str(kappas2["ZZ_250"]*kappas2["Zgam"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["ZZ_250"]*kappas2["Zgam"]*float(columns[9])/kappas2["H"])
 
             # Rejoin the columns and write to the output file
             outfile.write(" ".join(columns) + "\n")
@@ -1391,11 +2017,27 @@ if (scenario == "IDM_ILC_250_350"
     # Open the ILC_350 input file in read mode and output file in write mode
     input_file_ILC350 =  file_dir + "ObservablesHiggs_ILC_350_SM.conf"
     output_file_ILC350 = file_dir + "ObservablesHiggs_ILC_350_IDM.conf"
-    if no_1L_BSM_sqrt_s:
-        output_file_ILC350 = file_dir + "ObservablesHiggs_ILC_350_IDM_no_1L_BSM_sqrt_s.conf"
-    elif no_quad:
-        output_file_ILC350 = file_dir + "ObservablesHiggs_ILC_350_IDM_no_quad.conf"
+    output_file_flag_map = {
+        no_1L_BSM_sqrt_s: "ObservablesHiggs_ILC_350_IDM_no_1L_BSM_sqrt_s.conf",
+        no_1L_BSM: "ObservablesHiggs_ILC_350_IDM_no_1L_BSM.conf",
+        pure_1L_BSM: "ObservablesHiggs_ILC_350_IDM_pure_1L_BSM.conf",
+        no_quad: "ObservablesHiggs_ILC_350_IDM_no_quad.conf",
+        smeft_formula: "ObservablesHiggs_ILC_350_IDM_smeft_formula.conf",
+        smeft_formula_sqrt: "ObservablesHiggs_ILC_350_IDM_smeft_formula_sqrt.conf",
+        smeft_formula_no_cross: "ObservablesHiggs_ILC_350_IDM_smeft_formula_no_cross.conf",
+        smeft_formula_external_leg: "ObservablesHiggs_ILC_350_IDM_smeft_formula_external_leg.conf",
+        smeft_formula_all: "ObservablesHiggs_ILC_350_IDM_smeft_formula_all.conf",
+        WFR_kala2_input: "ObservablesHiggs_ILC_350_IDM_WFR_kala2_input.conf",
+        WFR_kala2_input_all: "ObservablesHiggs_ILC_350_IDM_WFR_kala2_input_all.conf",
+        use_HEPfit_C1_values_WFR_kala2_input_all: "ObservablesHiggs_ILC_350_IDM_use_HEPfit_C1_values_WFR_kala2_input_all.conf",
+        use_HEPfit_C1_values_decayrates_WFR_kala2_input_all: "ObservablesHiggs_ILC_350_IDM_use_HEPfit_C1_values_decayrates_WFR_kala2_input_all.conf",
+        use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all: "ObservablesHiggs_ILC_350_IDM_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all.conf",
+    }
 
+    for condition, filename in output_file_flag_map.items():
+        if condition:
+            output_file_ILC350 = file_dir + filename
+            break
 
     with open(input_file_ILC350, 'r') as infile, open(output_file_ILC350, 'w') as outfile:
         for line in infile:
@@ -1413,8 +2055,8 @@ if (scenario == "IDM_ILC_250_350"
                     columns[9] = str(kappas2["ZZ_350"]*kappas2["bb"]*float(columns[9])/kappas2["H"])
 
                 elif (columns[1].startswith("eeHvvbb_")):
-                    columns[8] = str(kappas2["WW"]*kappas2["bb"]*float(columns[8])/kappas2["H"])
-                    columns[9] = str(kappas2["WW"]*kappas2["bb"]*float(columns[9])/kappas2["H"])
+                    columns[8] = str(kappas2["WW_350"]*kappas2["bb"]*float(columns[8])/kappas2["H"])
+                    columns[9] = str(kappas2["WW_350"]*kappas2["bb"]*float(columns[9])/kappas2["H"])
 
 
                 elif (columns[1].startswith("eeZHcc_")):
@@ -1422,8 +2064,8 @@ if (scenario == "IDM_ILC_250_350"
                     columns[9] = str(kappas2["ZZ_350"]*kappas2["cc"]*float(columns[9])/kappas2["H"])
 
                 elif (columns[1].startswith("eeHvvcc_")):
-                    columns[8] = str(kappas2["WW"]*kappas2["cc"]*float(columns[8])/kappas2["H"])
-                    columns[9] = str(kappas2["WW"]*kappas2["cc"]*float(columns[9])/kappas2["H"])
+                    columns[8] = str(kappas2["WW_350"]*kappas2["cc"]*float(columns[8])/kappas2["H"])
+                    columns[9] = str(kappas2["WW_350"]*kappas2["cc"]*float(columns[9])/kappas2["H"])
 
 
                 elif (columns[1].startswith("eeZHgg_")):
@@ -1431,8 +2073,8 @@ if (scenario == "IDM_ILC_250_350"
                     columns[9] = str(kappas2["ZZ_350"]*kappas2["gg"]*float(columns[9])/kappas2["H"])
 
                 elif (columns[1].startswith("eeHvvgg_")):
-                    columns[8] = str(kappas2["WW"]*kappas2["gg"]*float(columns[8])/kappas2["H"])
-                    columns[9] = str(kappas2["WW"]*kappas2["gg"]*float(columns[9])/kappas2["H"])
+                    columns[8] = str(kappas2["WW_350"]*kappas2["gg"]*float(columns[8])/kappas2["H"])
+                    columns[9] = str(kappas2["WW_350"]*kappas2["gg"]*float(columns[9])/kappas2["H"])
 
 
                 elif (columns[1].startswith("eeZHWW_")):
@@ -1440,8 +2082,8 @@ if (scenario == "IDM_ILC_250_350"
                     columns[9] = str(kappas2["ZZ_350"]*kappas2["WW"]*float(columns[9])/kappas2["H"])
 
                 elif (columns[1].startswith("eeHvvWW_")):
-                    columns[8] = str(kappas2["WW"]*kappas2["WW"]*float(columns[8])/kappas2["H"])
-                    columns[9] = str(kappas2["WW"]*kappas2["WW"]*float(columns[9])/kappas2["H"])
+                    columns[8] = str(kappas2["WW_350"]*kappas2["WW"]*float(columns[8])/kappas2["H"])
+                    columns[9] = str(kappas2["WW_350"]*kappas2["WW"]*float(columns[9])/kappas2["H"])
 
 
                 elif (columns[1].startswith("eeZHZZ_")):
@@ -1449,8 +2091,8 @@ if (scenario == "IDM_ILC_250_350"
                     columns[9] = str(kappas2["ZZ_350"]*kappas2["ZZ"]*float(columns[9])/kappas2["H"])
 
                 elif (columns[1].startswith("eeHvvZZ_")):
-                    columns[8] = str(kappas2["WW"]*kappas2["ZZ"]*float(columns[8])/kappas2["H"])
-                    columns[9] = str(kappas2["WW"]*kappas2["ZZ"]*float(columns[9])/kappas2["H"])
+                    columns[8] = str(kappas2["WW_350"]*kappas2["ZZ"]*float(columns[8])/kappas2["H"])
+                    columns[9] = str(kappas2["WW_350"]*kappas2["ZZ"]*float(columns[9])/kappas2["H"])
 
 
                 elif (columns[1].startswith("eeZHtautau_")):
@@ -1458,8 +2100,8 @@ if (scenario == "IDM_ILC_250_350"
                     columns[9] = str(kappas2["ZZ_350"]*kappas2["tautau"]*float(columns[9])/kappas2["H"])
 
                 elif (columns[1].startswith("eeHvvtautau_")):
-                    columns[8] = str(kappas2["WW"]*kappas2["tautau"]*float(columns[8])/kappas2["H"])
-                    columns[9] = str(kappas2["WW"]*kappas2["tautau"]*float(columns[9])/kappas2["H"])
+                    columns[8] = str(kappas2["WW_350"]*kappas2["tautau"]*float(columns[8])/kappas2["H"])
+                    columns[9] = str(kappas2["WW_350"]*kappas2["tautau"]*float(columns[9])/kappas2["H"])
 
 
                 elif (columns[1].startswith("eeZHgaga_")):
@@ -1467,8 +2109,8 @@ if (scenario == "IDM_ILC_250_350"
                     columns[9] = str(kappas2["ZZ_350"]*kappas2["gamgam"]*float(columns[9])/kappas2["H"])
 
                 elif (columns[1].startswith("eeHvvgaga_")):
-                    columns[8] = str(kappas2["WW"]*kappas2["gamgam"]*float(columns[8])/kappas2["H"])
-                    columns[9] = str(kappas2["WW"]*kappas2["gamgam"]*float(columns[9])/kappas2["H"])
+                    columns[8] = str(kappas2["WW_350"]*kappas2["gamgam"]*float(columns[8])/kappas2["H"])
+                    columns[9] = str(kappas2["WW_350"]*kappas2["gamgam"]*float(columns[9])/kappas2["H"])
 
 
                 elif (columns[1].startswith("eeZHmumu_")):
@@ -1476,8 +2118,8 @@ if (scenario == "IDM_ILC_250_350"
                     columns[9] = str(kappas2["ZZ_350"]*kappas2["mumu"]*float(columns[9])/kappas2["H"])
 
                 elif (columns[1].startswith("eeHvvmumu_")):
-                    columns[8] = str(kappas2["WW"]*kappas2["mumu"]*float(columns[8])/kappas2["H"])
-                    columns[9] = str(kappas2["WW"]*kappas2["mumu"]*float(columns[9])/kappas2["H"])
+                    columns[8] = str(kappas2["WW_350"]*kappas2["mumu"]*float(columns[8])/kappas2["H"])
+                    columns[9] = str(kappas2["WW_350"]*kappas2["mumu"]*float(columns[9])/kappas2["H"])
 
 
                 # Rejoin the columns and write to the output file
@@ -1494,6 +2136,8 @@ if (scenario == "IDM_ILC_250_350"
 
 
 
+
+
 ###########################################################################################
 ###########################################################################################
 ###################################   ILC at 500 GeV   ####################################
@@ -1505,11 +2149,28 @@ if (scenario == "IDM_ILC_250_350_500"
     # Open the ILC_500 input file in read mode and output file in write mode
     input_file_ILC500 =  file_dir + "ObservablesHiggs_ILC_500_SM.conf"
     output_file_ILC500 = file_dir + "ObservablesHiggs_ILC_500_IDM.conf"
-    if no_1L_BSM_sqrt_s:
-        output_file_ILC500 = file_dir + "ObservablesHiggs_ILC_500_IDM_no_1L_BSM_sqrt_s.conf"
-    elif no_quad:
-        output_file_ILC500 = file_dir + "ObservablesHiggs_ILC_500_IDM_no_quad.conf"
+ 
+    output_file_flag_map = {
+        no_1L_BSM_sqrt_s: "ObservablesHiggs_ILC_500_IDM_no_1L_BSM_sqrt_s.conf",
+        no_1L_BSM: "ObservablesHiggs_ILC_500_IDM_no_1L_BSM.conf",
+        pure_1L_BSM: "ObservablesHiggs_ILC_500_IDM_pure_1L_BSM.conf",
+        no_quad: "ObservablesHiggs_ILC_500_IDM_no_quad.conf",
+        smeft_formula: "ObservablesHiggs_ILC_500_IDM_smeft_formula.conf",
+        smeft_formula_sqrt: "ObservablesHiggs_ILC_500_IDM_smeft_formula_sqrt.conf",
+        smeft_formula_no_cross: "ObservablesHiggs_ILC_500_IDM_smeft_formula_no_cross.conf",
+        smeft_formula_external_leg: "ObservablesHiggs_ILC_500_IDM_smeft_formula_external_leg.conf",
+        smeft_formula_all: "ObservablesHiggs_ILC_500_IDM_smeft_formula_all.conf",
+        WFR_kala2_input: "ObservablesHiggs_ILC_500_IDM_WFR_kala2_input.conf",
+        WFR_kala2_input_all: "ObservablesHiggs_ILC_500_IDM_WFR_kala2_input_all.conf",
+        use_HEPfit_C1_values_WFR_kala2_input_all: "ObservablesHiggs_ILC_500_IDM_use_HEPfit_C1_values_WFR_kala2_input_all.conf",
+        use_HEPfit_C1_values_decayrates_WFR_kala2_input_all: "ObservablesHiggs_ILC_500_IDM_use_HEPfit_C1_values_decayrates_WFR_kala2_input_all.conf",
+        use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all: "ObservablesHiggs_ILC_500_IDM_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all.conf",
+    }
 
+    for condition, filename in output_file_flag_map.items():
+        if condition:
+            output_file_ILC500 = file_dir + filename
+            break
 
     with open(input_file_ILC500, 'r') as infile, open(output_file_ILC500, 'w') as outfile:
         for line in infile:
@@ -1527,8 +2188,8 @@ if (scenario == "IDM_ILC_250_350_500"
                     columns[9] = str(kappas2["ZZ_500"]*kappas2["bb"]*float(columns[9])/kappas2["H"])
 
                 elif (columns[1].startswith("eeHvvbb_")):
-                    columns[8] = str(kappas2["WW"]*kappas2["bb"]*float(columns[8])/kappas2["H"])
-                    columns[9] = str(kappas2["WW"]*kappas2["bb"]*float(columns[9])/kappas2["H"])
+                    columns[8] = str(kappas2["WW_500"]*kappas2["bb"]*float(columns[8])/kappas2["H"])
+                    columns[9] = str(kappas2["WW_500"]*kappas2["bb"]*float(columns[9])/kappas2["H"])
 
 
                 elif (columns[1].startswith("eeZHcc_")):
@@ -1536,8 +2197,8 @@ if (scenario == "IDM_ILC_250_350_500"
                     columns[9] = str(kappas2["ZZ_500"]*kappas2["cc"]*float(columns[9])/kappas2["H"])
 
                 elif (columns[1].startswith("eeHvvcc_")):
-                    columns[8] = str(kappas2["WW"]*kappas2["cc"]*float(columns[8])/kappas2["H"])
-                    columns[9] = str(kappas2["WW"]*kappas2["cc"]*float(columns[9])/kappas2["H"])
+                    columns[8] = str(kappas2["WW_500"]*kappas2["cc"]*float(columns[8])/kappas2["H"])
+                    columns[9] = str(kappas2["WW_500"]*kappas2["cc"]*float(columns[9])/kappas2["H"])
 
 
                 elif (columns[1].startswith("eeZHgg_")):
@@ -1545,8 +2206,8 @@ if (scenario == "IDM_ILC_250_350_500"
                     columns[9] = str(kappas2["ZZ_500"]*kappas2["gg"]*float(columns[9])/kappas2["H"])
 
                 elif (columns[1].startswith("eeHvvgg_")):
-                    columns[8] = str(kappas2["WW"]*kappas2["gg"]*float(columns[8])/kappas2["H"])
-                    columns[9] = str(kappas2["WW"]*kappas2["gg"]*float(columns[9])/kappas2["H"])
+                    columns[8] = str(kappas2["WW_500"]*kappas2["gg"]*float(columns[8])/kappas2["H"])
+                    columns[9] = str(kappas2["WW_500"]*kappas2["gg"]*float(columns[9])/kappas2["H"])
 
 
                 elif (columns[1].startswith("eeZHWW_")):
@@ -1554,8 +2215,8 @@ if (scenario == "IDM_ILC_250_350_500"
                     columns[9] = str(kappas2["ZZ_500"]*kappas2["WW"]*float(columns[9])/kappas2["H"])
 
                 elif (columns[1].startswith("eeHvvWW_")):
-                    columns[8] = str(kappas2["WW"]*kappas2["WW"]*float(columns[8])/kappas2["H"])
-                    columns[9] = str(kappas2["WW"]*kappas2["WW"]*float(columns[9])/kappas2["H"])
+                    columns[8] = str(kappas2["WW_500"]*kappas2["WW"]*float(columns[8])/kappas2["H"])
+                    columns[9] = str(kappas2["WW_500"]*kappas2["WW"]*float(columns[9])/kappas2["H"])
 
 
                 elif (columns[1].startswith("eeZHZZ_")):
@@ -1563,8 +2224,8 @@ if (scenario == "IDM_ILC_250_350_500"
                     columns[9] = str(kappas2["ZZ_500"]*kappas2["ZZ"]*float(columns[9])/kappas2["H"])
 
                 elif (columns[1].startswith("eeHvvZZ_")):
-                    columns[8] = str(kappas2["WW"]*kappas2["ZZ"]*float(columns[8])/kappas2["H"])
-                    columns[9] = str(kappas2["WW"]*kappas2["ZZ"]*float(columns[9])/kappas2["H"])
+                    columns[8] = str(kappas2["WW_500"]*kappas2["ZZ"]*float(columns[8])/kappas2["H"])
+                    columns[9] = str(kappas2["WW_500"]*kappas2["ZZ"]*float(columns[9])/kappas2["H"])
 
 
                 elif (columns[1].startswith("eeZHtautau_")):
@@ -1572,8 +2233,8 @@ if (scenario == "IDM_ILC_250_350_500"
                     columns[9] = str(kappas2["ZZ_500"]*kappas2["tautau"]*float(columns[9])/kappas2["H"])
 
                 elif (columns[1].startswith("eeHvvtautau_")):
-                    columns[8] = str(kappas2["WW"]*kappas2["tautau"]*float(columns[8])/kappas2["H"])
-                    columns[9] = str(kappas2["WW"]*kappas2["tautau"]*float(columns[9])/kappas2["H"])
+                    columns[8] = str(kappas2["WW_500"]*kappas2["tautau"]*float(columns[8])/kappas2["H"])
+                    columns[9] = str(kappas2["WW_500"]*kappas2["tautau"]*float(columns[9])/kappas2["H"])
 
 
                 elif (columns[1].startswith("eeZHgaga_")):
@@ -1581,8 +2242,8 @@ if (scenario == "IDM_ILC_250_350_500"
                     columns[9] = str(kappas2["ZZ_500"]*kappas2["gamgam"]*float(columns[9])/kappas2["H"])
 
                 elif (columns[1].startswith("eeHvvgaga_")):
-                    columns[8] = str(kappas2["WW"]*kappas2["gamgam"]*float(columns[8])/kappas2["H"])
-                    columns[9] = str(kappas2["WW"]*kappas2["gamgam"]*float(columns[9])/kappas2["H"])
+                    columns[8] = str(kappas2["WW_500"]*kappas2["gamgam"]*float(columns[8])/kappas2["H"])
+                    columns[9] = str(kappas2["WW_500"]*kappas2["gamgam"]*float(columns[9])/kappas2["H"])
 
 
                 elif (columns[1].startswith("eeZHmumu_")):
@@ -1590,8 +2251,8 @@ if (scenario == "IDM_ILC_250_350_500"
                     columns[9] = str(kappas2["ZZ_500"]*kappas2["mumu"]*float(columns[9])/kappas2["H"])
 
                 elif (columns[1].startswith("eeHvvmumu_")):
-                    columns[8] = str(kappas2["WW"]*kappas2["mumu"]*float(columns[8])/kappas2["H"])
-                    columns[9] = str(kappas2["WW"]*kappas2["mumu"]*float(columns[9])/kappas2["H"])
+                    columns[8] = str(kappas2["WW_500"]*kappas2["mumu"]*float(columns[8])/kappas2["H"])
+                    columns[9] = str(kappas2["WW_500"]*kappas2["mumu"]*float(columns[9])/kappas2["H"])
 
 
                 # Rejoin the columns and write to the output file
@@ -1622,18 +2283,40 @@ if (scenario == "IDM_ILC_250_350_500_1000"):
 
 ###########################################################################################
 ###########################################################################################
-######################################   HL-HLC   #########################################
+######################################   HL-LHC   #########################################
 ###########################################################################################
 ###########################################################################################
 
-
+#OUTPUT FILES?
 # Open the HL-LHC input file in read mode and output file in write mode
 input_file_HLLHC =  file_dir + "ObservablesHiggs_HLLHC_SM.conf"
 output_file_HLLHC = file_dir + "ObservablesHiggs_HLLHC_IDM.conf"
-if no_1L_BSM_sqrt_s:
-    output_file_HLLHC = file_dir + "ObservablesHiggs_HLLHC_IDM_no_1L_BSM_sqrt_s.conf"
-if no_quad:
-    output_file_HLLHC = file_dir + "ObservablesHiggs_HLLHC_IDM_no_quad.conf"
+# if no_1L_BSM_sqrt_s:
+#     output_file_HLLHC = file_dir + "ObservablesHiggs_HLLHC_IDM_no_1L_BSM_sqrt_s.conf"
+# if no_quad:
+#     output_file_HLLHC = file_dir + "ObservablesHiggs_HLLHC_IDM_no_quad.conf"
+
+output_file_flag_map = {
+    no_1L_BSM_sqrt_s: "ObservablesHiggs_HLLHC_IDM_no_1L_BSM_sqrt_s.conf",
+    no_1L_BSM: "ObservablesHiggs_HLLHC_IDM_no_1L_BSM.conf",
+    pure_1L_BSM: "ObservablesHiggs_HLLHC_IDM_pure_1L_BSM.conf",
+    no_quad: "ObservablesHiggs_HLLHC_IDM_no_quad.conf",
+    smeft_formula: "ObservablesHiggs_HLLHC_IDM_smeft_formula.conf",
+    smeft_formula_sqrt: "ObservablesHiggs_HLLHC_IDM_smeft_formula_sqrt.conf",
+    smeft_formula_no_cross: "ObservablesHiggs_HLLHC_IDM_smeft_formula_no_cross.conf",
+    smeft_formula_external_leg: "ObservablesHiggs_HLLHC_IDM_smeft_formula_external_leg.conf",
+    smeft_formula_all: "ObservablesHiggs_HLLHC_IDM_smeft_formula_all.conf",
+    WFR_kala2_input: "ObservablesHiggs_HLLHC_IDM_WFR_kala2_input.conf",
+    WFR_kala2_input_all: "ObservablesHiggs_HLLHC_IDM_WFR_kala2_input_all.conf",
+    use_HEPfit_C1_values_WFR_kala2_input_all: "ObservablesHiggs_HLLHC_IDM_use_HEPfit_C1_values_WFR_kala2_input_all.conf",
+    use_HEPfit_C1_values_decayrates_WFR_kala2_input_all: "ObservablesHiggs_HLLHC_IDM_use_HEPfit_C1_values_decayrates_WFR_kala2_input_all.conf",
+    use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all: "ObservablesHiggs_HLLHC_IDM_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all.conf",
+}
+
+for condition, filename in output_file_flag_map.items():
+    if condition:
+        output_file_HLLHC = file_dir + filename
+        break
 
 
 with open(input_file_HLLHC, 'r') as infile, open(output_file_HLLHC, 'w') as outfile:
@@ -1644,121 +2327,121 @@ with open(input_file_HLLHC, 'r') as infile, open(output_file_HLLHC, 'w') as outf
 
             # ggF
             if (columns[1].startswith("muggHgagaHL")):
-                columns[8] = str(kappas2["gg"]*kappas2["gamgam"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["gg"]*kappas2["gamgam"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["ggH_HLLHC"]*kappas2["gamgam"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["ggH_HLLHC"]*kappas2["gamgam"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muggHZZ4lHL")):
-                columns[8] = str(kappas2["gg"]*kappas2["ZZ"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["gg"]*kappas2["ZZ"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["ggH_HLLHC"]*kappas2["ZZ"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["ggH_HLLHC"]*kappas2["ZZ"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muggHWW2l2vHL")):
-                columns[8] = str(kappas2["gg"]*kappas2["WW"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["gg"]*kappas2["WW"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["ggH_HLLHC"]*kappas2["WW"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["ggH_HLLHC"]*kappas2["WW"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muggHtautauHL")):
-                columns[8] = str(kappas2["gg"]*kappas2["tautau"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["gg"]*kappas2["tautau"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["ggH_HLLHC"]*kappas2["tautau"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["ggH_HLLHC"]*kappas2["tautau"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muggHbbHL")):
-                columns[8] = str(kappas2["gg"]*kappas2["bb"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["gg"]*kappas2["bb"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["ggH_HLLHC"]*kappas2["bb"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["ggH_HLLHC"]*kappas2["bb"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muggHmumuHL")):
-                columns[8] = str(kappas2["gg"]*kappas2["mumu"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["gg"]*kappas2["mumu"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["ggH_HLLHC"]*kappas2["mumu"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["ggH_HLLHC"]*kappas2["mumu"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muggHZgaHL")):
-                columns[8] = str(kappas2["gg"]*kappas2["Zgam"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["gg"]*kappas2["Zgam"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["ggH_HLLHC"]*kappas2["Zgam"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["ggH_HLLHC"]*kappas2["Zgam"]*float(columns[9])/kappas2["H"])
 
 
             # VBF
             elif (columns[1].startswith("muVBFgagaHL")):
-                columns[8] = str(kappas2["VBF"]*kappas2["gamgam"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["VBF"]*kappas2["gamgam"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["VBF_HLLHC"]*kappas2["gamgam"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["VBF_HLLHC"]*kappas2["gamgam"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muVBFZZ4lHL")):
-                columns[8] = str(kappas2["VBF"]*kappas2["ZZ"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["VBF"]*kappas2["ZZ"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["VBF_HLLHC"]*kappas2["ZZ"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["VBF_HLLHC"]*kappas2["ZZ"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muVBFWW2l2vHL")):
-                columns[8] = str(kappas2["VBF"]*kappas2["WW"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["VBF"]*kappas2["WW"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["VBF_HLLHC"]*kappas2["WW"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["VBF_HLLHC"]*kappas2["WW"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muVBFtautauHL")):
-                columns[8] = str(kappas2["VBF"]*kappas2["tautau"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["VBF"]*kappas2["tautau"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["VBF_HLLHC"]*kappas2["tautau"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["VBF_HLLHC"]*kappas2["tautau"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muVBFmumuHL")):
-                columns[8] = str(kappas2["VBF"]*kappas2["mumu"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["VBF"]*kappas2["mumu"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["VBF_HLLHC"]*kappas2["mumu"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["VBF_HLLHC"]*kappas2["mumu"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muVBFZgaHL")):
-                columns[8] = str(kappas2["VBF"]*kappas2["Zgam"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["VBF"]*kappas2["Zgam"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["VBF_HLLHC"]*kappas2["Zgam"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["VBF_HLLHC"]*kappas2["Zgam"]*float(columns[9])/kappas2["H"])
 
 
 
             # WH
             elif (columns[1].startswith("muWHgagaHL")):
-                columns[8] = str(kappas2["WW"]*kappas2["gamgam"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["WW"]*kappas2["gamgam"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["WH_HLLHC"]*kappas2["gamgam"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["WH_HLLHC"]*kappas2["gamgam"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muWHZZ4lHL")):
-                columns[8] = str(kappas2["WW"]*kappas2["ZZ"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["WW"]*kappas2["ZZ"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["WH_HLLHC"]*kappas2["ZZ"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["WH_HLLHC"]*kappas2["ZZ"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muWHWW2l2vHL")):
-                columns[8] = str(kappas2["WW"]*kappas2["WW"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["WW"]*kappas2["WW"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["WH_HLLHC"]*kappas2["WW"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["WH_HLLHC"]*kappas2["WW"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muWHbbHL")):
-                columns[8] = str(kappas2["WW"]*kappas2["bb"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["WW"]*kappas2["bb"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["WH_HLLHC"]*kappas2["bb"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["WH_HLLHC"]*kappas2["bb"]*float(columns[9])/kappas2["H"])
 
 
 
 
             # ZH
             elif (columns[1].startswith("muZHgagaHL")):
-                columns[8] = str(kappas2["ZZ_0"]*kappas2["gamgam"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["ZZ_0"]*kappas2["gamgam"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["ZH_HLLHC"]*kappas2["gamgam"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["ZH_HLLHC"]*kappas2["gamgam"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muZHZZ4lHL")):
-                columns[8] = str(kappas2["ZZ_0"]*kappas2["ZZ"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["ZZ_0"]*kappas2["ZZ"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["ZH_HLLHC"]*kappas2["ZZ"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["ZH_HLLHC"]*kappas2["ZZ"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muZHWW2l2vHL")):
-                columns[8] = str(kappas2["ZZ_0"]*kappas2["WW"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["ZZ_0"]*kappas2["WW"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["ZH_HLLHC"]*kappas2["WW"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["ZH_HLLHC"]*kappas2["WW"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muZHbbHL")):
-                columns[8] = str(kappas2["ZZ_0"]*kappas2["bb"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["ZZ_0"]*kappas2["bb"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["ZH_HLLHC"]*kappas2["bb"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["ZH_HLLHC"]*kappas2["bb"]*float(columns[9])/kappas2["H"])
 
 
 
 
             # ttH
             elif (columns[1].startswith("muttHgaga")):
-                columns[8] = str(kappas2["tt"]*kappas2["gamgam"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["tt"]*kappas2["gamgam"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["ttH_HLLHC"]*kappas2["gamgam"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["ttH_HLLHC"]*kappas2["gamgam"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muttHZZ4lHL")):
-                columns[8] = str(kappas2["tt"]*kappas2["ZZ"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["tt"]*kappas2["ZZ"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["ttH_HLLHC"]*kappas2["ZZ"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["ttH_HLLHC"]*kappas2["ZZ"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muttHWW2l2vHL")):
-                columns[8] = str(kappas2["tt"]*kappas2["WW"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["tt"]*kappas2["WW"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["ttH_HLLHC"]*kappas2["WW"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["ttH_HLLHC"]*kappas2["WW"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muttHbbHL")):
-                columns[8] = str(kappas2["tt"]*kappas2["bb"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["tt"]*kappas2["bb"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["ttH_HLLHC"]*kappas2["bb"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["ttH_HLLHC"]*kappas2["bb"]*float(columns[9])/kappas2["H"])
 
             elif (columns[1].startswith("muttHtautauHL")):
-                columns[8] = str(kappas2["tt"]*kappas2["tautau"]*float(columns[8])/kappas2["H"])
-                columns[9] = str(kappas2["tt"]*kappas2["tautau"]*float(columns[9])/kappas2["H"])
+                columns[8] = str(kappas2["ttH_HLLHC"]*kappas2["tautau"]*float(columns[8])/kappas2["H"])
+                columns[9] = str(kappas2["ttH_HLLHC"]*kappas2["tautau"]*float(columns[9])/kappas2["H"])
 
             # Rejoin the columns and write to the output file
             outfile.write(" ".join(columns) + "\n")
@@ -1781,23 +2464,79 @@ print(f"Modified content saved to {output_file_HLLHC}.")
 ###########################################################################################
 ###########################################################################################
 
-if BP == "BPB_2":
-    kala_uncertainty_low  = 0.135811
-    kala_uncertainty_high = 0.135811
-elif BP == "BPB_4":
-    kala_uncertainty_low  = 0.130138
-    kala_uncertainty_high = 0.130138
-elif BP == "BPB_6":
-    kala_uncertainty_low  = 0.128268
-    kala_uncertainty_high = 0.128268
-else:
-    raise IndexError("No uncertainty at ILC500 for this kappa_lambda has been implemented!")
 
-if (scenario == "IDM_ILC_250_350_500"
-    or scenario == "IDM_ILC_250_350_500_1000"):
-    # Open the e+e- collider input file in read mode and output file in write mode
-    input_file =  file_dir + "ObservablesHiggs_IDM.conf"
-    output_file = file_dir + "ObservablesHiggs_IDM_temp.conf"
+
+# import numpy as np
+from scipy.interpolate import interp1d
+# import matplotlib.pyplot as plt
+# import matplotlib.image as mpimg
+
+data_high = {
+    "x":[-1.487,-0.986,-0.484,0.029,0.497,0.999,1.512,2.025,2.515,2.994,3.485,3.998,4.499,5.012,5.492,6.016,6.506,6.986,7.498,8.017],
+    "y":[-1.091,-0.584,-0.022,0.486,1.02,1.688,2.437,4.922,5.056,5.029,5.109,5.269,5.51,5.831,6.205,6.579,7.033,7.488,7.915,8.423]
+}
+
+data_low = {
+    "x":[-1.493,-0.987,-0.486,0.004,0.506,1.007,1.508,2.009,2.51,3.011,3.501,4.013,4.503,4.993,5.506,5.996,6.508,6.998,7.51,8.006],
+    "y":[-1.893,-1.413,-0.933,-0.453,-0.027,0.453,0.853,1.227,1.493,1.733,1.893,1.92,1.92,2.187,4.56,5.253,5.867,6.48,7.013,7.547]
+}
+
+
+curve_high = interp1d(data_high["x"], data_high["y"], kind='linear', fill_value="extrapolate")
+curve_low = interp1d(data_low["x"], data_low["y"], kind='linear', fill_value="extrapolate")
+
+
+def uncertanties_high(lmbd):
+    if lmbd < -1.5:
+        lmbd = -1.5
+    elif lmbd > 8.:
+        lmbd = 8.
+    sigma = (curve_high(lmbd) - lmbd)/2.
+    return sigma
+
+def uncertanties_low(lmbd):
+    if lmbd < -1.5:
+        lmbd = -1.5
+    elif lmbd > 8.:
+        lmbd = 8.
+    sigma = (lmbd - curve_low(lmbd))/2.
+    return sigma
+
+# Overwrites the main Higgs config file. Implies that the file must already exist!
+if scenario == "IDM_ILC_250_350_500_1000_HLLHClambda":
+    if higgsconf is None:
+        if not realistic_HL_LHC_k_lambda_uncertainties:
+            input_file = file_dir + "ObservablesHiggs"
+        else:
+            input_file = file_dir + "ObservablesHiggs_scaled_realistic_HL_LHC"
+
+        flag_map = {
+            no_1L_BSM_sqrt_s: "_no_1L_BSM_sqrt_s",
+            no_1L_BSM: "_no_1L_BSM",
+            pure_1L_BSM: "_pure_1L_BSM",
+            no_quad: "_no_quad",
+            smeft_formula: "_smeft_formula",
+            smeft_formula_sqrt: "_smeft_formula_sqrt",
+            smeft_formula_no_cross: "_smeft_formula_no_cross",
+            smeft_formula_external_leg: "_smeft_formula_external_leg",
+            smeft_formula_all: "_smeft_formula_all",
+            WFR_kala2_input: "_WFR_kala2_input",
+            WFR_kala2_input_all: "_WFR_kala2_input_all",
+            use_HEPfit_C1_values_WFR_kala2_input_all: "_use_HEPfit_C1_values_WFR_kala2_input_all",
+            use_HEPfit_C1_values_decayrates_WFR_kala2_input_all: "_use_HEPfit_C1_values_decayrates_WFR_kala2_input_all",
+            use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all: "_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all",
+        }
+
+        for condition, flag in flag_map.items():
+            if condition:
+                input_file = input_file + flag
+                break
+
+    else:
+        input_file = file_dir + higgsconf
+
+    output_file = input_file + "_temp.conf"
+    input_file  = input_file  + ".conf"
     
 
     with open(input_file, 'r') as infile, open(output_file, 'w') as outfile:
@@ -1807,12 +2546,18 @@ if (scenario == "IDM_ILC_250_350_500"
                 columns = line.split()
                 
                 if (columns[2].startswith("deltalHHH")):
-                    columns[0] = "AsyGausObservable"
-                    columns[6]="MCMC"
-                    columns[7]="weight"
-                    columns.append(str(kappas['lam']-1))
-                    columns.append(str(kala_uncertainty_low))
-                    columns.append(str(kala_uncertainty_high))
+                    columns[8] = str(kappas['lam']-1)
+                    if not realistic_HL_LHC_k_lambda_uncertainties:
+                        columns[9] = str(kappas['lam']*0.5)
+                    else:
+                        columns[0] = "AsyGausObservable"
+                        columns[9]  = str(uncertanties_low(kappas['lam']))
+                        columns[10] = str(uncertanties_high(kappas['lam']))
+
+                    if kappas['lam'] < -1.5 or kappas['lam'] > 8.:
+                        print("Warning: kappa_lambda outside of the (-1.5, 8) range. Uncertainty evaluated at closest interval edge")
+
+
 
                 # Rejoin the columns and write to the output file
                 outfile.write(" ".join(columns) + "\n")
@@ -1826,8 +2571,6 @@ if (scenario == "IDM_ILC_250_350_500"
     print(f"Modified content saved to {output_file}.")
 
     subprocess.run(["mv", output_file, input_file])
-
-
 
 
 ###########################################################################################
@@ -1878,4 +2621,3 @@ for input_file, output_file in zip(input_files, output_files):
         outfile.write(final_text)
 
     print(f"Modified content saved to {output_file}.")
-
