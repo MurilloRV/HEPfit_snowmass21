@@ -997,9 +997,6 @@ def smeft_deltaGammaHggRatio(lmbd):
 
     return dwidth
 
-# Obs: all ZZ branching ratios have the same C1 value. Same with WW
-# Todo: ask Henning what to do with the other couplings (WW, ZZ, Zga, gaga)
-# Todo: check if all couplings are correctly assigned to the XS and BR
 
 if smeft_formula:
     # Implements the Zh cross-section using the kappa_lambda dependent expression from HEPfit,

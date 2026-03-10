@@ -22,6 +22,7 @@ def generate_bar_plots_pars(
     log_scale=True,
     x_range_min=None,
     x_range_max=None,
+    save_fig=True,
 ):
     """
     Generate bar plots with the absolute values of the fitted model parameters 
@@ -63,6 +64,8 @@ def generate_bar_plots_pars(
         Minimum value for the x-axis range. If None (default), it will be determined automatically.
     x_range_max : float, optional
         Maximum value for the x-axis range. If None (default), it will be determined automatically.
+    save_fig : bool, optional
+        Whether to save the figures. Default is True.
 
     Returns
     -------
@@ -171,7 +174,7 @@ def generate_bar_plots_pars(
                 ax.legend(loc=legend_loc, fontsize=10)
                 ax.set_title(plot_titles[BP][scenario], fontsize=10)
                 plt.tight_layout()   # Makes sure labels are not cut off
-                plt.savefig(f"{working_dir}/comparison_plots/results_{results_dir}/bar_plot_pars_{BP}_{scenario}_compare_{k}{file_suffix}.pdf")
+                if save_fig: plt.savefig(f"{working_dir}/comparison_plots/results_{results_dir}/bar_plot_pars_{BP}_{scenario}_compare_{k}{file_suffix}.pdf")
 
     if show_plots:
         plt.show()
@@ -193,6 +196,7 @@ def generate_pull_plots_pars(
     normalize_pulls=True,
     true_values=None,
     file_suffix="",
+    save_fig=True,
 ):
     """
     Generate pull plots for the model parameters.
@@ -231,6 +235,8 @@ def generate_pull_plots_pars(
         A dictionary containing the true values of the Wilson coefficients for each BP
     file_suffix : str, optional
         Suffix to add to the plot filenames. Default is an empty string.
+    save_fig : bool, optional
+        Whether to save the figures. Default is True.
 
     Returns
     -------
@@ -366,7 +372,7 @@ def generate_pull_plots_pars(
                 ax.legend(loc=legend_loc, fontsize=10)
                 ax.set_title(plot_titles[BP][scenario], fontsize=10)
                 plt.tight_layout()   # Makes sure labels are not cut off
-                plt.savefig(f"{working_dir}/comparison_plots/results_{results_dir}/pull_pars_{BP}_{scenario}_compare_{k}{file_suffix}.pdf")
+                if save_fig: plt.savefig(f"{working_dir}/comparison_plots/results_{results_dir}/pull_pars_{BP}_{scenario}_compare_{k}{file_suffix}.pdf")
 
     if show_plots:
         plt.show()
@@ -389,6 +395,7 @@ def generate_pull_plots_obs(
     compare_with_SM=False,
     figsize=(5, 7),
     legend_loc="best",
+    save_fig=True,
 ):
     """
     Generate pull plots for the fit observables.
@@ -433,6 +440,8 @@ def generate_pull_plots_obs(
         Figure size for the plots. Default is (5, 7).
     legend_loc : str, optional
         Location of the legend in the plots. Default is "best".
+    save_fig : bool, optional
+        Whether to save the figures. Default is True.
 
     Returns
     -------
@@ -578,7 +587,7 @@ def generate_pull_plots_obs(
                     plot_filename = plot_filename + "_with_SM"
                 if only_higgs_fccee_obs:
                     plot_filename = plot_filename + "_only_higgs_fccee_obs"
-                plt.savefig(f"{working_dir}/comparison_plots/results_{results_dir}/{plot_filename}_{k}.pdf")
+                if save_fig: plt.savefig(f"{working_dir}/comparison_plots/results_{results_dir}/{plot_filename}_{k}.pdf")
 
     if show_plots:
         plt.show()

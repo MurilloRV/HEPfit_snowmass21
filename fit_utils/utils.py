@@ -169,10 +169,12 @@ def generate_klam_comparison_plot(
     y_lim_ax1=None,
     y_lim_ax2=None,
     leg_fontsize=9,
+    leg_loc='best',
     spec_distance=0.1,
     upper_right_text=None,
     no_bottom_axis=False,
     asym_errors=False,
+    file_suffix='',
 ):
     r"""
     Compare the fit results for kappa_lambda between the benchmark points
@@ -230,6 +232,8 @@ def generate_klam_comparison_plot(
         determined automatically.
     leg_fontsize : float, optional
         Font size for the legend. Default is 9.
+    leg_loc : str, optional
+        Location for the legend. Default is 'best'.
     spec_distance : float, optional
         Horizontal distance between the markers for different model specifications, when
         grouping model specifications in the same plot. Default is 0.1.
@@ -243,6 +247,8 @@ def generate_klam_comparison_plot(
         using the standard deviation from the fit results. If set to True, asymmetric errors will
         be plotted, using the 16th and 84th percentiles from the fit results, obtained from the 
         histogram of the posterior distribution for kappa_lambda.
+    file_suffix : str, optional
+        Suffix to be added to the name of the generated plot files. Default is ''.
 
     Returns
     -------
@@ -405,7 +411,7 @@ def generate_klam_comparison_plot(
 
             ax1.set_ylabel(r'$\kappa_{\lambda}^\mathrm{fit}$', fontsize=15)
             ax1.grid(which='both', linestyle='--', linewidth=0.5)
-            ax1.legend(loc='best', fontsize=leg_fontsize)
+            ax1.legend(loc=leg_loc, fontsize=leg_fontsize)
 
             if not no_bottom_axis:
                 if y_lim_ax2 is not None:
@@ -434,9 +440,9 @@ def generate_klam_comparison_plot(
             fig.tight_layout()   # Makes sure labels are not cut off
 
             if not no_bottom_axis:
-                fig.savefig(working_dir + f'/comparison_plots/results_{results_dir}/kappa_lambda_results_{scenario}.pdf')
+                fig.savefig(working_dir + f'/comparison_plots/results_{results_dir}/kappa_lambda_results_{scenario}{file_suffix}.pdf')
             else:
-                fig.savefig(working_dir + f'/comparison_plots/results_{results_dir}/kappa_lambda_results_{scenario}_no_bottom_axis.pdf')
+                fig.savefig(working_dir + f'/comparison_plots/results_{results_dir}/kappa_lambda_results_{scenario}_no_bottom_axis{file_suffix}.pdf')
 
     if show_plots:
         plt.show()
@@ -539,6 +545,8 @@ def generate_obs_comparison_plot(
     no_bottom_axis : bool, optional
         Whether to only show the top part of the plot, and not plot the difference in
         a bottom subplot. Default is False.
+    file_suffix : str, optional
+        Suffix to be added to the name of the generated plot files. Default is ''.
 
     Returns
     -------
