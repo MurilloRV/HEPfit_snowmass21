@@ -57,17 +57,17 @@ true_kappas = {
 
 n_BPs = len(BPs)
 
-# scenarios = ["IDM_FCCee240_FCCee365" for i in range(n_BPs)]
+# scenarios = ["IDM_ILC250_ILC350" for i in range(n_BPs)]
 scenarios = [
-    # "IDM_FCCee240",
-    "IDM_FCCee240_FCCee365",
-    # "IDM_FCCee240_FCCee365_HLLHClambda",
+    # "IDM_ILC250",
+    "IDM_IL_250_350",
+    # "IDM_IL_250_350_HLLHClambda",
 ]
 
 scenario_titles = [
-    # rf"FCC-ee$_{{240}}$",
-    rf"FCC-ee$_{{240}}$ + FCC-ee$_{{365}}$",
-    # rf"FCC-ee$_{{240}}$ + FCC-ee$_{{365}}$ + $\kappa_{{\lambda}}$ at HL-LHC",
+    # rf"ILC-ee$_{{250}}$",
+    rf"ILC$_{{250}}$ + ILC$_{{350}}$",
+    # rf"ILC$_{{250}}$ + ILC$_{{350}}$ + $\kappa_{{\lambda}}$ at HL-LHC",
 ]
 
 
@@ -80,16 +80,16 @@ specs = [ f"fits_realistic_HL_LHC_use_new_NPs_scale1.52_WFR_kala2_input_all_all_
 # spec_compare = "fits_realistic_HL_LHC_WFR_kala2_input_all_no_HLLHC_Higgs_small_priors_long"
 spec_compare = "fits_realistic_HL_LHC_WFR_kala2_input_all_all_EW_mods_small_priors_long"
 model_specs = {
-    # "IDM_FCCee240" : [spec, "fits"],
-    "IDM_FCCee240_FCCee365" : [*specs, spec_compare],
-    # "IDM_FCCee240_FCCee365_HLLHClambda" : [spec, "fits_realistic_HL_LHC_realistic_HL_LHC_long"],
+    # "IDM_ILC250" : [spec, "fits"],
+    "IDM_ILC250_ILC350" : [*specs, spec_compare],
+    # "IDM_ILC250_ILC350_HLLHClambda" : [spec, "fits_realistic_HL_LHC_realistic_HL_LHC_long"],
 }
 
 labels = [r"$\epsilon^{\text{theo}}=$"+err for err in theo_errs]
 model_specs_labels = {
-    # "IDM_FCCee240" : labels,
-    "IDM_FCCee240_FCCee365" : [*labels, "Original"],
-    # "IDM_FCCee240_FCCee365_HLLHClambda" : labels,
+    # "IDM_ILC250" : labels,
+    "IDM_ILC250_ILC350" : [*labels, "Original"],
+    # "IDM_ILC250_ILC350_HLLHClambda" : labels,
 }
 
 # results_dir = spec
@@ -259,7 +259,7 @@ print(f"results shape: {results[BP][scenario][model_spec].shape}")
 # y_shift = [-0.15, 0.15]
 w = 1.7
 dimw = w / 2
-n_specs = len(model_specs["IDM_FCCee240_FCCee365"])
+n_specs = len(model_specs["IDM_ILC250_ILC350"])
 y_shift = np.linspace(+dimw/2, -dimw/2, n_specs) 
 
 
