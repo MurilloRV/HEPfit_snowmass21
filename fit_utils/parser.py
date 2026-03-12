@@ -423,11 +423,21 @@ def find_configuration_files(
         configuration files, conf_files[scenario][model_spec].
     """
 
+
     HEPfit_flags = [
         "",
         "use_new_NPs_",
         "use_new_NPs_scale1.52_",
         "use_new_NPs_scale1.52_theoerr240_0.00107_theoerr365_0.00105_NPmismatch240_0_NPmismatch365_0_",
+        "use_new_NPs_theoerr240_1_theoerr365_1_klam_dependent_a240_1.18e-05_b240_2.3e-05_c240_0.000161_a365_2.12e-05_b365_-6.32e-05_c365_0.000304_",  # Z2SSM: Estimates EXCLUDING the O(1/Lambda_NP^2) curve
+        "use_new_NPs_theoerr240_1_theoerr365_1_klam_dependent_a240_0.000754_b240_-0.00149_c240_0.000743_a365_0.000788_b365_-0.00162_c365_0.000845_",  # Z2SSM: Estimates INCLUDING the O(1/Lambda_NP^2) curve
+        "use_new_NPs_klam_dependent_a240_8.42e-06_b240_6.93e-05_c240_0.000124_a365_1.99e-05_b365_-2.66e-05_c365_0.000313_",  # IDM: Estimates EXCLUDING the O(1/Lambda_NP^2) curve
+        "use_new_NPs_klam_dependent_a240_0.000763_b240_-0.00152_c240_0.000761_a365_0.000792_b365_-0.00162_c365_0.000835_",   # IDM: Estimates INCLUDING the O(1/Lambda_NP^2) curve
+    ]
+
+    loop_order_flags = [
+        "",
+        "one_loop_inputs_",
     ]
 
     exclusive_flag_list = [
@@ -514,38 +524,39 @@ def find_configuration_files(
 
             found_flag = False
             for hepfit_flag in HEPfit_flags:
-                for exclusive_flag in exclusive_flag_list:
-                    for additional_flag in additional_flag_list:
-                        for priors_flag in priors_flag_list:
-                            for MC_flag in MC_flag_list:
-                                full_flag = hepfit_flag + exclusive_flag + additional_flag + priors_flag + MC_flag
-                                if model_spec == f"fits_realistic_HL_LHC_{full_flag}":
-                                    print(f"Full fit flag: {full_flag}")
-                                    found_flag = True
+                for loop_order_flag in loop_order_flags:
+                    for exclusive_flag in exclusive_flag_list:
+                        for additional_flag in additional_flag_list:
+                            for priors_flag in priors_flag_list:
+                                for MC_flag in MC_flag_list:
+                                    full_flag = hepfit_flag + loop_order_flag + exclusive_flag + additional_flag + priors_flag + MC_flag
+                                    if model_spec == f"fits_realistic_HL_LHC_{full_flag}":
+                                        print(f"Full fit flag: {full_flag}")
+                                        found_flag = True
 
-                                    if read_WCs:
-                                        if additional_flag == "_no_C_HG":
-                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("d6Ops_corr")] = "d6Ops_corr_no_C_HG"
+                                        if read_WCs:
+                                            if additional_flag == "_no_C_HG":
+                                                conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("d6Ops_corr")] = "d6Ops_corr_no_C_HG"
 
-                                    else:
-                                        Higgs_flag = exclusive_flag
-                                        
-                                        if not additional_flag == "_no_HLLHC_Higgs":
-                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_HLLHC_SM_kappa_scaled")] = f"ObservablesHiggs_HLLHC_SM_kappa_scaled_{Higgs_flag}"
-                                        conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_FCCee_240_SM_kappa_scaled")] = f"ObservablesHiggs_FCCee_240_SM_kappa_scaled_{Higgs_flag}"
-                                        if scenario == f"{model}_FCCee240_FCCee365" or scenario == f"{model}_FCCee240_FCCee365_HLLHClambda":
-                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_FCCee_365_kappa_scaled")] = f"ObservablesHiggs_FCCee_365_kappa_scaled_{Higgs_flag}"
-
-                                        if additional_flag == "_no_HLLHC_Higgs":
-                                            Higgs_flag = "no_HLLHC_" + Higgs_flag
-                                        if scenario == f"{model}_FCCee240_FCCee365_HLLHClambda":
-                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_scaled_realistic_HL_LHC")] = f"ObservablesHiggs_scaled_realistic_HL_LHC_{Higgs_flag}"
                                         else:
-                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs")] = f"ObservablesHiggs_{Higgs_flag}"
+                                            Higgs_flag = loop_order_flag + exclusive_flag
+                                            
+                                            if not additional_flag == "_no_HLLHC_Higgs":
+                                                conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_HLLHC_SM_kappa_scaled")] = f"ObservablesHiggs_HLLHC_SM_kappa_scaled_{Higgs_flag}"
+                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_FCCee_240_SM_kappa_scaled")] = f"ObservablesHiggs_FCCee_240_SM_kappa_scaled_{Higgs_flag}"
+                                            if scenario == f"{model}_FCCee240_FCCee365" or scenario == f"{model}_FCCee240_FCCee365_HLLHClambda":
+                                                conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_FCCee_365_kappa_scaled")] = f"ObservablesHiggs_FCCee_365_kappa_scaled_{Higgs_flag}"
 
-                                        if additional_flag == "_all_EW_mods":
-                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesEW")] = "ObservablesEW_all_mods"
-                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesEW_Current_SM_noLFU")] = "ObservablesEW_Current_SM_noLFU_kappa_scaled"
+                                            if additional_flag == "_no_HLLHC_Higgs":
+                                                Higgs_flag = "no_HLLHC_" + Higgs_flag
+                                            if scenario == f"{model}_FCCee240_FCCee365_HLLHClambda":
+                                                conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_scaled_realistic_HL_LHC")] = f"ObservablesHiggs_scaled_realistic_HL_LHC_{Higgs_flag}"
+                                            else:
+                                                conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs")] = f"ObservablesHiggs_{Higgs_flag}"
+
+                                            if additional_flag == "_all_EW_mods":
+                                                conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesEW")] = "ObservablesEW_all_mods"
+                                                conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesEW_Current_SM_noLFU")] = "ObservablesEW_Current_SM_noLFU_kappa_scaled"
 
             if found_flag == False:
                 raise ValueError(f"Model specification {model_spec} could not be assigned flags. Make sure all flags are implemented")
@@ -699,6 +710,7 @@ def read_configuration_files(
 
     return observables, observables_tex, central_values_obs
 
+
 def read_fit_results(
     BPs,
     model_specs,
@@ -729,7 +741,8 @@ def read_fit_results(
     -------
     results : dict
         Dictionary mapping benchmark points, scenarios, and model specifications, 
-        to a list of central values for observables which were found in the configuration files.
+        to a list of means and standard deviations for the observables which were 
+        found in the fit results files.
 
     """
     scenarios = list(model_specs.keys())
@@ -791,6 +804,40 @@ def read_fit_results_pars(
     scenarios,
     model,
 ):
+    """
+    Read and store the fit results for the model parameters (the Wilson coefficients), given 
+    certain benchmark points, model specifications, and scenarios. The path to the files to be 
+    read must be stored in the {files} dictionary.
+
+    Parameters
+    ----------
+    BPs : list
+        List of benchmark point names. Must correspond to the directory name for the BP
+    model_specs : dict
+        Dictionary mapping scenarios to a list of model specifications.
+    working_dir : str
+        Working directory path, containing subdirectories for each benchmark point.
+    model : str
+        The BSM model considered. Currently can be either "IDM" or "Z2SSM"
+    
+
+    Returns
+    -------
+    parameters : dict
+        Dictionary mapping benchmark points, scenarios, and model specifications, 
+        to a list of parameters which were found in the configuration files.
+    observables_tex : dict
+        Dictionary mapping benchmark points, scenarios, and model specifications, 
+        to a list LaTeX labels for parameters which were found in the configuration files.
+    central_values_obs : dict
+        Dictionary mapping benchmark points, scenarios, and model specifications, 
+        to a list of central values for parameters which were found in the configuration files.
+    results : dict
+        Dictionary mapping benchmark points, scenarios, and model specifications, 
+        to a list of means and standard deviations for the parameters which were 
+        found in the fit results files.
+
+    """
 
     files = {}
     for BP in BPs:
