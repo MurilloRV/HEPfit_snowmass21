@@ -920,13 +920,18 @@ def read_klam_hist_uproot(
 
     # Open the ROOT file
     if BP == "BP_lambda1" and spec == "fits_realistic_HL_LHC_WFR_kala2_input_all_all_EW_mods_small_priors_long":
-        file_path = f"{working_dir}/{BP}/{scenario}/results_{spec[:-5]}_strict/MCout.root"
+        file_path = f"{working_dir}/{BP}/{scenario}/results_{spec[:-5]}_strict/"
     else:
-        file_path = f"{working_dir}/{BP}/{scenario}/results_{spec}/MCout.root"
-    with uproot.open(file_path) as file:
+        file_path = f"{working_dir}/{BP}/{scenario}/results_{spec}/"
 
-        hist_lmbd_y, hist_lmbd_x = file["deltalHHH_HLLHC"].to_numpy()
-        hist_lmbd_x = hist_lmbd_x + 1 
+    os.chdir(file_path)
+    try:
+        with uproot.open("./MCout.root") as file:
 
-        return hist_lmbd_x, hist_lmbd_y
+            hist_lmbd_y, hist_lmbd_x = file["deltalHHH_HLLHC"].to_numpy()
+            hist_lmbd_x = hist_lmbd_x + 1 
+
+            return hist_lmbd_x, hist_lmbd_y
+    finally:
+        os.chdir("../../..")
 

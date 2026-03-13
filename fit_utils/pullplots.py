@@ -474,7 +474,7 @@ def generate_pull_plots_obs(
     conf_files = find_configuration_files(model_specs, model)
         
     print(f"\nReading configuration files for observables")
-    observables, observables_tex, central_values_obs = read_configuration_files(
+    observables, observables_tex, central_values_obs, _ = read_configuration_files(
         working_dir=working_dir,
         BPs=BPs,
         model_specs=model_specs,

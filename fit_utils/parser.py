@@ -634,7 +634,9 @@ def read_configuration_files(
     central_values_obs : dict
         Dictionary mapping benchmark points, scenarios, and model specifications, 
         to a list of central values for observables which were found in the configuration files.
-
+    input_uncertainties_obs : dict
+        Dictionary mapping benchmark points, scenarios, and model specifications, 
+        to a list of input uncertainties for observables which were found in the configuration files.
     """
 
     if only_obs is not None and skip_obs is not None:
@@ -645,21 +647,25 @@ def read_configuration_files(
     observables = {}
     observables_tex = {}
     central_values_obs = {}
+    input_uncertainties = {}
 
     for BP in BPs:
         observables[BP] = {}
         observables_tex[BP] = {}
         central_values_obs[BP] = {}
+        input_uncertainties[BP] = {}
 
         for scenario in scenarios:
             observables[BP][scenario] = {}
             observables_tex[BP][scenario] = {} 
             central_values_obs[BP][scenario] = {}
+            input_uncertainties[BP][scenario] = {}
 
             for model_spec in model_specs[scenario]:
                 observables[BP][scenario][model_spec] = []
                 observables_tex[BP][scenario][model_spec] = []
                 central_values_obs[BP][scenario][model_spec] = []
+                input_uncertainties[BP][scenario][model_spec] = []
 
                 for conf_file in conf_files[scenario][model_spec]:
 
@@ -687,13 +693,16 @@ def read_configuration_files(
                                 if read_model_parameters==True:
                                     observable_tex_label = find_tex_label_par(columns[3], observable[0:-5])
                                     central_value = 0.0
+                                    uncertainty = 0.0
                                 else:
                                     observable_tex_label = find_tex_label_obs(columns[3], observable)
                                     central_value = float(columns[8])
+                                    uncertainty = float(columns[9])
 
                                 observables[BP][scenario][model_spec].append(observable)
                                 observables_tex[BP][scenario][model_spec].append(observable_tex_label)
                                 central_values_obs[BP][scenario][model_spec].append(central_value)
+                                input_uncertainties[BP][scenario][model_spec].append(uncertainty)
                                 
 
                 n_obs = len(observables[BP][scenario][model_spec])
@@ -715,7 +724,7 @@ def read_configuration_files(
                         else:
                             raise ValueError(f"Observable {obs} not found in SM predictions!")
 
-    return observables, observables_tex, central_values_obs
+    return observables, observables_tex, central_values_obs, input_uncertainties
 
 
 def read_fit_results(
@@ -858,7 +867,7 @@ def read_fit_results_pars(
     conf_files = find_configuration_files(model_specs, model, read_WCs=True)
         
     print(f"\nReading configuration files for observables")
-    parameters, parameters_tex, central_values_obs = read_configuration_files(
+    parameters, parameters_tex, central_values_obs, _ = read_configuration_files(
         working_dir,
         BPs,
         model_specs,
