@@ -58,14 +58,14 @@ theoerr_FCCee365_input="1.0"
 # theoerr_FCCee365_input="0.014717533492464643" 
 # theoerr_FCCee365_input="DEFAULT"
 
+##### ELLIPTIC ESTIMATES #####
 # Estimates EXCLUDING the O(1/Lambda_NP^2) curve
-theoerr_FCCee240_function_x2_coef_input="0.00001181688261206522"
-theoerr_FCCee240_function_x1_coef_input="0.00002295991973064774"
-theoerr_FCCee240_function_x0_coef_input="0.00016144224670125849"
-theoerr_FCCee365_function_x2_coef_input="0.00002123360866793691"
-theoerr_FCCee365_function_x1_coef_input="-0.00006323230952913563"
-theoerr_FCCee365_function_x0_coef_input="0.00030380536674829025"
-
+# theoerr_FCCee240_function_x2_coef_input="0.00001181688261206522"
+# theoerr_FCCee240_function_x1_coef_input="0.00002295991973064774"
+# theoerr_FCCee240_function_x0_coef_input="0.00016144224670125849"
+# theoerr_FCCee365_function_x2_coef_input="0.00002123360866793691"
+# theoerr_FCCee365_function_x1_coef_input="-0.00006323230952913563"
+# theoerr_FCCee365_function_x0_coef_input="0.00030380536674829025"
 # # Estimates INCLUDING the O(1/Lambda_NP^2) curve
 # theoerr_FCCee240_function_x2_coef_input="0.0007542742457910392"
 # theoerr_FCCee240_function_x1_coef_input="-0.001494337082454511"
@@ -73,6 +73,23 @@ theoerr_FCCee365_function_x0_coef_input="0.00030380536674829025"
 # theoerr_FCCee365_function_x2_coef_input="0.0007875677735286304"
 # theoerr_FCCee365_function_x1_coef_input="-0.0016206377638829624"
 # theoerr_FCCee365_function_x0_coef_input="0.0008454276558888096"
+
+
+##### RECTANGULAR ESTIMATES #####
+# Estimates EXCLUDING the O(1/Lambda_NP^2) curve
+# theoerr_FCCee240_function_x2_coef_input="0.00002058257587149103"
+# theoerr_FCCee240_function_x1_coef_input="0.00007030236504412133"
+# theoerr_FCCee240_function_x0_coef_input="-0.00008830351437427154"
+# theoerr_FCCee365_function_x2_coef_input="0.00005796810851274359"
+# theoerr_FCCee365_function_x1_coef_input="-0.00029590899621704375"
+# theoerr_FCCee365_function_x0_coef_input="0.00030995235089337545"
+# # Estimates INCLUDING the O(1/Lambda_NP^2) curve
+theoerr_FCCee240_function_x2_coef_input="0.00039731332556491069"
+theoerr_FCCee240_function_x1_coef_input="-0.00067338600344624090"
+theoerr_FCCee240_function_x0_coef_input="0.00027664317128916300"
+theoerr_FCCee365_function_x2_coef_input="0.00040264774180380253"
+theoerr_FCCee365_function_x1_coef_input="-0.00084847911321574274"
+theoerr_FCCee365_function_x0_coef_input="0.00046616889088956339"
 
 set_theoerr() {
     local input="$1"
@@ -85,8 +102,8 @@ set_theoerr() {
     fi
 }
 
-# scale_NPs=$(echo "scale=20.0; scl=2.295748928898636; scl=sqrt(scl); scl" | bc)
-scale_NPs="1.0"  # default
+scale_NPs=$(echo "scale=20.0; scl=2.295748928898636; scl=sqrt(scl); scl" | bc)
+# scale_NPs="1.0"  # default
 
 # Check if more than one exclusive flag is set to "true"
 EXCLUSIVE_FLAGS=(

@@ -429,8 +429,15 @@ def find_configuration_files(
         "use_new_NPs_",
         "use_new_NPs_scale1.52_",
         "use_new_NPs_scale1.52_theoerr240_0.00107_theoerr365_0.00105_NPmismatch240_0_NPmismatch365_0_",
+        # Z2SSM
+        ##### ELLIPTIC ESTIMATES #####
         "use_new_NPs_theoerr240_1_theoerr365_1_klam_dependent_a240_1.18e-05_b240_2.3e-05_c240_0.000161_a365_2.12e-05_b365_-6.32e-05_c365_0.000304_",  # Z2SSM: Estimates EXCLUDING the O(1/Lambda_NP^2) curve
         "use_new_NPs_theoerr240_1_theoerr365_1_klam_dependent_a240_0.000754_b240_-0.00149_c240_0.000743_a365_0.000788_b365_-0.00162_c365_0.000845_",  # Z2SSM: Estimates INCLUDING the O(1/Lambda_NP^2) curve
+        ##### RECTANGULAR ESTIMATES, with 2D scaling #####
+        "use_new_NPs_scale1.52_theoerr240_1_theoerr365_1_klam_dependent_a240_2.06e-05_b240_7.03e-05_c240_-8.83e-05_a365_5.8e-05_b365_-0.000296_c365_0.00031_",   # Z2SSM: Estimates EXCLUDING the O(1/Lambda_NP^2) curve
+        "use_new_NPs_scale1.52_theoerr240_1_theoerr365_1_klam_dependent_a240_0.000397_b240_-0.000673_c240_0.000277_a365_0.000403_b365_-0.000848_c365_0.000466_", # Z2SSM: Estimates INCLUDING the O(1/Lambda_NP^2) curve
+
+        # IDM
         "use_new_NPs_klam_dependent_a240_8.42e-06_b240_6.93e-05_c240_0.000124_a365_1.99e-05_b365_-2.66e-05_c365_0.000313_",  # IDM: Estimates EXCLUDING the O(1/Lambda_NP^2) curve
         "use_new_NPs_klam_dependent_a240_0.000763_b240_-0.00152_c240_0.000761_a365_0.000792_b365_-0.00162_c365_0.000835_",   # IDM: Estimates INCLUDING the O(1/Lambda_NP^2) curve
     ]
