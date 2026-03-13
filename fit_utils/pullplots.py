@@ -4,6 +4,182 @@ import subprocess
 from .parser import observable_order, parameter_order, find_configuration_files, read_configuration_files, read_fit_results, read_fit_results_pars, align_observables
 
 
+
+def generate_bar_plots_pars(
+    BPs,
+    model_specs,
+    working_dir,
+    results_dir,
+    model_specs_labels,
+    plot_titles,
+    model,
+    colors=None,
+    show_plots=False,
+    nvar_per_plot=15,
+    figsize=(5, 7),
+    legend_loc="best",
+    file_suffix="",
+    log_scale=True,
+    x_range_min=None,
+    x_range_max=None,
+    save_fig=True,
+):
+    """
+    Generate bar plots with the absolute values of the fitted model parameters 
+    (i.e., the Wilson coefficients). 
+
+    Parameters
+    ----------
+    BPs : list
+        List of benchmark point names. Must correspond to the directory name for the BP
+    model_specs : dict
+        Dictionary mapping scenarios to a list of model specifications.
+    working_dir : str
+        Working directory path, containing subdirectories for each benchmark point.
+    results_dir : str
+        Suffix of the name of the directory to store the results. Results are stored in
+        '{working_dir}/comparison_plots/results_{results_dir}/'
+    model_specs_labels : dict
+        A dictionary containing the labels for the model specifications.
+    plot_titles : dict
+        A dictionary containing the titles for the plots.
+    model : str
+        The BSM model considered. Currently can be either "IDM" or "Z2SSM"
+    colors : list, optional
+        List of colors assign to each model specification. If not set, the default 
+        matplotlib color cycle will be used.
+    show_plots : bool, optional
+        Whether to show the plots or not. Default is False.
+    nvar_per_plot : int, optional
+        The number of variables per plot. Default is 15.
+    figsize : tuple, optional
+        Figure size for the plots. Default is (5, 7).
+    legend_loc : str, optional
+        Location of the legend in the plots. Default is "best".
+    file_suffix : str, optional
+        Suffix to add to the plot filenames. Default is an empty string.
+    log_scale : bool, optional
+        Whether to use a logarithmic scale for the x-axis. Default is True.
+    x_range_min : float, optional
+        Minimum value for the x-axis range. If None (default), it will be determined automatically.
+    x_range_max : float, optional
+        Maximum value for the x-axis range. If None (default), it will be determined automatically.
+    save_fig : bool, optional
+        Whether to save the figures. Default is True.
+
+    Returns
+    -------
+    None
+
+    """
+
+
+    if colors is None:
+        # Default matplotlib color cycle
+        colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+
+    # Create the output directory, if it does not yet exist
+    subprocess.run(["mkdir", "-p", f"{working_dir}/comparison_plots/results_{results_dir}"])
+
+    scenarios = model_specs.keys()
+
+    parameters, parameters_tex, central_values_obs, results = read_fit_results_pars(
+        BPs,
+        model_specs,
+        working_dir,
+        scenarios,
+        model,
+    )
+
+    print(f"\nSorting observables")
+    aligned_parameters, aligned_parameters_tex, central_values_obs, results = align_observables(
+        observable_order_func=parameter_order,
+        BPs=BPs,
+        model_specs=model_specs,
+        observables=parameters,
+        observables_tex=parameters_tex,
+        central_values_obs=central_values_obs,
+        results=results,
+    )
+
+    n_model_specs = len(list(model_specs.values())[0])
+    w = 1.0
+    dimw = w / 2
+    bar_height = dimw / n_model_specs
+    if n_model_specs > 1:
+        y_shift = np.linspace(+dimw/2, -dimw/2, n_model_specs) 
+    else:
+        y_shift = np.array([0])
+
+    print(f"\n")
+    num_fig = 0
+    for i, BP in enumerate(BPs):
+        for scenario in scenarios:
+
+            nvar_per_plot = nvar_per_plot
+            param_breaks = np.arange(0, len(aligned_parameters[BP][scenario]), nvar_per_plot)
+
+            if len(param_breaks)==1 or param_breaks[-1] != len(aligned_parameters[BP][scenario]):
+                param_breaks = np.append(param_breaks, [len(aligned_parameters[BP][scenario])])
+
+            print(f"\nProducing plots for {BP}, scenario {scenario}")
+            print(f"Total number of parameters: {len(aligned_parameters[BP][scenario])}")
+            print(f"Parameter breaks: {param_breaks}")
+
+            labels = aligned_parameters_tex[BP][scenario][:]
+            for j, par in enumerate(aligned_parameters_tex[BP][scenario]):
+                labels[j] = par
+
+            for model_spec in model_specs[scenario]:
+                results[BP][scenario][model_spec][:,0] = np.copy(np.abs(results[BP][scenario][model_spec][:,0]))
+                results[BP][scenario][model_spec][:,1] = np.copy(results[BP][scenario][model_spec][:,1])
+
+            for k in range(len(param_breaks) - 1):
+
+                fig = plt.figure(num_fig, figsize=figsize)
+                num_fig = num_fig + 1
+                ax = plt.gca()
+
+                y = np.arange(param_breaks[k],param_breaks[k+1])
+                
+                plt.axvline(x=0, c='0.6', linewidth=2)
+
+                for spec_index, model_spec in enumerate(model_specs[scenario]):
+                    ax.barh(
+                        y = -y+y_shift[spec_index], 
+                        width = results[BP][scenario][model_spec][param_breaks[k]:param_breaks[k+1], 0],
+                        height = bar_height,
+                        # xerr = (results[BP][scenario][model_spec][param_breaks[k]:param_breaks[k+1], 1],), 
+                        color=colors[spec_index],
+                        label=model_specs_labels[scenario][spec_index],
+                        # alpha=alphas[i],
+                    )
+
+                ax.set_xscale('log' if log_scale else 'linear')
+                    
+                # ax.set_yticks(-y-dimw/2.)
+                ax.set_yticks(-y)
+                y_label_size = min( 250. / (param_breaks[k+1] - param_breaks[k]), 13)
+                ax.set_yticklabels(labels[param_breaks[k]:param_breaks[k+1]], fontsize=y_label_size)
+                x_limits = [
+                    x_range_min if not x_range_min is None else plt.xlim()[0], 
+                    x_range_max if not x_range_max is None else plt.xlim()[1], 
+                ]
+                ax.hlines(y=-y, xmin=x_limits[0], xmax=x_limits[1], color="black", linestyle="--", linewidth=0.5)
+                ax.set_xlim(*x_limits)
+                ax.tick_params(axis='x', size=10, labelsize=11)
+                ax.tick_params(axis='x', which='minor', size=6)
+                x_label = r'Absolute value of Wilson coefficients'
+                ax.set_xlabel(x_label, fontsize=10)
+                ax.legend(loc=legend_loc, fontsize=10)
+                ax.set_title(plot_titles[BP][scenario], fontsize=10)
+                plt.tight_layout()   # Makes sure labels are not cut off
+                if save_fig: plt.savefig(f"{working_dir}/comparison_plots/results_{results_dir}/bar_plot_pars_{BP}_{scenario}_compare_{k}{file_suffix}.pdf")
+
+    if show_plots:
+        plt.show()
+
+
 def generate_pull_plots_pars(
     BPs,
     model_specs,
@@ -16,9 +192,11 @@ def generate_pull_plots_pars(
     show_plots=False,
     nvar_per_plot=15,
     figsize=(5, 7),
+    legend_loc="best",
     normalize_pulls=True,
     true_values=None,
     file_suffix="",
+    save_fig=True,
 ):
     """
     Generate pull plots for the model parameters.
@@ -34,13 +212,12 @@ def generate_pull_plots_pars(
     results_dir : str
         Suffix of the name of the directory to store the results. Results are stored in
         '{working_dir}/comparison_plots/results_{results_dir}/'
+    model_specs_labels : dict
+        A dictionary containing the labels for the model specifications.
     plot_titles : dict
         A dictionary containing the titles for the plots.
     model : str
         The BSM model considered. Currently can be either "IDM" or "Z2SSM"
-    results_dir : str
-        Suffix of the name of the directory to store the results. Results are stored in
-        '{working_dir}/comparison_plots/results_{results_dir}/'
     colors : list, optional
         List of colors assign to each model specification. If not set, the default 
         matplotlib color cycle will be used.
@@ -50,10 +227,16 @@ def generate_pull_plots_pars(
         The number of variables per plot. Default is 15.
     figsize : tuple, optional
         Figure size for the plots. Default is (5, 7).
+    legend_loc : str, optional
+        Location of the legend in the plots. Default is "best".
     normalize_pulls : bool, optional
         If True, normalize the pulls to the uncertainties. Default is True.
     true_values : dict, optional
         A dictionary containing the true values of the Wilson coefficients for each BP
+    file_suffix : str, optional
+        Suffix to add to the plot filenames. Default is an empty string.
+    save_fig : bool, optional
+        Whether to save the figures. Default is True.
 
     Returns
     -------
@@ -143,7 +326,7 @@ def generate_pull_plots_pars(
 
                 for spec_index, model_spec in enumerate(model_specs[scenario]):
                     ax.errorbar(results[BP][scenario][model_spec][param_breaks[k]:param_breaks[k+1], 0],
-                                -y-y_shift[spec_index], 
+                                -y+y_shift[spec_index], 
                                 # -y, 
                                 xerr=(results[BP][scenario][model_spec][param_breaks[k]:param_breaks[k+1], 1],), 
                                 fmt='o', 
@@ -168,11 +351,12 @@ def generate_pull_plots_pars(
                     else: 
                         ax.scatter(np.zeros_like(y), -y, **true_values['style'])
 
-                ax.scatter([], [], label=true_values['label'], **true_values['style'])
+                    ax.scatter([], [], label=true_values['label'], **true_values['style'])
 
                 # ax.set_yticks(-y-dimw/2.)
                 ax.set_yticks(-y)
-                ax.set_yticklabels(labels[param_breaks[k]:param_breaks[k+1]],fontsize=10)
+                y_label_size = min( 250. / (param_breaks[k+1] - param_breaks[k]), 13)
+                ax.set_yticklabels(labels[param_breaks[k]:param_breaks[k+1]], fontsize=y_label_size)
                 x_limits = [plt.xlim()[0], plt.xlim()[1]]
                 ax.hlines(y=-y, xmin=x_limits[0], xmax=x_limits[1], color="black", linestyle="--", linewidth=0.5)
                 ax.set_xlim(*x_limits)
@@ -185,16 +369,13 @@ def generate_pull_plots_pars(
                 if true_values is not None and true_values['subtract_true_values'] is True:
                     x_label = x_label + f' (w.r.t. {true_values["label"]})'
                 ax.set_xlabel(x_label, fontsize=11)
-                ax.legend(loc='best', fontsize=10)
+                ax.legend(loc=legend_loc, fontsize=10)
                 ax.set_title(plot_titles[BP][scenario], fontsize=10)
                 plt.tight_layout()   # Makes sure labels are not cut off
-                plt.savefig(f"{working_dir}/comparison_plots/results_{results_dir}/pull_pars_{BP}_{scenario}_compare_{k}{file_suffix}.pdf")
+                if save_fig: plt.savefig(f"{working_dir}/comparison_plots/results_{results_dir}/pull_pars_{BP}_{scenario}_compare_{k}{file_suffix}.pdf")
 
     if show_plots:
         plt.show()
-
-
-
 
 
 def generate_pull_plots_obs(
@@ -213,6 +394,8 @@ def generate_pull_plots_obs(
     only_higgs_fccee_obs=False,
     compare_with_SM=False,
     figsize=(5, 7),
+    legend_loc="best",
+    save_fig=True,
 ):
     """
     Generate pull plots for the fit observables.
@@ -234,7 +417,7 @@ def generate_pull_plots_obs(
         A dictionary containing the titles for the plots.
     model : str
         The BSM model considered. Currently can be either "IDM" or "Z2SSM"
-    only_obs : list, optional
+    only_obs : list of str, optional
         List of observables to include. If set, only these observables will be
         processed.
     skip_obs : list of str, optional
@@ -253,6 +436,17 @@ def generate_pull_plots_obs(
     compare_with_SM : bool, optional
         If set to true, use SM predictions as the central values for the 
         pulls. Default is False
+    figsize : tuple, optional
+        Figure size for the plots. Default is (5, 7).
+    legend_loc : str, optional
+        Location of the legend in the plots. Default is "best".
+    save_fig : bool, optional
+        Whether to save the figures. Default is True.
+
+    Returns
+    -------
+    None
+
     """
 
     scenarios = model_specs.keys()
@@ -350,7 +544,7 @@ def generate_pull_plots_obs(
                     plt.axvline(x=0, c='0.6', linewidth=2)
                 
                     ax.errorbar(results_means[param_breaks[k]:param_breaks[k+1]],
-                                -y-y_shift[spec_index], 
+                                -y+y_shift[spec_index], 
                                 # -y, 
                                 xerr=(results_errors[param_breaks[k]:param_breaks[k+1]],), 
                                 fmt='o', 
@@ -368,7 +562,9 @@ def generate_pull_plots_obs(
                     fontsize = 12
                 else:
                     fontsize = 8
-                ax.set_yticklabels(labels[param_breaks[k]:param_breaks[k+1]],fontsize=fontsize)
+                y_label_size = min( 400. / (param_breaks[k+1] - param_breaks[k]), 13)
+                ax.set_yticklabels(labels[param_breaks[k]:param_breaks[k+1]], fontsize=y_label_size)
+                # ax.set_yticklabels(labels[param_breaks[k]:param_breaks[k+1]],fontsize=fontsize)
                 x_limits = [plt.xlim()[0], plt.xlim()[1]]
                 y_limits = [plt.ylim()[0] +1.0, plt.ylim()[1] -1.0]
                 ax.hlines(y=-y, xmin=x_limits[0], xmax=x_limits[1], color="black", linestyle="--", linewidth=0.5)
@@ -380,7 +576,7 @@ def generate_pull_plots_obs(
                     ax.set_xlabel(r'Pulls (w.r.t. SM prediction)', fontsize=15)
                 else:
                     ax.set_xlabel(r'Pulls', fontsize=15)
-                ax.legend(loc='best', fontsize=8)
+                ax.legend(loc=legend_loc, fontsize=8)
                 if only_higgs_fccee_obs:
                     ax.set_title(plot_titles[BP][scenario], fontsize=16)
                 else:
@@ -391,7 +587,7 @@ def generate_pull_plots_obs(
                     plot_filename = plot_filename + "_with_SM"
                 if only_higgs_fccee_obs:
                     plot_filename = plot_filename + "_only_higgs_fccee_obs"
-                plt.savefig(f"{working_dir}/comparison_plots/results_{results_dir}/{plot_filename}_{k}.pdf")
+                if save_fig: plt.savefig(f"{working_dir}/comparison_plots/results_{results_dir}/{plot_filename}_{k}.pdf")
 
     if show_plots:
         plt.show()
