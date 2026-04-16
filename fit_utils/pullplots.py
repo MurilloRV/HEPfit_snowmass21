@@ -180,6 +180,173 @@ def generate_bar_plots_pars(
         plt.show()
 
 
+
+def generate_WCs_vs_klam_plot(
+    BPs,
+    BP_lambdas,
+    model_specs,
+    working_dir,
+    results_dirs,
+    plot_titles,
+    model,
+    WC_names=["CH",],
+    WC_scale_factors=[None,],
+    colors=None,
+    show_plots=False,
+    figsize=(4, 3),
+    legend_fontsize=7,
+    file_suffix="",
+    log_scale=False,
+    save_fig=True,
+):
+    """
+    Generate bar plots with the absolute values of the fitted model parameters 
+    (i.e., the Wilson coefficients). 
+
+    Parameters
+    ----------
+    BPs : list
+        List of benchmark point names. Must correspond to the directory name for the BP
+    BP_lambdas : list
+        List of the values of kappa_lambda for each benchmark point. Must be in the same 
+        order as the BPs list.
+    model_specs : dict
+        Dictionary mapping scenarios to a list of model specifications.
+    working_dir : str
+        Working directory path, containing subdirectories for each benchmark point.
+    results_dirs : list
+        List of suffixes for the names of the directories to store the results. Results are stored in
+        '{working_dir}/comparison_plots/results_{results_dir}/', for each results_dir in results_dirs. 
+        Must be in the same order as the model specifications in model_specs.
+    plot_titles : dict
+        A dictionary containing the titles for the plots.
+    model : str
+        The BSM model considered. Currently can be either "IDM" or "Z2SSM"
+    WC_names : list, optional
+        List of Wilson coefficient names to include in the plots. Default is "CH"
+    WC_scale_factors : list, optional
+        List of scale factors to apply to the Wilson coefficients. Default is None for all WCs 
+        (i.e., no scaling).
+    colors : list, optional
+        List of colors assign to each Wilson coefficient. If not set, the default matplotlib 
+        color cycle will be used.
+    show_plots : bool, optional
+        Whether to show the plots or not. Default is False.
+    figsize : tuple, optional
+        Figure size for the plots. Default is (5, 7).
+    legend_fontsize : int, optional
+        Font size for the legend in the plots. Default is 7.
+    file_suffix : str, optional
+        Suffix to add to the plot filenames. Default is an empty string.
+    log_scale : bool, optional
+        Whether to use a logarithmic scale for the x-axis. Default is False.
+    save_fig : bool, optional
+        Whether to save the figures. Default is True.
+
+    Returns
+    -------
+    None
+
+    """
+
+    n_WCs = len(WC_names)
+    if n_WCs != len(WC_scale_factors) or (colors is not None and n_WCs != len(colors)):
+        raise ValueError(
+            f"""
+            Length of WC_names, WC_scale_factors, and colors must be the same
+            Length of WC_names: {n_WCs}
+            Length of WC_scale_factors: {len(WC_scale_factors)}
+            Length of colors: {len(colors) if colors is not None else 0}
+            """
+        )
+
+    WC_names = [WC + "_corr" for WC in WC_names]  # Add the suffix "_corr" to the WC names, as this is how they are stored in the fit results
+
+
+    if colors is None:
+        # Default matplotlib color cycle
+        colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+
+    scenarios = model_specs.keys()
+
+    parameters, parameters_tex, central_values_obs, results = read_fit_results_pars(
+        BPs,
+        model_specs,
+        working_dir,
+        scenarios,
+        model,
+        only_pars=WC_names,
+    )
+
+    WC_order = {WC: i for i, WC in enumerate(WC_names)}
+    WC_order_func = lambda obs: WC_order[obs] if obs in WC_order else len(WC_names)  
+    # Order function for the WCs, which will be used to sort the observables. WCs not in WC_names will be sorted at the end, in their original order.
+
+    print(f"\nSorting observables")
+    aligned_parameters, aligned_parameters_tex, central_values_obs, results = align_observables(
+        observable_order_func=WC_order_func,
+        BPs=BPs,
+        model_specs=model_specs,
+        observables=parameters,
+        observables_tex=parameters_tex,
+        central_values_obs=central_values_obs,
+        results=results,
+    )
+
+
+    print(f"\n")
+    num_fig = 0
+    for scenario in scenarios:
+        for spec_index, (model_spec, results_dir) in enumerate(zip(model_specs[scenario], results_dirs)):
+
+            print(f"\nProducing plot for scenario {scenario}, model specification {model_spec}")
+            print(f"Total number of WCs considered for the plot: {n_WCs}")
+            print(f"WCs considered for the plot: {WC_names}")
+
+            # Create the output directory, if it does not yet exist
+            subprocess.run(["mkdir", "-p", f"{working_dir}/comparison_plots/results_{results_dir}"])
+
+            for BP in BPs:
+                if aligned_parameters[BP][scenario] != WC_names:
+                    raise ValueError(f"WC_names does not match the WCs present in the fit results for BP {BP}, scenario {scenario}.")
+
+            labels = aligned_parameters_tex[BP][scenario][:]
+
+            fig = plt.figure(num_fig, figsize=figsize)
+            num_fig = num_fig + 1
+            ax = plt.gca()
+            plt.axhline(y=0, c='0.1', linewidth=1)
+
+            for k, (wc_name, wc_scale, label, color) in enumerate(zip(WC_names, WC_scale_factors, labels, colors)):
+
+
+                if wc_scale is not None:
+                    label = fr"${wc_scale}\cdot$ {label}"
+
+                if wc_scale is None: wc_scale = 1
+                y = [results[BP][scenario][model_spec][k,0] * wc_scale for BP in BPs]
+
+                ax.plot(
+                    BP_lambdas,
+                    y, 
+                    'o-',
+                    color=color,
+                    label=label,
+                )
+
+            ax.set_xscale('log' if log_scale else 'linear')                                    
+            ax.set_xlabel(r'$\kappa_\lambda$', fontsize=12)
+            ax.set_ylabel(r'Fitted Wilson coefficients', fontsize=10)
+            ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left", fontsize=legend_fontsize)
+            # ax.set_title(plot_titles[BP][scenario], fontsize=10)
+            plt.tight_layout()   # Makes sure labels are not cut off
+            if save_fig: plt.savefig(f"{working_dir}/comparison_plots/results_{results_dir}/WCs_vs_klam_{scenario}_{file_suffix}.pdf")
+
+    if show_plots:
+        plt.show()
+
+
+
 def generate_pull_plots_pars(
     BPs,
     model_specs,

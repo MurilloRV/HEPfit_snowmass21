@@ -819,6 +819,7 @@ def read_fit_results_pars(
     working_dir,
     scenarios,
     model,
+    only_pars=None,
 ):
     """
     Read and store the fit results for the model parameters (the Wilson coefficients), given 
@@ -835,6 +836,9 @@ def read_fit_results_pars(
         Working directory path, containing subdirectories for each benchmark point.
     model : str
         The BSM model considered. Currently can be either "IDM" or "Z2SSM"
+    only_pars : list, optional
+        List of parameters to include. If set, only these parameters will be
+        processed.
     
 
     Returns
@@ -872,7 +876,7 @@ def read_fit_results_pars(
         BPs,
         model_specs,
         conf_files,
-        only_obs=None,
+        only_obs=only_pars,
         skip_obs=None,
         only_higgs_fccee_obs=False,
         read_model_parameters=True,
