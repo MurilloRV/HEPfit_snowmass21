@@ -1,7 +1,7 @@
 #!/bin/bash
 
-ORIGINAL_PATH="$BUDDY/HEPfit/HEPfit_snowmass21/Fits_HLLHC_ILC_250_350_500_1000/Fits_HLLHC_ILC_250_350_500_1000/GIMR"
-TARGET_PATH="$BUDDY/HEPfit/HEPfit_snowmass21/IDM_fits/Fits_HLLHC_ILC_250_350_500_1000/different_BPs"
+ORIGINAL_PATH="$BUDDY/phd/HEPfit/HEPfit_snowmass21/Fits_HLLHC_ILC_250_350_500_1000/Fits_HLLHC_ILC_250_350_500_1000/GIMR"
+TARGET_PATH="$BUDDY/phd/HEPfit/HEPfit_snowmass21/IDM_fits/Fits_HLLHC_ILC_250_350_500_1000/different_BPs"
 cd $TARGET_PATH
 
 # Defining the names of the benchmark points to be considered

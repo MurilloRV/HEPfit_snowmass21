@@ -3,7 +3,7 @@
 mkdir -p /jwd/bat_mod/BAT-1.0.0
 cd /jwd/bat_mod/BAT-1.0.0
 
-HEPfit_dir="$BUDDY/HEPfit/HEPfit_snowmass21"
+HEPfit_dir="$BUDDY/phd/HEPfit/HEPfit_snowmass21"
 
 # cp ${HEPfit_dir}/HEPfit/BATv1.0.0_parallel-dev/src-dev/* src/
 # cp ${HEPfit_dir}/HEPfit/BATv1.0.0_parallel-dev/BAT-dev/* BAT/

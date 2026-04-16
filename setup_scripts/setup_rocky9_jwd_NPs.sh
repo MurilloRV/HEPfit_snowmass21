@@ -7,7 +7,7 @@ lsetup "views LCG_105 x86_64-el9-gcc11-opt"
 
 cd /jwd
 
-HEPfit_dir="$BUDDY/HEPfit/HEPfit_snowmass21"
+HEPfit_dir="$BUDDY/phd/HEPfit/HEPfit_snowmass21"
 
 tar xvf ${HEPfit_dir}/code/bat_mod.tar.gz
 tar xvf ${HEPfit_dir}/code/HEPfit_snowmass_mod_NPs.tar.gz

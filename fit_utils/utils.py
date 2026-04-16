@@ -161,6 +161,7 @@ def generate_klam_comparison_plot(
     colors=None,
     show_plots=False,
     group_model_specs=False,
+    group_scenarios=False,
     figsize=(3.5, 4),
     fig_kwargs={},
     x_lim=None,
@@ -216,6 +217,8 @@ def generate_klam_comparison_plot(
     group_model_specs : bool, optional
         Whether to generate a single plot per scenario, grouping all BPs and model specs 
         in the same plot. Default is False.
+    group_scenarios : bool, optional
+        Whether to generate a single plot for all scenarios, BPs and model specs.
     figsize : tuple, optional
         Size for the generated plot. Default is (3.5, 4).
     fig_kwargs : dict, optional
@@ -290,25 +293,33 @@ def generate_klam_comparison_plot(
             files=files,
         )
         
+    def initialize_plot():
+        if not no_bottom_axis:
+            fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, figsize=figsize, height_ratios=[0.7, 0.3], gridspec_kw=dict(hspace=0.), **fig_kwargs)
+            return fig, ax1, ax2
+        else:
+            fig, ax1 = plt.subplots(1, 1, figsize=figsize, **fig_kwargs)
+            return fig, ax1, None
+    
+    n_scenarios = len(scenarios)
 
-    spec_distance = spec_distance
-    for scenario in scenarios:
+    if group_scenarios: fig, ax1, ax2 = initialize_plot()
+    for scenarios_idx, scenario in enumerate(scenarios):
+        
         n_specs = len(model_specs[scenario])
-        if group_model_specs:
-            if not no_bottom_axis:
-                fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, figsize=figsize, height_ratios=[0.7, 0.3], gridspec_kw=dict(hspace=0.), **fig_kwargs)
-            else:
-                fig, ax1 = plt.subplots(1, 1, figsize=figsize, **fig_kwargs)
 
+        if group_model_specs and not group_scenarios: fig, ax1, ax2 = initialize_plot()
         for spec_idx, (model_spec, results_dir) in enumerate(zip(model_specs[scenario], results_dirs)):
-            x = BP_lambdas
-            if not group_model_specs:
-                if not no_bottom_axis:
-                    fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, figsize=figsize, height_ratios=[0.7, 0.3], gridspec_kw=dict(hspace=0.), **fig_kwargs)
-                else:
-                    fig, ax1 = plt.subplots(1, 1, figsize=figsize, **fig_kwargs)
-            elif n_specs != 1:
+
+            if group_model_specs and n_specs != 1:
                 x = np.array(BP_lambdas) + spec_distance * (-0.5*(n_specs-1) + spec_idx)/(n_specs-1)
+
+            elif group_scenarios and n_scenarios != 1:
+                x = np.array(BP_lambdas) + spec_distance * (-0.5*(n_scenarios-1) + scenarios_idx)/(n_scenarios-1)
+
+            else:
+                fig, ax1, ax2 = initialize_plot()
+                x = BP_lambdas
 
             if not asym_errors:
                 means  = {BP : kappa_lambda_results[BP][scenario][model_spec][0, 0] + 1 for BP in BPs}
@@ -359,13 +370,19 @@ def generate_klam_comparison_plot(
 
                 if group_model_specs:
                     idx = spec_idx
-                    if i == 0:
-                        label = plot_labels[idx]
-                    else:
-                        label = None
+                    plot_path = f'/comparison_plots/results_{results_dir}/kappa_lambda_results_{scenario}'
+                elif group_scenarios:
+                    idx = scenarios_idx
+                    plot_path = f'/comparison_plots/results_{results_dir}/kappa_lambda_results_{model_spec}'
                 else:
                     idx = i
+                    plot_path = f'/comparison_plots/results_{results_dir}/kappa_lambda_results'
+
+                if i == 0 or not (group_model_specs or group_scenarios):
                     label = plot_labels[idx]
+                else:
+                    label = None
+                        
 
                 ax1.errorbar(x=x[i],
                             y=means[BP],
@@ -438,9 +455,9 @@ def generate_klam_comparison_plot(
             fig.tight_layout()   # Makes sure labels are not cut off
 
             if not no_bottom_axis:
-                fig.savefig(working_dir + f'/comparison_plots/results_{results_dir}/kappa_lambda_results_{scenario}{file_suffix}.pdf')
+                fig.savefig(working_dir + plot_path + f'{file_suffix}.pdf')
             else:
-                fig.savefig(working_dir + f'/comparison_plots/results_{results_dir}/kappa_lambda_results_{scenario}_no_bottom_axis{file_suffix}.pdf')
+                fig.savefig(working_dir + plot_path + f'_no_bottom_axis{file_suffix}.pdf')
 
     if show_plots:
         plt.show()
@@ -709,10 +726,12 @@ def compare_BP_results_uproot(
     model_specs,
     working_dir,
     results_dir,
-    spec_labels,
+    plot_labels,
     BP_names,
     BP_lambdas,
     model,
+    group_model_specs=False,
+    group_scenarios=False,
     scenario_titles=None,
     plot_titles=None,
     colors=None,
@@ -735,15 +754,19 @@ def compare_BP_results_uproot(
     results_dir : str
         Suffix of the name of the directory to store the results. Results are stored in
         '{working_dir}/comparison_plots/results_{results_dir}/'.
-    spec_labels : list of str
-        List with the labels for each model specification. Must have the same length as the
-        model_specs[scenario] lists, for each collider scenario.
+    plot_labels : list of str
+        List with the labels for each plot
     BP_names : list of str
         List with the names for the benchmark point, used in plots.
     BP_lambda : list of float
         List of the corresponding BSM model prediction for kappa_lambda for each BP.
     model : str
         The BSM model considered. Currently can be either "IDM" or "Z2SSM"
+    group_model_specs : bool, optional
+        Whether to generate a single plot per scenario, grouping all BPs and model specs 
+        in the same plot. Default is False.
+    group_scenarios : bool, optional
+        Whether to generate a single plot for all scenarios, BPs and model specs.
     scenario_titles : list, optional
         A list containing the titles for the scenarios. If not provided, default titles 
         will be used.
@@ -787,42 +810,75 @@ def compare_BP_results_uproot(
                 scenario_titles = [rf"FCC-ee$_{{240}}$ + FCC-ee$_{{365}}$ + $\kappa_{{\lambda}}$ at HL-LHC"]
 
     if plot_titles is None:
-        plot_titles = {BP: {scenario: rf"{model} {BP_name}, {scenario_title}" for scenario_title in scenario_titles} for BP, BP_name in zip(BPs, BP_names)}
+        # plot_titles = {BP: {scenario: rf"{model} {BP_name}, {scenario_title}" for scenario, scenario_title in zip(scenarios, scenario_titles)} for BP, BP_name in zip(BPs, BP_names)}
+        plot_titles = {BP: {scenario: rf"{model} {BP_name}" for scenario, scenario_title in zip(scenarios, scenario_titles)} for BP, BP_name in zip(BPs, BP_names)}
 
 
     # Create the output directory, if it does not yet exist
     subprocess.run(["mkdir", "-p", f"{working_dir}/comparison_plots/results_{results_dir}"])
 
     fig_num = 0
-    for scenario in scenarios:
-        for BP, BP_name, BP_lambda in zip(BPs, BP_names, BP_lambdas):
+    fig_initialized = False
 
-            # BP_lambda = BP_lambdas[BP]
-            fig = plt.figure(fig_num, figsize=(4.0, 3.5))
-            fig_num += 1
-            ax = plt.gca()
+    def initialize_figure(fig_num, fig_initialized):
+        fig = plt.figure(figsize=(4.0, 3.5))
+        fig_num += 1
+        ax = plt.gca()
+        fig_initialized = True
+        return fig, ax, fig_num, fig_initialized
+
+
+    for i, (BP, BP_name, BP_lambda) in enumerate(zip(BPs, BP_names, BP_lambdas)):
+
+        if group_scenarios: fig, ax, fig_num, fig_initialized = initialize_figure(fig_num, fig_initialized)
+        for scenario_idx, scenario in enumerate(scenarios):
+
             ax.set_title(plot_titles[BP][scenario])
-            ax.set_xlabel(r"$\kappa_{\lambda}$", fontsize=14)
-            ax.set_ylabel("Posterior distribution", fontsize=12)
+            
+            if group_model_specs: fig, ax, fig_num, fig_initialized = initialize_figure(fig_num, fig_initialized)
+            for spec_idx, spec in enumerate(model_specs[scenario]):
 
-            for spec, label, color_rgb in zip(model_specs[scenario], spec_labels, colors_rgb_list):
+                if not group_model_specs and not group_scenarios: fig, ax, fig_num, fig_initialized = initialize_figure(fig_num, fig_initialized)
+
                 hist_lmbd_x, hist_lmbd_y = read_klam_hist_uproot(
                     working_dir,
                     BP,
                     scenario,
                     spec,
                 )
+
+                if group_model_specs:
+                    idx = spec_idx
+                    last_idx = len(model_specs[scenario]) - 1
+                    plot_path = f"{working_dir}/comparison_plots/results_{results_dir}/{model}_{BP}_{scenario}_final.pdf"
+                elif group_scenarios:
+                    idx = scenario_idx
+                    last_idx = len(scenarios) - 1
+                    plot_path = f"{working_dir}/comparison_plots/results_{results_dir}/{model}_{BP}_final.pdf"
+                else:
+                    idx = 0
+                    last_idx = 0
+                    plot_path = f"{working_dir}/comparison_plots/results_{results_dir}/{model}_{BP}_final.pdf"
+
+                label = plot_labels[idx]
+                color_rgb = colors_rgb_list[idx]
+
                 plt.hist(hist_lmbd_x[:-1], hist_lmbd_x, weights=hist_lmbd_y, label=label, density=True, histtype="step", edgecolor=(*color_rgb, 1.0), facecolor=(*color_rgb, 0.5), linewidth=1.5, fill=True)
 
-            scale = 1.2
-            ylow, yhigh = ax.get_ylim()
-            ax.set_ylim(ylow, yhigh + (scale-1)*(yhigh-ylow))
+                if fig_initialized and idx==last_idx:
+                    scale = 1.2
+                    ylow, yhigh = ax.get_ylim()
+                    ax.set_ylim(ylow, yhigh + (scale-1)*(yhigh-ylow))
 
-            # plt.axvline(BP_lambda, color="black", linestyle="--", label=rf"{model} {BP_name} value"+"\n"+rf"($\kappa_{{\lambda}}$ = {BP_lambda:.2f})")
-            plt.axvline(BP_lambda, color="black", linestyle="--", label=rf"{model} {BP_name} value ($\kappa_{{\lambda}}$ = {BP_lambda:.2f})")
-            plt.legend(fontsize=legend_fontsize, loc="best")
-            plt.tight_layout()
-            plt.savefig(f"{working_dir}/comparison_plots/results_{results_dir}/{model}_{BP}_{scenario}_final.pdf")
+                    ax.set_xlabel(r"$\kappa_{\lambda}$", fontsize=14)
+                    ax.set_ylabel("Posterior distribution", fontsize=12)
+
+                    # ax.axvline(BP_lambda, color="black", linestyle="--", label=rf"{model} {BP_name} value"+"\n"+rf"($\kappa_{{\lambda}}$ = {BP_lambda:.2f})")
+                    ax.axvline(BP_lambda, color="black", linestyle="--", label=rf"{model} {BP_name} value ($\kappa_{{\lambda}}$ = {BP_lambda:.2f})")
+                    ax.legend(fontsize=legend_fontsize, loc="best")
+                    fig.tight_layout()
+                    fig.savefig(plot_path)
+                    fig_initialized = False
 
     if show_plots:
         plt.show()

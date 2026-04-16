@@ -7,7 +7,7 @@ lsetup "views LCG_105 x86_64-el9-gcc11-opt"
 
 cd /jwd
 
-HEPfit_dir="$BUDDY/HEPfit/HEPfit_snowmass21"
+HEPfit_dir="$BUDDY/phd/HEPfit/HEPfit_snowmass21"
 
 tar xvf ${HEPfit_dir}/code/bat_mod.tar.gz
 # tar xvf ${HEPfit_dir}/code/gslpp.tar.gz
@@ -23,7 +23,9 @@ export PATH="/jwd/HEPfit/build/HEPfit/bin:$PATH"
 
 cd ${HEPfit_dir}
 
-git config --global user.name "Melis Kuskapan"
-git config --global user.email "melissakuskapan@gmail.com"
+# git config --global user.name "Melis Kuskapan"
+# git config --global user.email "melissakuskapan@gmail.com"
+git config --global user.name "Murillo Vellasco"
+git config --global user.email "murillo.vellassco@gmail.com"
 
 # add line "#include <Math/Util.h>" to BCIntegrate.cxx

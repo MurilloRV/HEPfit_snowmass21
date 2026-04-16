@@ -19,7 +19,7 @@ python -m pip install --no-build-isolation --no-cache-dir --verbose pyCollier # 
 
 cd /jwd
 
-HEPfit_dir="$BUDDY/HEPfit/HEPfit_snowmass21"
+HEPfit_dir="$BUDDY/phd/HEPfit/HEPfit_snowmass21"
 tar czf ${HEPfit_dir}/code/python_venv_py38.tar.gz python_venv_py38
 
 cd $HEPfit_dir
