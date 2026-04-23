@@ -114,9 +114,8 @@ file_dir = f"{BP}/{scenario}/"
 
 
 kappas={}
-# Definition of IDM benchmark point:
-kappas['gg'] = 1.0
 
+# Definition of IDM benchmark point:
 
 # Main benchmark points, for which data is stored in yaml files
 BP_Names = [f"BPB_{i}" for i in range(19)] + \
@@ -678,7 +677,6 @@ if use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all:
 if use_HEPfit_C1_values_decayrates_WFR_kala2_input_all or \
     use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all:
     kappas['ZZ']   = kappas['ZZ_HEPfit_C1']
-    kappas['ZZ_0'] = kappas['ZZ_HEPfit_C1'] # Used for the Zh cross-section at HL-LHC
     kappas['WW']   = kappas['WW_HEPfit_C1']
     kappas['gg']   = kappas['gg_HEPfit_C1']
     kappas['gamgam'] = kappas['gamgam_HEPfit_C1']
@@ -702,6 +700,7 @@ cLHd6 = 1
 cLH3d62 = 1
 
 
+# HEPfit expressions:
 
 # e+e- cross-sections
 def smeft_mueeZH(lmbd, sqrt_s):
@@ -1089,11 +1088,19 @@ else:
     kappas["WW_365"] = kappas["WW"]
     kappas["WW_500"] = kappas["WW"]
 
-    kappas["ggH_HLLHC"] = kappas["gg"]
-    kappas["VBF_HLLHC"] = kappas["VBF"]
-    kappas["ZH_HLLHC"]  = kappas["ZZ_0"]
-    kappas["WH_HLLHC"]  = kappas["WW"]
-    kappas["ttH_HLLHC"] = kappas["tt"]
+    if use_HEPfit_C1_values_decayrates_WFR_kala2_input_all or \
+        use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all:
+        kappas["ggH_HLLHC"] = kappas["ggH_HLLHC_HEPfit_C1"]
+        kappas["VBF_HLLHC"] = kappas["VBF_HLLHC_HEPfit_C1"]
+        kappas["ZH_HLLHC"]  = kappas["ZH_HLLHC_HEPfit_C1"]
+        kappas["WH_HLLHC"]  = kappas["WH_HLLHC_HEPfit_C1"]
+        kappas["ttH_HLLHC"] = kappas["ttH_HLLHC_HEPfit_C1"]
+    else:
+        kappas["ggH_HLLHC"] = kappas["gg"]
+        kappas["VBF_HLLHC"] = kappas["VBF"]
+        kappas["ZH_HLLHC"]  = kappas["ZZ_0"]
+        kappas["WH_HLLHC"]  = kappas["WW"]
+        kappas["ttH_HLLHC"] = kappas["tt"]
 
 # Johannes' formula
 Mh = 125.1
