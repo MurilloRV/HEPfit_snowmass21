@@ -906,7 +906,9 @@ def read_fit_results_pars(
 def read_fit_results_dim6Ops_correlations(
     BPs,
     model_specs,
-    files,
+    files=None,
+    working_dir=None,
+    assert_equal_observables=False,
 ):
     """
     Read and store the fit results for the correlation matrix of the Wilson coefficients, given 
@@ -919,9 +921,17 @@ def read_fit_results_dim6Ops_correlations(
         List of benchmark point names. Must correspond to the directory name for the BP
     model_specs : dict
         Dictionary mapping scenarios to a list of model specifications.
-    files : dict
+    files : dict, optional
         Dictionary mapping BPs, scenarios, and model specifications to the Statistics.txt file 
         containing the fit results
+    working_dir : str, optional
+        Working directory path, containing subdirectories for each benchmark point. Will be used 
+        to construct the path to the files containing the fit results, if the {files} dictionary 
+        is not provided.
+    assert_equal_observables : bool, optional
+        If set to True, the function will raise an error if the list of observables found for each
+        BP, scenario, and model specification are not the all the same. Default is False, in which 
+        case only a warning will be printed instead.
 
     Returns
     -------
@@ -931,6 +941,17 @@ def read_fit_results_dim6Ops_correlations(
 
     """
     scenarios = list(model_specs.keys())
+
+    if files is None:
+        if working_dir is None:
+            raise ValueError("Either 'files' or 'working_dir' must be provided.")
+        files = {}
+        for BP in BPs:
+            files[BP] = {}
+            for scenario in scenarios:
+                files[BP][scenario] = {}
+            for model_spec in model_specs[scenario]:
+                files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/results_{model_spec}/Observables/Statistics.txt"
 
     
     observables = {BP: {scenario: {model_spec: [] for model_spec in model_specs[scenario]} for scenario in scenarios} for BP in BPs}
@@ -949,7 +970,6 @@ def read_fit_results_dim6Ops_correlations(
                 with open(file_path, 'r') as file:
                     lines = file.readlines()
                     
-                    line_nrs = [np.nan for obs in observables[BP][scenario][model_spec]]
                     for n, line in enumerate(lines):
                         columns = line.split()
                         if len(columns) < 2:
@@ -967,7 +987,7 @@ def read_fit_results_dim6Ops_correlations(
                             start_line_nr = n + 4
 
                     n_obs = len(observables[BP][scenario][model_spec])
-                    print(f"Found {n_obs} observables in the correlation matrix\n\n")
+                    print(f"Found {n_obs} observables in the correlation matrix\n")
                     corr_matrix = np.eye(n_obs)
 
                     for n, line in enumerate(lines[start_line_nr:]):
@@ -975,18 +995,23 @@ def read_fit_results_dim6Ops_correlations(
 
                         # Reached the end of the correlation matrix
                         if len(columns) < 2:
-                            end_line_nr = start_line_nr + n
                             break
                         else:
                             row_nr = n
                             for col_nr in range(0, row_nr):
-                                # print(f"Setting corr_matrix[{row_nr}, {col_nr}] to {float(columns[col_nr + 2])}")
                                 corr_matrix[row_nr, col_nr] = float(columns[col_nr + 2])
                                 corr_matrix[col_nr, row_nr] = float(columns[col_nr + 2])
 
                 corr_matrices[BP][scenario][model_spec] = corr_matrix
 
-    return corr_matrices
+                if not observables[BP][scenario][model_spec] == observables[BPs[0]][scenarios[0]][model_specs[scenarios[0]][0]]:
+                    error_msg = "Observable lists are not the same for all BPs, scenarios, and model specifications!"
+                    if assert_equal_observables:
+                        raise ValueError(error_msg)
+                    else:
+                        print("Warning: " + error_msg)
+
+    return corr_matrices, observables
 
 
 def align_observables(

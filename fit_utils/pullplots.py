@@ -1,7 +1,20 @@
 import numpy as np
+import seaborn as sns
+import pandas as pd
 from matplotlib import pyplot as plt
 import subprocess
-from .parser import observable_order, parameter_order, find_configuration_files, read_configuration_files, read_fit_results, read_fit_results_pars, align_observables
+from .parser import (
+    observable_order, 
+    parameter_order, 
+    find_configuration_files, 
+    read_configuration_files, 
+    read_fit_results, 
+    read_fit_results_pars, 
+    align_observables,
+    read_fit_results_dim6Ops_correlations,
+    find_tex_label_par,
+)
+
 
 
 
@@ -341,6 +354,243 @@ def generate_WCs_vs_klam_plot(
             # ax.set_title(plot_titles[BP][scenario], fontsize=10)
             plt.tight_layout()   # Makes sure labels are not cut off
             if save_fig: plt.savefig(f"{working_dir}/comparison_plots/results_{results_dir}/WCs_vs_klam_{scenario}_{file_suffix}.pdf")
+
+    if show_plots:
+        plt.show()
+
+
+def generate_WC_correlations_vs_klam_plot(
+    BPs,
+    BP_lambdas,
+    model_specs,
+    working_dir,
+    results_dirs,
+    WC_pairs=[["CH", "CuH_33r"], ],
+    colors=None,
+    show_plots=False,
+    figsize=(4, 3),
+    legend_fontsize=7,
+    file_suffix="",
+    log_scale=False,
+    save_fig=True,
+):
+    """
+    Generate bar plots with the absolute values of the fitted model parameters 
+    (i.e., the Wilson coefficients). 
+
+    Parameters
+    ----------
+    BPs : list
+        List of benchmark point names. Must correspond to the directory name for the BP
+    BP_lambdas : list
+        List of the values of kappa_lambda for each benchmark point. Must be in the same 
+        order as the BPs list.
+    model_specs : dict
+        Dictionary mapping scenarios to a list of model specifications.
+    working_dir : str
+        Working directory path, containing subdirectories for each benchmark point.
+    results_dirs : list
+        List of suffixes for the names of the directories to store the results. Results are stored in
+        '{working_dir}/comparison_plots/results_{results_dir}/', for each results_dir in results_dirs. 
+        Must be in the same order as the model specifications in model_specs.
+    WC_pairs : list, optional
+        List of pairs of Wilson coefficient names to include in the plots. Default is [["CH", "CuH_33r"], ]
+    colors : list, optional
+        List of colors assign to each Wilson coefficient. If not set, the default matplotlib 
+        color cycle will be used.
+    show_plots : bool, optional
+        Whether to show the plots or not. Default is False.
+    figsize : tuple, optional
+        Figure size for the plots. Default is (5, 7).
+    legend_fontsize : int, optional
+        Font size for the legend in the plots. Default is 7.
+    file_suffix : str, optional
+        Suffix to add to the plot filenames. Default is an empty string.
+    log_scale : bool, optional
+        Whether to use a logarithmic scale for the x-axis. Default is False.
+    save_fig : bool, optional
+        Whether to save the figures. Default is True.
+
+    Returns
+    -------
+    None
+
+    """
+
+    n_WC_pairs = len(WC_pairs)
+    scenarios = list(model_specs.keys())
+
+    correlation_matrices, observables = read_fit_results_dim6Ops_correlations(
+        BPs=BPs,
+        model_specs=model_specs,
+        files=None,
+        working_dir=working_dir,
+        assert_equal_observables=True,
+    )
+
+    # The "assert_equal_observables" option above ensures that all lists of observables are equal 
+    # between BPs, scenarios and model specs, so we can safely take the list of observables for 
+    # the first ones
+    observables = observables[BPs[0]][scenarios[0]][model_specs[scenarios[0]][0]]
+    observables_tex = [find_tex_label_par(None, obs[:-5]) for obs in observables]
+
+    if colors is None:
+        # Default matplotlib color cycle
+        colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+
+
+    print(f"\n")
+    num_fig = 0
+    for scenario in scenarios:
+        for spec_index, (model_spec, results_dir) in enumerate(zip(model_specs[scenario], results_dirs)):
+
+            print(f"\nProducing plot for scenario {scenario}, model specification {model_spec}")
+            print(f"Total number of WCs considered for the plot: {n_WC_pairs}")
+            print(f"WCs pairs considered for the plot: {WC_pairs}")
+
+            # Create the output directory, if it does not yet exist
+            subprocess.run(["mkdir", "-p", f"{working_dir}/comparison_plots/results_{results_dir}"])
+
+            fig = plt.figure(num_fig, figsize=figsize)
+            num_fig = num_fig + 1
+            ax = plt.gca()
+            plt.axhline(y=0, c='0.1', linewidth=1)
+
+            for k, (wc_pair, color) in enumerate(zip(WC_pairs, colors)):
+
+
+                wc_pair_indices = [
+                    observables.index(wc_pair[0] + "_corr"), 
+                    observables.index(wc_pair[1] + "_corr"),
+                ]
+
+                y = [correlation_matrices[BP][scenario][model_spec][wc_pair_indices[0], wc_pair_indices[1]] for BP in BPs]
+
+                label = fr"$\rho(${observables_tex[wc_pair_indices[0]]}, {observables_tex[wc_pair_indices[1]]}$)$"
+
+                ax.plot(
+                    BP_lambdas,
+                    y, 
+                    'o-',
+                    color=color,
+                    label=label,
+                )
+
+            ax.set_xscale('log' if log_scale else 'linear')                                    
+            ax.set_xlabel(r'$\kappa_\lambda$', fontsize=12)
+            ax.set_ylabel(r'Fitted Wilson coef. correlations', fontsize=10)
+            ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left", fontsize=legend_fontsize)
+            plt.tight_layout()   # Makes sure labels are not cut off
+            if save_fig: plt.savefig(f"{working_dir}/comparison_plots/results_{results_dir}/WC_correlations_vs_klam_{scenario}{file_suffix}.pdf")
+
+    if show_plots:
+        plt.show()
+
+
+def generate_WC_corr_matrix_plot(
+    BPs,
+    model_specs,
+    working_dir,
+    results_dirs,
+    WC_names=None,
+    plot_titles=None,
+    show_plots=False,
+    figsize=(4, 3),
+    file_suffix="",
+    save_fig=True,
+):
+    """
+    Generate bar plots with the absolute values of the fitted model parameters 
+    (i.e., the Wilson coefficients). 
+
+    Parameters
+    ----------
+    BPs : list
+        List of benchmark point names. Must correspond to the directory name for the BP
+    BP_lambdas : list
+        List of the values of kappa_lambda for each benchmark point. Must be in the same 
+        order as the BPs list.
+    model_specs : dict
+        Dictionary mapping scenarios to a list of model specifications.
+    working_dir : str
+        Working directory path, containing subdirectories for each benchmark point.
+    results_dirs : list
+        List of suffixes for the names of the directories to store the results. Results are stored in
+        '{working_dir}/comparison_plots/results_{results_dir}/', for each results_dir in results_dirs. 
+        Must be in the same order as the model specifications in model_specs.
+    WC_names : list, optional
+        List of Wilson coefficient names to include in the plots. If not set, all available Wilson 
+        coefficients will be included.
+    show_plots : bool, optional
+        Whether to show the plots or not. Default is False.
+    figsize : tuple, optional
+        Figure size for the plots. Default is (5, 7).
+    file_suffix : str, optional
+        Suffix to add to the plot filenames. Default is an empty string.
+    save_fig : bool, optional
+        Whether to save the figures. Default is True.
+
+    Returns
+    -------
+    None
+
+    """
+
+    correlation_matrices, observables = read_fit_results_dim6Ops_correlations(
+        BPs=BPs,
+        model_specs=model_specs,
+        files=None,
+        working_dir=working_dir,
+        assert_equal_observables=True,
+    )
+
+   
+    scenarios = list(model_specs.keys())
+
+    # The "assert_equal_observables" option above ensures that all lists of observables are equal 
+    # between BPs, scenarios and model specs, so we can safely take the list of observables for 
+    # the first ones
+    observables = observables[BPs[0]][scenarios[0]][model_specs[scenarios[0]][0]]
+
+    observables_indices = [observables.index(WC + "_corr") for WC in WC_names] if not WC_names is None else range(len(observables))
+    observables_tex = [find_tex_label_par(None, observables[i][:-5]) for i in observables_indices]
+
+    if WC_names is None:
+        WC_names = [observables[i][:-5] for i in observables_indices]
+    
+    n_WCs = len(WC_names)
+
+    cmap = sns.color_palette("vlag", as_cmap=True)
+
+    print(f"\n")
+    num_fig = 0
+    for scenario in scenarios:
+        for spec_index, (model_spec, results_dir) in enumerate(zip(model_specs[scenario], results_dirs)):
+            for BP in BPs:
+                print(f"\nProducing plot for scenario {scenario}, model specification {model_spec}, BP {BP}")
+                print(f"Total number of WCs considered for the plot: {n_WCs}")
+                print(f"WCs considered for the plot: {WC_names}")
+
+                # Create the output directory, if it does not yet exist
+                subprocess.run(["mkdir", "-p", f"{working_dir}/comparison_plots/results_{results_dir}"])
+
+                fig = plt.figure(num_fig, figsize=figsize)
+                num_fig = num_fig + 1
+                ax = plt.gca()
+
+                # Restrict the matrix to WCs of interest
+                corr_matrix = correlation_matrices[BP][scenario][model_spec][np.ix_(observables_indices, observables_indices)]
+                corr_dataframe = pd.DataFrame(corr_matrix, index=observables_tex, columns=observables_tex)
+
+                sns.heatmap(corr_dataframe, cmap=cmap, vmax=1., vmin=-1., center=0, square=True, linewidths=1., cbar_kws={"shrink": 1.0}, annot=True, fmt=".2f", ax=ax)
+
+                ax.xaxis.set_tick_params(rotation=75, labelsize=12)
+                ax.yaxis.set_tick_params(labelsize=12)
+
+                if plot_titles is not None:
+                    ax.set_title(f"{plot_titles[BP][scenario][model_spec]}", fontsize=13)
+                plt.tight_layout()   # Makes sure labels are not cut off
+                if save_fig: plt.savefig(f"{working_dir}/comparison_plots/results_{results_dir}/WC_correlations_vs_klam_{scenario}{file_suffix}.pdf")
 
     if show_plots:
         plt.show()

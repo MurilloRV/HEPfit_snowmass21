@@ -37,10 +37,10 @@ LoopHd6NoSubleading="false" # Do not include the subleading corrections (resumma
 noLoopH3d6Quad="false" # Do not include quadratic modifications in the SM loops in Higgs observables due to the dim 6 interactions that contribute to the trilinear Higgs coupling. That is, sets cLH3d62 = 0.0
 LoopHd6noWFR="false" # Completely remove the wavefunction renormalization contribution to the kappa_lambda NLO effects. That is, sets dZH1 = dZH2 = 0.0
 no_C_HG="false" # Exclude the C_HG operator from the fit
-no_HLLHC_Higgs="false" # Exclude the HL-LHC Higgs observables from the fit
+no_HLLHC_Higgs="true" # Exclude the HL-LHC Higgs observables from the fit
 LoopH3d6Full="false" # Use the full expansion of the ZH cross-section in terms of C1 and dZH
 
-use_new_NPs="true" # Use newly implementent theory nuisance parameters
+use_new_NPs="false" # Use newly implementent theory nuisance parameters
 UseKlamDependentUncertainties="true" # A boolean flag that is true if using klam-dependent theoretical uncertainties in the ee->Zh cross-section predictions.
 
 # Changed default values to 1.0!
