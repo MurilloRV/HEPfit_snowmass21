@@ -588,9 +588,9 @@ def generate_WC_corr_matrix_plot(
                 ax.yaxis.set_tick_params(labelsize=12)
 
                 if plot_titles is not None:
-                    ax.set_title(f"{plot_titles[BP][scenario][model_spec]}", fontsize=13)
+                    ax.set_title(f"{plot_titles[BP][scenario][model_spec]}", fontsize=14)
                 plt.tight_layout()   # Makes sure labels are not cut off
-                if save_fig: plt.savefig(f"{working_dir}/comparison_plots/results_{results_dir}/WC_correlations_vs_klam_{scenario}{file_suffix}.pdf")
+                if save_fig: plt.savefig(f"{working_dir}/comparison_plots/results_{results_dir}/WC_corr_matrix_{BP}_{scenario}{file_suffix}.pdf")
 
     if show_plots:
         plt.show()
