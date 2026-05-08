@@ -3,6 +3,7 @@ import seaborn as sns
 import pandas as pd
 from matplotlib import pyplot as plt
 import subprocess
+from copy import deepcopy
 from .parser import (
     observable_order, 
     parameter_order, 
@@ -13,6 +14,7 @@ from .parser import (
     align_observables,
     read_fit_results_dim6Ops_correlations,
     find_tex_label_par,
+    read_WC_predictions,
 )
 
 
@@ -497,6 +499,7 @@ def generate_WC_corr_matrix_plot(
     show_plots=False,
     figsize=(4, 3),
     file_suffix="",
+    labelsize=12,
     save_fig=True,
 ):
     """
@@ -527,6 +530,8 @@ def generate_WC_corr_matrix_plot(
         Figure size for the plots. Default is (5, 7).
     file_suffix : str, optional
         Suffix to add to the plot filenames. Default is an empty string.
+    labelsize : int, optional
+        Size of the font for the axis labels. Default is 12.
     save_fig : bool, optional
         Whether to save the figures. Default is True.
 
@@ -584,13 +589,15 @@ def generate_WC_corr_matrix_plot(
 
                 sns.heatmap(corr_dataframe, cmap=cmap, vmax=1., vmin=-1., center=0, square=True, linewidths=1., cbar_kws={"shrink": 1.0}, annot=True, fmt=".2f", ax=ax)
 
-                ax.xaxis.set_tick_params(rotation=75, labelsize=12)
-                ax.yaxis.set_tick_params(labelsize=12)
+                ax.xaxis.set_tick_params(rotation=75, labelsize=labelsize)
+                ax.yaxis.set_tick_params(labelsize=labelsize)
 
                 if plot_titles is not None:
                     ax.set_title(f"{plot_titles[BP][scenario][model_spec]}", fontsize=14)
                 plt.tight_layout()   # Makes sure labels are not cut off
-                if save_fig: plt.savefig(f"{working_dir}/comparison_plots/results_{results_dir}/WC_corr_matrix_{BP}_{scenario}{file_suffix}.pdf")
+
+                filename = f"{working_dir}/comparison_plots/results_{results_dir}/WC_corr_matrix_{BP}_{scenario}{file_suffix}.pdf"
+                if save_fig: plt.savefig(filename)
 
     if show_plots:
         plt.show()
@@ -810,8 +817,10 @@ def generate_pull_plots_obs(
     nvar_per_plot=50,
     only_higgs_fccee_obs=False,
     compare_with_SM=False,
+    WC_list_for_prediction_pulls=None,
     figsize=(5, 7),
     legend_loc="best",
+    file_suffix="",
     save_fig=True,
 ):
     """
@@ -833,7 +842,7 @@ def generate_pull_plots_obs(
     plot_titles : dict
         A dictionary containing the titles for the plots.
     model : str
-        The BSM model considered. Currently can be either "IDM" or "Z2SSM"
+        The BSM model considered. Currently can be either "IDM" or "Z2SSM" or "SM"
     only_obs : list of str, optional
         List of observables to include. If set, only these observables will be
         processed.
@@ -853,10 +862,16 @@ def generate_pull_plots_obs(
     compare_with_SM : bool, optional
         If set to true, use SM predictions as the central values for the 
         pulls. Default is False
+    WC_list_for_prediction_pulls: list of str, optional
+        If set, the pulls in the plots will illustrate the deviation between
+        the predictions for the given WC values and the SM predictions.This
+        list should contain the names of the WCs to be included.
     figsize : tuple, optional
         Figure size for the plots. Default is (5, 7).
     legend_loc : str, optional
         Location of the legend in the plots. Default is "best".
+    file_suffix: str, optional
+        Suffix to add to the plot filenames. Default is an empty string.
     save_fig : bool, optional
         Whether to save the figures. Default is True.
 
@@ -872,8 +887,8 @@ def generate_pull_plots_obs(
         # Default matplotlib color cycle
         colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
-    if model not in ["IDM", "Z2SSM"]:
-        raise ValueError(f"Invalid model specified ({model}). Please choose either 'IDM' or 'Z2SSM'.")
+    if model not in ["IDM", "Z2SSM", "SM"]:
+        raise ValueError(f"Invalid model specified ({model}). Please choose either 'IDM', 'Z2SSM', or 'SM'.")
 
     files = {}
     for BP in BPs:
@@ -891,7 +906,7 @@ def generate_pull_plots_obs(
     conf_files = find_configuration_files(model_specs, model)
         
     print(f"\nReading configuration files for observables")
-    observables, observables_tex, central_values_obs, _ = read_configuration_files(
+    observables, observables_tex, central_values_obs, input_uncertainties = read_configuration_files(
         working_dir=working_dir,
         BPs=BPs,
         model_specs=model_specs,
@@ -904,12 +919,33 @@ def generate_pull_plots_obs(
     )
 
     print(f"\nReading fit results")
-    results = read_fit_results(
-        BPs=BPs,
-        model_specs=model_specs,
-        observables=observables,
-        files=files,
-    )
+    if WC_list_for_prediction_pulls is None:
+        results = read_fit_results(
+            BPs=BPs,
+            model_specs=model_specs,
+            observables=observables,
+            files=files,
+        )
+
+    else:
+        results = {}
+        for BP in BPs:
+            results[BP] = {}
+            for scenario in scenarios:
+                results[BP][scenario] = {}
+                for model_spec in model_specs[scenario]:
+                    results[BP][scenario][model_spec] = np.zeros((len(observables["Config_Files"]["."]['fits_small_priors_strict']), 2))
+                    results[BP][scenario][model_spec] = np.array( 
+                        [
+                            central_values_obs["Config_Files"]["."]['fits_small_priors_strict'],
+                            input_uncertainties["Config_Files"]["."]['fits_small_priors_strict'],
+                        ] 
+                    ).T
+
+        WC_labels = [ find_tex_label_par(None, wc) for wc in WC_list_for_prediction_pulls ]
+
+
+
 
     print(f"\nSorting observables")
     aligned_observables, aligned_observables_tex, central_values_obs, results = align_observables(
@@ -925,7 +961,21 @@ def generate_pull_plots_obs(
     n_model_specs = len(list(model_specs.values())[0])
     w = 1.0
     dimw = w / 2
-    y_shift = np.linspace(+dimw/2, -dimw/2, n_model_specs) 
+
+    if WC_list_for_prediction_pulls is not None:
+        obs_predictions = read_WC_predictions(
+            working_dir=working_dir,
+            WCs=WC_list_for_prediction_pulls,
+            n_WC_values=2,
+            observables=aligned_observables,
+        )
+
+        n_WCs = len(WC_list_for_prediction_pulls)
+        y_shift = np.linspace(+dimw/2, -dimw/2, n_WCs) 
+
+    else:
+        y_shift = np.linspace(+dimw/2, -dimw/2, n_model_specs) 
+
 
     fig_num = 0
     for i, BP in enumerate(BPs):
@@ -951,27 +1001,52 @@ def generate_pull_plots_obs(
                 fig_num = fig_num + 1
                 ax = plt.gca()
 
-                for spec_index, model_spec in enumerate(model_specs[scenario]):
+                y = np.arange(param_breaks[k],param_breaks[k+1])
+                plt.axvline(x=0, c='0.6', linewidth=2)
 
-                    results_means  = np.copy((results[BP][scenario][model_spec][:,0] - central_values_obs[BP][scenario][model_spec]) / results[BP][scenario][model_spec][:,1] )
-                    results_errors = np.copy( results[BP][scenario][model_spec][:,1] / results[BP][scenario][model_spec][:,1] )
+                if WC_list_for_prediction_pulls is None:
+                    for spec_index, model_spec in enumerate(model_specs[scenario]):
 
-                    y = np.arange(param_breaks[k],param_breaks[k+1])
-                    
-                    plt.axvline(x=0, c='0.6', linewidth=2)
-                
-                    ax.errorbar(results_means[param_breaks[k]:param_breaks[k+1]],
-                                -y+y_shift[spec_index], 
-                                # -y, 
-                                xerr=(results_errors[param_breaks[k]:param_breaks[k+1]],), 
-                                fmt='o', 
-                                linewidth=1.5, 
-                                capsize=3.5, 
-                                markersize=4, 
-                                color=colors[spec_index],
-                                label=model_specs_labels[scenario][spec_index],
-                                # alpha=alphas[i],
-                                )
+                        results_means  = np.copy((results[BP][scenario][model_spec][:,0] - central_values_obs[BP][scenario][model_spec]) / results[BP][scenario][model_spec][:,1] )
+                        results_errors = np.copy( results[BP][scenario][model_spec][:,1] / results[BP][scenario][model_spec][:,1] )
+
+                        ax.errorbar(results_means[param_breaks[k]:param_breaks[k+1]],
+                                    -y+y_shift[spec_index], 
+                                    # -y, 
+                                    xerr=(results_errors[param_breaks[k]:param_breaks[k+1]],), 
+                                    fmt='o', 
+                                    linewidth=1.5, 
+                                    capsize=3.5, 
+                                    markersize=4, 
+                                    color=colors[spec_index],
+                                    label=model_specs_labels[scenario][spec_index],
+                                    # alpha=alphas[i],
+                                    )
+                else:
+                    for i, wc in enumerate(WC_list_for_prediction_pulls):
+                        plotted_results_low = deepcopy( (obs_predictions[wc][0] - central_values_obs["Config_Files"]["."]['fits_small_priors_strict'])/results["Config_Files"]["."]['fits_small_priors_strict'][:,1] )
+                        plotted_results_high = deepcopy( (obs_predictions[wc][1] - central_values_obs["Config_Files"]["."]['fits_small_priors_strict'])/results["Config_Files"]["."]['fits_small_priors_strict'][:,1] )
+                        ax.plot(
+                            plotted_results_low[param_breaks[k]:param_breaks[k+1]],
+                            -y+y_shift[i], 
+                            linestyle="None",
+                            marker=4, 
+                            markersize=10,
+                            color=colors[i],
+                            label=WC_labels[i],
+                        )
+
+                        ax.plot(
+                            plotted_results_high[param_breaks[k]:param_breaks[k+1]],
+                            -y+y_shift[i], 
+                            linestyle="None",
+                            marker=5, 
+                            markersize=10,
+                            color=colors[i],
+                        )
+
+                    ax.plot([], [], marker=5, markersize=10, linestyle="None", color="black", label="$+1\sigma$")
+                    ax.plot([], [], marker=4, markersize=10, linestyle="None", color="black", label="$-1\sigma$")
 
                 # ax.set_yticks(-y-dimw/2.)
                 ax.set_yticks(-y)
@@ -984,12 +1059,14 @@ def generate_pull_plots_obs(
                 # ax.set_yticklabels(labels[param_breaks[k]:param_breaks[k+1]],fontsize=fontsize)
                 x_limits = [plt.xlim()[0], plt.xlim()[1]]
                 y_limits = [plt.ylim()[0] +1.0, plt.ylim()[1] -1.0]
+                if WC_list_for_prediction_pulls is not None:
+                    y_limits = [plt.ylim()[0], plt.ylim()[1]]
                 ax.hlines(y=-y, xmin=x_limits[0], xmax=x_limits[1], color="black", linestyle="--", linewidth=0.5)
                 ax.set_xlim(*x_limits)
                 ax.set_ylim(*y_limits)
                 ax.tick_params(axis='x', size=10, labelsize=11)
                 ax.tick_params(axis='x', which='minor', size=6)
-                if compare_with_SM:
+                if compare_with_SM or (WC_list_for_prediction_pulls is not None):
                     ax.set_xlabel(r'Pulls (w.r.t. SM prediction)', fontsize=15)
                 else:
                     ax.set_xlabel(r'Pulls', fontsize=15)
@@ -999,7 +1076,11 @@ def generate_pull_plots_obs(
                 else:
                     ax.set_title(plot_titles[BP][scenario], fontsize=9)
                 plt.tight_layout()   # Makes sure labels are not cut off
-                plot_filename = f"pull_obs_{BP}_{scenario}_compare"
+
+                if WC_list_for_prediction_pulls is None:
+                    plot_filename = f"pull_obs_{BP}_{scenario}_compare{file_suffix}"
+                else: 
+                    plot_filename = f"pull_plot_obs_compare{file_suffix}"
                 if compare_with_SM: 
                     plot_filename = plot_filename + "_with_SM"
                 if only_higgs_fccee_obs:
@@ -1008,3 +1089,5 @@ def generate_pull_plots_obs(
 
     if show_plots:
         plt.show()
+
+

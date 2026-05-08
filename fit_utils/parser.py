@@ -398,6 +398,49 @@ def read_SM_predictions():
     return obs, central_values
 
 
+def read_WC_predictions(
+    working_dir,
+    WCs,
+    n_WC_values,
+    observables,
+):
+
+    for i in range(2):
+        observables = list(observables.values())[0]
+
+    print("observables:", observables)
+
+    obs_predictions = {}
+    for wc in WCs:
+        obs_predictions[wc] = {}
+        for point in range(n_WC_values):
+            obs_predictions[wc][point] = np.full(len(observables), np.nan)
+            filename = f"{working_dir}/observables_results/observables_{wc}_{point}.txt"
+            with open(filename, "r") as input_file:
+                print("Reading Observables:")
+                for line_nr, input_line in enumerate(input_file):
+                    # Skip the empty line after "Observables"
+                    if line_nr == 0:
+                        continue
+                    
+                    if input_line in ['\n', '\r\n']:
+                        continue
+                    else:
+                        columns = input_line.split()
+                        observable = columns[0]
+
+                        if observable in observables:
+                            idx = observables.index(observable)
+                            obs_predictions[wc][point][idx] = float(columns[2])
+
+            if np.isnan(obs_predictions[wc][point]).sum() != 0:
+                print(f"Warning: Number of predictions for {wc} does not match number of observables.")
+                print(f"Number of predictions: {len(obs_predictions[wc][point]) - np.isnan(obs_predictions[wc][point]).sum()}")
+                print(f"Number of observables: {len(observables)}")
+
+    return obs_predictions
+
+
 def find_configuration_files(
     model_specs,
     model,
@@ -411,7 +454,8 @@ def find_configuration_files(
     model_specs : dict
         Dictionary mapping scenarios to a list of model specifications.
     model : str
-        The BSM model considered. Currently can be either "IDM" or "Z2SSM"
+        The BSM model considered. Currently can be either "IDM" or "Z2SSM". Can
+        also be set to "SM".
     read_WCs : bool, optional
         If set to True, the function will find the configuration files with the 
         Wilson coefficients, instead of the observables
@@ -422,6 +466,32 @@ def find_configuration_files(
         Dictionary mapping scenarios and model specifications to a list of 
         configuration files, conf_files[scenario][model_spec].
     """
+
+    scenarios = model_specs.keys()
+
+    if model == "SM" and not read_WCs: 
+        conf_file_list = [
+            "ObservablesEW.conf",
+            "ObservablesEW_Current_SM_noLFU.conf",
+            "ObservablesEW_FCCee_Zpole_SM.conf",
+            "ObservablesEW_FCCee_WW_SM.conf",
+            "ObservablesEW_HLLHC.conf",
+            "ObservablesHiggs.conf",
+            "ObservablesHiggs_FCCee_240_SM.conf",
+            "ObservablesHiggs_FCCee_365.conf",
+            "ObservablesHiggs_HLLHC_SM.conf",
+            "ObservablesVV.conf",
+            "aTGC_observables_Current.conf",
+            "aTGC_observables_HLLHC_Full.conf",
+            "ObservablesVV_OO_FCCee_161.conf",
+            "ObservablesVV_OO_FCCee_240.conf",
+            "ObservablesVV_OO_FCCee_365.conf",
+            "EffVHcouplings_QFU12.conf",
+            "HiggsEW_Par_Corr.conf",
+        ]
+        conf_files = { scenario : {spec : conf_file_list for spec in model_specs[scenario]} for scenario in scenarios}
+
+        return conf_files
 
 
     HEPfit_flags = [
@@ -485,8 +555,6 @@ def find_configuration_files(
         "_long_bugfix",
     ]
 
-    scenarios = model_specs.keys()
-
     conf_files = {}
     for scenario in scenarios:
 
@@ -530,50 +598,50 @@ def find_configuration_files(
                 if scenario == f"{model}_FCCee240_FCCee365_HLLHClambda":
                     conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs")] = f"ObservablesHiggs_scaled_realistic_HL_LHC"
 
-            def determine_flags_in_model_spec(conf_files):
-                found_flag = False
-                for hepfit_flag in HEPfit_flags:
-                    for loop_order_flag in loop_order_flags:
-                        for exclusive_flag in exclusive_flag_list:
-                            for additional_flag1 in additional_flag_list:
-                                for additional_flag2 in additional_flag_list:
-                                    for priors_flag in priors_flag_list:
-                                        for MC_flag in MC_flag_list:
-                                            full_flag = hepfit_flag + loop_order_flag + exclusive_flag + additional_flag1 + additional_flag2 + priors_flag + MC_flag
-                                            if model_spec == f"fits_realistic_HL_LHC_{full_flag}":
-                                                print(f"Full fit flag: {full_flag}")
-                                                found_flag = True
+                def determine_flags_in_model_spec(conf_files):
+                    found_flag = False
+                    for hepfit_flag in HEPfit_flags:
+                        for loop_order_flag in loop_order_flags:
+                            for exclusive_flag in exclusive_flag_list:
+                                for additional_flag1 in additional_flag_list:
+                                    for additional_flag2 in additional_flag_list:
+                                        for priors_flag in priors_flag_list:
+                                            for MC_flag in MC_flag_list:
+                                                full_flag = hepfit_flag + loop_order_flag + exclusive_flag + additional_flag1 + additional_flag2 + priors_flag + MC_flag
+                                                if model_spec == f"fits_realistic_HL_LHC_{full_flag}":
+                                                    print(f"Full fit flag: {full_flag}")
+                                                    found_flag = True
 
-                                                if read_WCs:
-                                                    if additional_flag1 == "_no_C_HG" or additional_flag2 == "_no_C_HG":
-                                                        conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("d6Ops_corr")] = "d6Ops_corr_no_C_HG"
+                                                    if read_WCs:
+                                                        if additional_flag1 == "_no_C_HG" or additional_flag2 == "_no_C_HG":
+                                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("d6Ops_corr")] = "d6Ops_corr_no_C_HG"
 
-                                                else:
-                                                    Higgs_flag = loop_order_flag + exclusive_flag
-                                                    
-                                                    if not (additional_flag1 == "_no_HLLHC_Higgs" or additional_flag2 == "_no_HLLHC_Higgs"):
-                                                        conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_HLLHC_SM_kappa_scaled")] = f"ObservablesHiggs_HLLHC_SM_kappa_scaled_{Higgs_flag}"
-                                                    conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_FCCee_240_SM_kappa_scaled")] = f"ObservablesHiggs_FCCee_240_SM_kappa_scaled_{Higgs_flag}"
-                                                    if scenario == f"{model}_FCCee240_FCCee365" or scenario == f"{model}_FCCee240_FCCee365_HLLHClambda":
-                                                        conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_FCCee_365_kappa_scaled")] = f"ObservablesHiggs_FCCee_365_kappa_scaled_{Higgs_flag}"
-
-                                                    if additional_flag1 == "_no_HLLHC_Higgs" or additional_flag2 == "_no_HLLHC_Higgs":
-                                                        Higgs_flag = "no_HLLHC_" + Higgs_flag
-                                                    if scenario == f"{model}_FCCee240_FCCee365_HLLHClambda":
-                                                        conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_scaled_realistic_HL_LHC")] = f"ObservablesHiggs_scaled_realistic_HL_LHC_{Higgs_flag}"
                                                     else:
-                                                        conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs")] = f"ObservablesHiggs_{Higgs_flag}"
+                                                        Higgs_flag = loop_order_flag + exclusive_flag
+                                                        
+                                                        if not (additional_flag1 == "_no_HLLHC_Higgs" or additional_flag2 == "_no_HLLHC_Higgs"):
+                                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_HLLHC_SM_kappa_scaled")] = f"ObservablesHiggs_HLLHC_SM_kappa_scaled_{Higgs_flag}"
+                                                        conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_FCCee_240_SM_kappa_scaled")] = f"ObservablesHiggs_FCCee_240_SM_kappa_scaled_{Higgs_flag}"
+                                                        if scenario == f"{model}_FCCee240_FCCee365" or scenario == f"{model}_FCCee240_FCCee365_HLLHClambda":
+                                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_FCCee_365_kappa_scaled")] = f"ObservablesHiggs_FCCee_365_kappa_scaled_{Higgs_flag}"
 
-                                                    if additional_flag1 == "_all_EW_mods" or additional_flag2 == "_all_EW_mods":
-                                                        conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesEW")] = "ObservablesEW_all_mods"
-                                                        conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesEW_Current_SM_noLFU")] = "ObservablesEW_Current_SM_noLFU_kappa_scaled"
+                                                        if additional_flag1 == "_no_HLLHC_Higgs" or additional_flag2 == "_no_HLLHC_Higgs":
+                                                            Higgs_flag = "no_HLLHC_" + Higgs_flag
+                                                        if scenario == f"{model}_FCCee240_FCCee365_HLLHClambda":
+                                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_scaled_realistic_HL_LHC")] = f"ObservablesHiggs_scaled_realistic_HL_LHC_{Higgs_flag}"
+                                                        else:
+                                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs")] = f"ObservablesHiggs_{Higgs_flag}"
 
-                                                return conf_files
-                                                
-                if found_flag == False:
-                    raise ValueError(f"Model specification {model_spec} could not be assigned flags. Make sure all flags are implemented")
+                                                        if additional_flag1 == "_all_EW_mods" or additional_flag2 == "_all_EW_mods":
+                                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesEW")] = "ObservablesEW_all_mods"
+                                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesEW_Current_SM_noLFU")] = "ObservablesEW_Current_SM_noLFU_kappa_scaled"
+
+                                                    return conf_files
+                                                    
+                    if found_flag == False:
+                        raise ValueError(f"Model specification {model_spec} could not be assigned flags. Make sure all flags are implemented")
                 
-            conf_files = determine_flags_in_model_spec(conf_files)
+                conf_files = determine_flags_in_model_spec(conf_files)
 
             for i, file in enumerate(conf_files[scenario][model_spec]):
                 conf_files[scenario][model_spec][i] = file + ".conf"
