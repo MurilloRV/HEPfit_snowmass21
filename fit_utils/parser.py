@@ -403,19 +403,28 @@ def read_WC_predictions(
     WCs,
     n_WC_values,
     observables,
+    matched_predictions=False,
 ):
 
     for i in range(2):
         observables = list(observables.values())[0]
 
+    if matched_predictions and n_WC_values != 1:
+        print("Warning: Matched predictions should only with n_WC_values=1.")
+        n_WC_values = 1
+
     print("observables:", observables)
 
     obs_predictions = {}
-    for wc in WCs:
+    for idx, wc in enumerate(WCs):
         obs_predictions[wc] = {}
         for point in range(n_WC_values):
             obs_predictions[wc][point] = np.full(len(observables), np.nan)
-            filename = f"{working_dir}/observables_results/observables_{wc}_{point}.txt"
+
+            if matched_predictions:
+                filename = f"{working_dir}/../smeft_matching_inputs/observables_results/observables_BP{idx}.txt"
+            else:
+                filename = f"{working_dir}/observables_results/observables_{wc}_{point}.txt"
             with open(filename, "r") as input_file:
                 print("Reading Observables:")
                 for line_nr, input_line in enumerate(input_file):
@@ -439,6 +448,9 @@ def read_WC_predictions(
                 print(f"Number of observables: {len(observables)}")
 
     return obs_predictions
+
+
+
 
 
 def find_configuration_files(
