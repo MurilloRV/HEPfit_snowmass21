@@ -12,6 +12,7 @@ parser.add_argument("-s", "--scenario", help = "Name of the scenario (e.g. IDM_F
 parser.add_argument("-b", "--bp", help = "Which benchmark point to use", type=str)
 parser.add_argument("--realistic", help = "Use realistic, asymmetric uncertainties for the on-shell kappa_lambda measurement at HL-LHC", action="store_true")
 parser.add_argument("--ewpos_all", help = "Modify also the EWPO central values for current observables", action="store_true")
+parser.add_argument("--with_Af", help = "Use BSM predictions for sin2theta_eff to evaluate A_f and A_FB_f asymmetries and use these in the fit inputs", action="store_true")
 parser.add_argument("--no_1L_BSM_sqrt_s", help = "Do not include momentum dependent BSM 1L corrections to Z->ZH", action="store_true")
 parser.add_argument("--no_1L_BSM", help = "Do not include ANY BSM 1L corrections to Z->ZH", action="store_true")
 parser.add_argument("--pure_1L_BSM", help = "Only includes strictly 1L BSM contributions, no SM-like diagrams with insertions of kappa_lambda", action="store_true")
@@ -34,6 +35,7 @@ scenario                                            = args.scenario
 BP                                                  = args.bp
 realistic_HL_LHC_k_lambda_uncertainties             = args.realistic
 modify_all_ewpos                                    = args.ewpos_all
+with_Af                                             = args.with_Af
 no_1L_BSM_sqrt_s                                    = args.no_1L_BSM_sqrt_s
 no_1L_BSM                                           = args.no_1L_BSM
 pure_1L_BSM                                         = args.pure_1L_BSM
@@ -637,6 +639,29 @@ elif BP == "BP_new_10":
 else:
     raise ValueError("Could not determine benchmark point!")
 
+def A_f(f, sin2thetaEff):
+    if f in ['u', 'c', 't']:
+        T3 = 0.5
+        Q = 2.0/3.0
+    elif f in ['d', 's', 'b']:
+        T3 = -0.5
+        Q = -1.0/3.0
+    elif f in ['e', 'mu', 'tau']:
+        T3 = -0.5
+        Q = -1.0
+    else:
+        raise ValueError("Invalid fermion type for A_f calculation")
+
+    gV = T3 - 2*Q*sin2thetaEff
+    gA = T3
+
+    return 2*gV*gA/(gV**2 + gA**2)
+
+def A_FB_f(f, sin2thetaEff):
+    A_f_value = A_f(f, sin2thetaEff)
+    A_e_value = A_f('e', sin2thetaEff)
+    A_FB_value = 3/4 * A_e_value * A_f_value 
+    return A_FB_value
 
 
 if no_1L_BSM_sqrt_s:
@@ -1730,23 +1755,33 @@ if scenario == "IDM_FCCee240_FCCee365_HLLHClambda":
 ###########################################################################################
 ###########################################################################################
 
-input_files =  [# "ObservablesEW_Current_SM_noLFU.conf",
-               file_dir + "ObservablesEW_HLLHC.conf",
-               file_dir + "ObservablesEW_FCCee_WW_SM.conf",
-               file_dir + "ObservablesEW_FCCee_Zpole_SM.conf",
+input_files =  [
+            #    file_dir + "ObservablesEW_HLLHC",
+            #    file_dir + "ObservablesEW_FCCee_WW_SM",
+               file_dir + "ObservablesEW_FCCee_Zpole_SM",
                ]
-if modify_all_ewpos:
-    input_files.append(file_dir + "ObservablesEW_Current_SM_noLFU.conf")
 
-output_files = [# "ObservablesEW_Current_SM_noLFU_kappa_scaled.conf",
-               file_dir + "ObservablesEW_HLLHC_kappa_scaled.conf",
-               file_dir + "ObservablesEW_FCCee_WW_SM_kappa_scaled.conf",
-               file_dir + "ObservablesEW_FCCee_Zpole_SM_kappa_scaled.conf",
+output_files = [
+            #    file_dir + "ObservablesEW_HLLHC_kappa_scaled",
+            #    file_dir + "ObservablesEW_FCCee_WW_SM_kappa_scaled",
+               file_dir + "ObservablesEW_FCCee_Zpole_SM_kappa_scaled",
               ]
+
 if modify_all_ewpos:
-    output_files.append(file_dir + "ObservablesEW_Current_SM_noLFU_kappa_scaled.conf")
+    input_files.append(file_dir + "ObservablesEW_Current_SM_noLFU")
+    output_files.append(file_dir + "ObservablesEW_Current_SM_noLFU_kappa_scaled")
+
+if with_Af:
+    output_files = [output_file + "_with_Af" for output_file in output_files]
+
+input_files.append(file_dir + "ObservablesEW_HLLHC")
+input_files.append(file_dir + "ObservablesEW_FCCee_WW_SM",)
+output_files.append(file_dir + "ObservablesEW_HLLHC_kappa_scaled")
+output_files.append(file_dir + "ObservablesEW_FCCee_WW_SM_kappa_scaled")
 
 for input_file, output_file in zip(input_files, output_files):
+    input_file = input_file  + ".conf"
+    output_file = output_file + ".conf"
     with open(input_file, 'r') as infile, open(output_file, 'w') as outfile:
         for line in infile:
             if line.startswith("Observable"):
@@ -1758,6 +1793,31 @@ for input_file, output_file in zip(input_files, output_files):
 
                 elif (columns[2].startswith("Mw")):
                     columns[8] = str(Mw)
+
+                if with_Af:
+                    if (columns[2].startswith("Aelectron")):
+                        columns[8] = str(A_f('e', sin2thetaEff))
+                    elif (columns[2].startswith("Amuon")):
+                        columns[8] = str(A_f('mu', sin2thetaEff))
+                    elif (columns[2].startswith("Atau")):
+                        columns[8] = str(A_f('tau', sin2thetaEff))
+                    elif (columns[2].startswith("Abottom")):
+                        columns[8] = str(A_f('b', sin2thetaEff))
+                    elif (columns[2].startswith("Acharm")):
+                        columns[8] = str(A_f('c', sin2thetaEff))
+                    elif (columns[2].startswith("As")):
+                        columns[8] = str(A_f('s', sin2thetaEff))
+
+                    elif (columns[2].startswith("AFBelectron")):
+                        columns[8] = str(A_FB_f('e', sin2thetaEff))
+                    elif (columns[2].startswith("AFBmuon")):
+                        columns[8] = str(A_FB_f('mu', sin2thetaEff))
+                    elif (columns[2].startswith("AFBtau")):
+                        columns[8] = str(A_FB_f('tau', sin2thetaEff))
+                    elif (columns[2].startswith("AFBbottom")):
+                        columns[8] = str(A_FB_f('b', sin2thetaEff))
+                    elif (columns[2].startswith("AFBcharm")):
+                        columns[8] = str(A_FB_f('c', sin2thetaEff))
 
                 # Rejoin the columns and write to the output file
                 outfile.write(" ".join(columns) + "\n")
