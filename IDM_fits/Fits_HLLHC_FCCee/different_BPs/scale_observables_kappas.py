@@ -13,6 +13,7 @@ parser.add_argument("-b", "--bp", help = "Which benchmark point to use", type=st
 parser.add_argument("--realistic", help = "Use realistic, asymmetric uncertainties for the on-shell kappa_lambda measurement at HL-LHC", action="store_true")
 parser.add_argument("--ewpos_all", help = "Modify also the EWPO central values for current observables", action="store_true")
 parser.add_argument("--with_Af", help = "Use BSM predictions for sin2theta_eff to evaluate A_f and A_FB_f asymmetries and use these in the fit inputs", action="store_true")
+parser.add_argument("--EWPO_2L", help = "Use 2-loop IDM predictions for EWPO, instead of 1-loop ones", action="store_true")
 parser.add_argument("--no_1L_BSM_sqrt_s", help = "Do not include momentum dependent BSM 1L corrections to Z->ZH", action="store_true")
 parser.add_argument("--no_1L_BSM", help = "Do not include ANY BSM 1L corrections to Z->ZH", action="store_true")
 parser.add_argument("--pure_1L_BSM", help = "Only includes strictly 1L BSM contributions, no SM-like diagrams with insertions of kappa_lambda", action="store_true")
@@ -36,6 +37,7 @@ BP                                                  = args.bp
 realistic_HL_LHC_k_lambda_uncertainties             = args.realistic
 modify_all_ewpos                                    = args.ewpos_all
 with_Af                                             = args.with_Af
+EWPO_2L                                             = args.EWPO_2L
 no_1L_BSM_sqrt_s                                    = args.no_1L_BSM_sqrt_s
 no_1L_BSM                                           = args.no_1L_BSM
 pure_1L_BSM                                         = args.pure_1L_BSM
@@ -93,6 +95,8 @@ if exclusive_flag_count > 1:
 elif exclusive_flag_count == 1 and not realistic_HL_LHC_k_lambda_uncertainties:
     raise ValueError("""The following options are only be currently used along with the --realistic option:
         --ewpos_all,
+        --with_Af,
+        --EWPO_2L,
         --no_1L_BSM_sqrt_s,
         --no_1L_BSM,
         --pure_1L_BSM,
@@ -132,9 +136,14 @@ if BP in BP_Names:
                 kappas[key] = float(data_loaded['kappas'][key])
 
             EWPOs = data_loaded['EWPOs']
-            Mw           = float(EWPOs['Mw'])
-            sin2thetaEff = float(EWPOs['sin2thetaEff'])
-            GammaZ       = float(EWPOs['GammaZ'])
+            Mw1L           = float(EWPOs['Mw1L'])
+            sin2thetaEff1L = float(EWPOs['sin2thetaEff1L'])
+            GammaZ1L       = float(EWPOs['GammaZ1L'])
+
+            Mw2L           = float(EWPOs['Mw2L'])
+            sin2thetaEff2L = float(EWPOs['sin2thetaEff2L'])
+            GammaZ2L       = float(EWPOs['GammaZ2L'])
+
         except yaml.YAMLError as exc:
             print(exc)
 
@@ -662,6 +671,16 @@ def A_FB_f(f, sin2thetaEff):
     A_e_value = A_f('e', sin2thetaEff)
     A_FB_value = 3/4 * A_e_value * A_f_value 
     return A_FB_value
+
+
+if EWPO_2L:
+    Mw = Mw2L
+    sin2thetaEff = sin2thetaEff2L
+    GammaZ = GammaZ2L
+else:
+    Mw = Mw1L
+    sin2thetaEff = sin2thetaEff1L
+    GammaZ = GammaZ1L
 
 
 if no_1L_BSM_sqrt_s:
@@ -1778,6 +1797,9 @@ input_files.append(file_dir + "ObservablesEW_HLLHC")
 input_files.append(file_dir + "ObservablesEW_FCCee_WW_SM",)
 output_files.append(file_dir + "ObservablesEW_HLLHC_kappa_scaled")
 output_files.append(file_dir + "ObservablesEW_FCCee_WW_SM_kappa_scaled")
+
+if EWPO_2L:
+    output_files = [output_file + "_EWPO_2L" for output_file in output_files]
 
 for input_file, output_file in zip(input_files, output_files):
     input_file = input_file  + ".conf"
