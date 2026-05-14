@@ -551,6 +551,7 @@ def find_configuration_files(
         "_no_HLLHC_Higgs",
         "_no_C_HG",
         "_all_EW_mods",
+        "_with_Af",
         "_noLoopH3d6Quad",
         "_all_EW_mods_noLoopH3d6Quad",
     ]
@@ -644,9 +645,31 @@ def find_configuration_files(
                                                         else:
                                                             conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs")] = f"ObservablesHiggs_{Higgs_flag}"
 
+                                                        EWPO_conf1 = "ObservablesEW"
+                                                        EWPO_conf2 = "ObservablesEW_Current_SM_noLFU"
+                                                        EWPO_conf3 = "ObservablesEW_FCCee_Zpole_SM_kappa_scaled"
                                                         if additional_flag1 == "_all_EW_mods" or additional_flag2 == "_all_EW_mods":
-                                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesEW")] = "ObservablesEW_all_mods"
-                                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesEW_Current_SM_noLFU")] = "ObservablesEW_Current_SM_noLFU_kappa_scaled"
+                                                            EWPO_conf1_new = EWPO_conf1 + "_all_mods"
+                                                            EWPO_conf2_new = EWPO_conf2 + "_kappa_scaled"
+                                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(EWPO_conf1)] = EWPO_conf1_new
+                                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(EWPO_conf2)] = EWPO_conf2_new
+                                                            EWPO_conf1 = EWPO_conf1_new
+                                                            EWPO_conf2 = EWPO_conf2_new
+                                                           
+                                                        if additional_flag1 == "_with_Af" or additional_flag2 == "_with_Af":
+                                                            EWPO_conf1_new = EWPO_conf1 + "_with_Af"
+                                                            EWPO_conf3_new = EWPO_conf3 + "_with_Af"
+                                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(EWPO_conf1)] = EWPO_conf1_new
+                                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(EWPO_conf3)] = EWPO_conf3_new
+                                                            EWPO_conf1 = EWPO_conf1_new
+                                                            EWPO_conf3 = EWPO_conf3_new
+
+                                                            if additional_flag1 == "_all_EW_mods" or additional_flag2 == "_all_EW_mods":
+                                                                EWPO_conf2_new = EWPO_conf2 + "_with_Af"
+                                                                conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(EWPO_conf2)] = EWPO_conf2_new
+                                                                EWPO_conf2 = EWPO_conf2_new
+
+
 
                                                     return conf_files
                                                     
