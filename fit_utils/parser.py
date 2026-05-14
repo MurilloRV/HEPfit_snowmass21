@@ -552,6 +552,7 @@ def find_configuration_files(
         "_no_C_HG",
         "_all_EW_mods",
         "_with_Af",
+        "_EWPO_2L",
         "_noLoopH3d6Quad",
         "_all_EW_mods_noLoopH3d6Quad",
     ]
@@ -618,60 +619,84 @@ def find_configuration_files(
                             for exclusive_flag in exclusive_flag_list:
                                 for additional_flag1 in additional_flag_list:
                                     for additional_flag2 in additional_flag_list:
-                                        for priors_flag in priors_flag_list:
-                                            for MC_flag in MC_flag_list:
-                                                full_flag = hepfit_flag + loop_order_flag + exclusive_flag + additional_flag1 + additional_flag2 + priors_flag + MC_flag
-                                                if model_spec == f"fits_realistic_HL_LHC_{full_flag}":
-                                                    print(f"Full fit flag: {full_flag}")
-                                                    found_flag = True
+                                        for additional_flag3 in additional_flag_list:
+                                            for priors_flag in priors_flag_list:
+                                                for MC_flag in MC_flag_list:
+                                                    full_flag = hepfit_flag + loop_order_flag + exclusive_flag + additional_flag1 + additional_flag2 + additional_flag3 + priors_flag + MC_flag
+                                                    if model_spec == f"fits_realistic_HL_LHC_{full_flag}":
+                                                        print(f"Full fit flag: {full_flag}")
+                                                        found_flag = True
 
-                                                    if read_WCs:
-                                                        if additional_flag1 == "_no_C_HG" or additional_flag2 == "_no_C_HG":
-                                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("d6Ops_corr")] = "d6Ops_corr_no_C_HG"
+                                                        additional_flag_all = [additional_flag1, additional_flag2, additional_flag3]
 
-                                                    else:
-                                                        Higgs_flag = loop_order_flag + exclusive_flag
-                                                        
-                                                        if not (additional_flag1 == "_no_HLLHC_Higgs" or additional_flag2 == "_no_HLLHC_Higgs"):
-                                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_HLLHC_SM_kappa_scaled")] = f"ObservablesHiggs_HLLHC_SM_kappa_scaled_{Higgs_flag}"
-                                                        conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_FCCee_240_SM_kappa_scaled")] = f"ObservablesHiggs_FCCee_240_SM_kappa_scaled_{Higgs_flag}"
-                                                        if scenario == f"{model}_FCCee240_FCCee365" or scenario == f"{model}_FCCee240_FCCee365_HLLHClambda":
-                                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_FCCee_365_kappa_scaled")] = f"ObservablesHiggs_FCCee_365_kappa_scaled_{Higgs_flag}"
+                                                        if read_WCs:
+                                                            if "_no_C_HG" in additional_flag_all:
+                                                                conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("d6Ops_corr")] = "d6Ops_corr_no_C_HG"
 
-                                                        if additional_flag1 == "_no_HLLHC_Higgs" or additional_flag2 == "_no_HLLHC_Higgs":
-                                                            Higgs_flag = "no_HLLHC_" + Higgs_flag
-                                                        if scenario == f"{model}_FCCee240_FCCee365_HLLHClambda":
-                                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_scaled_realistic_HL_LHC")] = f"ObservablesHiggs_scaled_realistic_HL_LHC_{Higgs_flag}"
                                                         else:
-                                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs")] = f"ObservablesHiggs_{Higgs_flag}"
+                                                            Higgs_flag = loop_order_flag + exclusive_flag
+                                                            
+                                                            if not ("_no_HLLHC_Higgs" in additional_flag_all):
+                                                                conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_HLLHC_SM_kappa_scaled")] = f"ObservablesHiggs_HLLHC_SM_kappa_scaled_{Higgs_flag}"
+                                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_FCCee_240_SM_kappa_scaled")] = f"ObservablesHiggs_FCCee_240_SM_kappa_scaled_{Higgs_flag}"
+                                                            if scenario == f"{model}_FCCee240_FCCee365" or scenario == f"{model}_FCCee240_FCCee365_HLLHClambda":
+                                                                conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_FCCee_365_kappa_scaled")] = f"ObservablesHiggs_FCCee_365_kappa_scaled_{Higgs_flag}"
 
-                                                        EWPO_conf1 = "ObservablesEW"
-                                                        EWPO_conf2 = "ObservablesEW_Current_SM_noLFU"
-                                                        EWPO_conf3 = "ObservablesEW_FCCee_Zpole_SM_kappa_scaled"
-                                                        if additional_flag1 == "_all_EW_mods" or additional_flag2 == "_all_EW_mods":
-                                                            EWPO_conf1_new = EWPO_conf1 + "_all_mods"
-                                                            EWPO_conf2_new = EWPO_conf2 + "_kappa_scaled"
-                                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(EWPO_conf1)] = EWPO_conf1_new
-                                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(EWPO_conf2)] = EWPO_conf2_new
-                                                            EWPO_conf1 = EWPO_conf1_new
-                                                            EWPO_conf2 = EWPO_conf2_new
-                                                           
-                                                        if additional_flag1 == "_with_Af" or additional_flag2 == "_with_Af":
-                                                            EWPO_conf1_new = EWPO_conf1 + "_with_Af"
-                                                            EWPO_conf3_new = EWPO_conf3 + "_with_Af"
-                                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(EWPO_conf1)] = EWPO_conf1_new
-                                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(EWPO_conf3)] = EWPO_conf3_new
-                                                            EWPO_conf1 = EWPO_conf1_new
-                                                            EWPO_conf3 = EWPO_conf3_new
+                                                            if "_no_HLLHC_Higgs" in additional_flag_all:
+                                                                Higgs_flag = "no_HLLHC_" + Higgs_flag
+                                                            if scenario == f"{model}_FCCee240_FCCee365_HLLHClambda":
+                                                                conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs_scaled_realistic_HL_LHC")] = f"ObservablesHiggs_scaled_realistic_HL_LHC_{Higgs_flag}"
+                                                            else:
+                                                                conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("ObservablesHiggs")] = f"ObservablesHiggs_{Higgs_flag}"
 
-                                                            if additional_flag1 == "_all_EW_mods" or additional_flag2 == "_all_EW_mods":
-                                                                EWPO_conf2_new = EWPO_conf2 + "_with_Af"
+                                                            EWPO_conf1 = "ObservablesEW"
+                                                            EWPO_conf2 = "ObservablesEW_Current_SM_noLFU"
+                                                            EWPO_conf3 = "ObservablesEW_HLLHC_kappa_scaled"
+                                                            EWPO_conf4 = "ObservablesEW_FCCee_Zpole_SM_kappa_scaled"
+                                                            EWPO_conf5 = "ObservablesEW_FCCee_WW_SM_kappa_scaled"
+                                                            if "_all_EW_mods" in additional_flag_all:
+                                                                EWPO_conf1_new = EWPO_conf1 + "_all_mods"
+                                                                EWPO_conf2_new = EWPO_conf2 + "_kappa_scaled"
+                                                                conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(EWPO_conf1)] = EWPO_conf1_new
                                                                 conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(EWPO_conf2)] = EWPO_conf2_new
+                                                                EWPO_conf1 = EWPO_conf1_new
                                                                 EWPO_conf2 = EWPO_conf2_new
+                                                            
+                                                            if "_with_Af" in additional_flag_all:
+                                                                EWPO_conf1_new = EWPO_conf1 + "_with_Af"
+                                                                EWPO_conf4_new = EWPO_conf4 + "_with_Af"
+                                                                conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(EWPO_conf1)] = EWPO_conf1_new
+                                                                conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(EWPO_conf4)] = EWPO_conf4_new
+                                                                EWPO_conf1 = EWPO_conf1_new
+                                                                EWPO_conf4 = EWPO_conf4_new
+
+                                                                if "_all_EW_mods" in additional_flag_all:
+                                                                    EWPO_conf2_new = EWPO_conf2 + "_with_Af"
+                                                                    conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(EWPO_conf2)] = EWPO_conf2_new
+                                                                    EWPO_conf2 = EWPO_conf2_new
+
+                                                            if "_EWPO_2L" in additional_flag_all:
+                                                                EWPO_conf1_new = EWPO_conf1 + "_EWPO_2L"
+                                                                EWPO_conf3_new = EWPO_conf3 + "_EWPO_2L"
+                                                                EWPO_conf4_new = EWPO_conf4 + "_EWPO_2L"
+                                                                EWPO_conf5_new = EWPO_conf5 + "_EWPO_2L"
+                                                                conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(EWPO_conf1)] = EWPO_conf1_new
+                                                                conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(EWPO_conf3)] = EWPO_conf3_new
+                                                                conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(EWPO_conf4)] = EWPO_conf4_new
+                                                                conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(EWPO_conf5)] = EWPO_conf5_new
+                                                                EWPO_conf1 = EWPO_conf1_new
+                                                                EWPO_conf3 = EWPO_conf3_new
+                                                                EWPO_conf4 = EWPO_conf4_new
+                                                                EWPO_conf5 = EWPO_conf5_new
+
+                                                                if "_all_EW_mods" in additional_flag_all:
+                                                                    EWPO_conf2_new = EWPO_conf2 + "_EWPO_2L"
+                                                                    conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(EWPO_conf2)] = EWPO_conf2_new
+                                                                    EWPO_conf2 = EWPO_conf2_new
 
 
 
-                                                    return conf_files
+                                                        return conf_files
                                                     
                     if found_flag == False:
                         raise ValueError(f"Model specification {model_spec} could not be assigned flags. Make sure all flags are implemented")
@@ -1060,8 +1085,8 @@ def read_fit_results_dim6Ops_correlations(
             files[BP] = {}
             for scenario in scenarios:
                 files[BP][scenario] = {}
-            for model_spec in model_specs[scenario]:
-                files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/results_{model_spec}/Observables/Statistics.txt"
+                for model_spec in model_specs[scenario]:
+                    files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/results_{model_spec}/Observables/Statistics.txt"
 
     
     observables = {BP: {scenario: {model_spec: [] for model_spec in model_specs[scenario]} for scenario in scenarios} for BP in BPs}

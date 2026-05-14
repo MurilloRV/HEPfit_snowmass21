@@ -596,7 +596,7 @@ def generate_WC_corr_matrix_plot(
                     ax.set_title(f"{plot_titles[BP][scenario][model_spec]}", fontsize=14)
                 plt.tight_layout()   # Makes sure labels are not cut off
 
-                filename = f"{working_dir}/comparison_plots/results_{results_dir}/WC_corr_matrix_{BP}_{scenario}{file_suffix}.pdf"
+                filename = f"{working_dir}/comparison_plots/results_{results_dir}/WC_corr_matrix_{scenario}_{BP}_{scenario}{file_suffix}.pdf"
                 if save_fig: plt.savefig(filename)
 
     if show_plots:
