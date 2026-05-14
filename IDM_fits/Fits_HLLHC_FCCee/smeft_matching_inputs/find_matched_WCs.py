@@ -14,12 +14,19 @@ def find_matched_WCs(wilson_coefficients):
 
     BP_input_dir = "/cephfs/user/mrebuzzi/phd/HiggsTools/future_projections/scan_output/IDM_scan_output"
     BP_dicts_filename = f"{BP_input_dir}/Benchmark_Points_outliers_dicts.pkl"
+    BP_dicts_lambda1_filename = f"{BP_input_dir}/Benchmark_Points_lambda1_dicts.pkl"
 
     with open(BP_dicts_filename, 'rb') as f:
         BPs = pickle.load(f)
         bp_model_pars = BPs["model_pars"][2::2]
 
+    with open(BP_dicts_lambda1_filename, 'rb') as f:
+        BPs = pickle.load(f)
+        bp_model_pars_lambda1 = BPs["model_pars"]
+
     print("BP model parameters:", bp_model_pars)
+    print("BP model parameters (lambda1):", bp_model_pars_lambda1)
+    bp_model_pars[0] = bp_model_pars_lambda1 # BP 0 is BP_lambda1
 
     mu2 = np.sqrt( np.array([bp["mu2sq"] for bp in bp_model_pars]) ); print("\nmu2:", mu2)
     lam1 = np.array([bp["lam1"] for bp in bp_model_pars]); print("\nlam1:", lam1)

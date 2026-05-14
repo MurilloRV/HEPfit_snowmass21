@@ -1112,7 +1112,8 @@ def generate_pull_plots_obs(
                 ax.set_yticklabels(labels[param_breaks[k]:param_breaks[k+1]], fontsize=y_label_size)
                 # ax.set_yticklabels(labels[param_breaks[k]:param_breaks[k+1]],fontsize=fontsize)
                 x_limits = [plt.xlim()[0], plt.xlim()[1]]
-                y_limits = [plt.ylim()[0] +1.0, plt.ylim()[1] -1.0]
+                # y_limits = [plt.ylim()[0] +1.0, plt.ylim()[1] -1.0]
+                y_limits = [plt.ylim()[0], plt.ylim()[1]]
                 if WC_list_for_prediction_pulls is not None:
                     y_limits = [plt.ylim()[0], plt.ylim()[1]]
                 ax.hlines(y=-y, xmin=x_limits[0], xmax=x_limits[1], color="black", linestyle="--", linewidth=0.5)
@@ -1123,7 +1124,7 @@ def generate_pull_plots_obs(
                 if compare_with_SM or (WC_list_for_prediction_pulls is not None):
                     ax.set_xlabel(r'Pulls (w.r.t. SM prediction)', fontsize=15)
                 elif matched_predictions_vs_BSM:
-                    ax.set_xlabel(r'Pulls for matched SMEFT pred. w.r.t. BSM pred.', fontsize=15)
+                    ax.set_xlabel(r'Pulls for matched SMEFT pred. w.r.t. BSM pred.', fontsize=9)
                 else:
                     ax.set_xlabel(r'Pulls', fontsize=15)
                 ax.legend(loc=legend_loc, fontsize=8)
