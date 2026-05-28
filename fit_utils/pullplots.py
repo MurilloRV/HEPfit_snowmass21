@@ -819,6 +819,7 @@ def generate_pull_plots_obs(
     compare_with_SM=False,
     WC_list_for_prediction_pulls=None,
     matched_predictions_vs_BSM=False,
+    BP_lambdas=None,
     figsize=(5, 7),
     legend_loc="best",
     file_suffix="",
@@ -870,6 +871,9 @@ def generate_pull_plots_obs(
     matched_predictions_vs_BSM : bool, optional
         If True, this function will evaluate the pulls of the BSM model 
         predictions w.r.t. to the SMEFT predictions using matched Wilson coef.
+    BP_lambdas : list of floats, optional
+        List of predictions for kappa_lambda for each BP. If set, kappa_lambda will be added as an 
+        observable with the corresponding central value for each BP. 
     figsize : tuple, optional
         Figure size for the plots. Default is (5, 7).
     legend_loc : str, optional
@@ -920,6 +924,7 @@ def generate_pull_plots_obs(
         only_higgs_fccee_obs=only_higgs_fccee_obs,
         read_model_parameters=False,
         compare_with_SM=compare_with_SM,
+        BP_lambdas=BP_lambdas,
     )
 
     print(f"\nReading fit results")

@@ -34,7 +34,8 @@ use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all="false" # I
 # Additional, independent flags
 modify_all_ewpos="true" # Modify also the EWPO central values for *current* observables, not just future ones
 with_Af="true" # Use BSM predictions for sin2theta_eff to evaluate A_f and A_FB_f asymmetries and use these in the fit inputs
-EWPO_2L="true" # Use 2-loop IDM predictions for EWPO, instead of 1-loop ones
+EWPO_2L="false" # Use 2-loop IDM predictions for EWPO, instead of 1-loop ones
+shifted_sin2thetaEff="true" # Shift the sin2thetaEff value using the HEPfit prediction for the SM
 LoopHd6NoSubleading="false" # Do not include the subleading corrections (resummation) in kappa_lambda NLO effects. That is, Sets dZH1 = dZH2 = dZH
 noLoopH3d6Quad="false" # Do not include quadratic modifications in the SM loops in Higgs observables due to the dim 6 interactions that contribute to the trilinear Higgs coupling. That is, sets cLH3d62 = 0.0
 LoopHd6noWFR="false" # Completely remove the wavefunction renormalization contribution to the kappa_lambda NLO effects. That is, sets dZH1 = dZH2 = 0.0
@@ -208,6 +209,7 @@ for BP_Name in "${BP_Names_Total[@]}"; do
         if [ "$modify_all_ewpos" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_all_EW_mods"; fi
         if [ "$with_Af" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_with_Af"; fi
         if [ "$EWPO_2L" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_EWPO_2L"; fi
+        if [ "$shifted_sin2thetaEff" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_shifted_sin2thetaEff"; fi
         if [ "$noLoopH3d6Quad" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_noLoopH3d6Quad"; fi
         if [ "$LoopHd6NoSubleading" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_LoopHd6NoSubleading"; fi
         if [ "$LoopHd6noWFR" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_LoopHd6noWFR"; fi
@@ -482,10 +484,12 @@ for BP_Name in "${BP_Names_Total[@]}"; do
 
         if [ "$with_Af" == "true" ]; then
             NEW_EWPO_CONF_FILE="${EWPO_CONF_FILE}_with_Af"
+            if [ "$shifted_sin2thetaEff" == "true" ]; then NEW_EWPO_CONF_FILE="${NEW_EWPO_CONF_FILE}_shifted_sin2thetaEff"; fi
             cp ${EWPO_CONF_FILE}.conf ${NEW_EWPO_CONF_FILE}.conf
             
             if [ "$modify_all_ewpos" == "true" ]; then
                 NEW_EWPO_CONF_FILE_CURRENT="${EWPO_CONF_FILE_CURRENT}_with_Af"
+                if [ "$shifted_sin2thetaEff" == "true" ]; then NEW_EWPO_CONF_FILE_CURRENT="${NEW_EWPO_CONF_FILE_CURRENT}_shifted_sin2thetaEff"; fi
                 sed -i "\/IncludeFile ${EWPO_CONF_FILE_CURRENT}.conf/c\\IncludeFile ${NEW_EWPO_CONF_FILE_CURRENT}.conf" ${NEW_EWPO_CONF_FILE}.conf
             fi
 
@@ -494,6 +498,7 @@ for BP_Name in "${BP_Names_Total[@]}"; do
             # sed -i "\/IncludeFile ObservablesEW_HLLHC_kappa_scaled.conf/c\\IncludeFile ${NEW_EWPO_CONF_FILE_HLLHC}.conf" ${NEW_EWPO_CONF_FILE}.conf
 
             NEW_EWPO_CONF_FILE_FCCee_Zpole="${EWPO_CONF_FILE_FCCee_Zpole}_with_Af"
+            if [ "$shifted_sin2thetaEff" == "true" ]; then NEW_EWPO_CONF_FILE_FCCee_Zpole="${NEW_EWPO_CONF_FILE_FCCee_Zpole}_shifted_sin2thetaEff"; fi
             sed -i "\/IncludeFile ${EWPO_CONF_FILE_FCCee_Zpole}.conf/c\\IncludeFile ${NEW_EWPO_CONF_FILE_FCCee_Zpole}.conf" ${NEW_EWPO_CONF_FILE}.conf
 
             # No A_f/A_FB_f obs for FCC_ee_WW
@@ -505,12 +510,14 @@ for BP_Name in "${BP_Names_Total[@]}"; do
             sed -i "\/IncludeFile ..\/..\/${EWPO_CONF_FILE}.conf /c\\$NEW_MODEL_EWS" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
 
             EWPO_PYTHON_ARG="${EWPO_PYTHON_ARG} --with_Af"
+             if [ "$shifted_sin2thetaEff" == "true" ]; then EWPO_PYTHON_ARG="${EWPO_PYTHON_ARG} --shifted_sin2thetaEff"; fi
             EWPO_CONF_FILE="${NEW_EWPO_CONF_FILE}"
 
             EWPO_CONF_FILE_CURRENT="${NEW_EWPO_CONF_FILE_CURRENT}"
             # EWPO_CONF_FILE_HLLHC="${NEW_EWPO_CONF_FILE_HLLHC}"
             EWPO_CONF_FILE_FCCee_Zpole="${NEW_EWPO_CONF_FILE_FCCee_Zpole}"
             # EWPO_CONF_FILE_FCCee_WW="${NEW_EWPO_CONF_FILE_FCCee_WW}"
+
         fi
 
         if [ "$EWPO_2L" == "true" ]; then

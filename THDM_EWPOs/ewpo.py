@@ -23,15 +23,20 @@ def checkwithin(testval, minval, maxval):
     else: 
         return False
 
-def ewpo1L2L(mH,mA,mHp,l345):
+def ewpo1L2L(mH,mA,mHp,l345, test=False):
 
-    out=open(f"{working_dir}/output.txt",'w')
-
-    subprocess.call([f"{working_dir}/THDM_EWPOS/IHDM_allEWPOs.bin", str(mH), str(mA), str(mHp), str(l345)], stdout=out)
+    if test:
+        out_path = f"{working_dir}/output_test.txt"
+        out=open(out_path,'w')
+        subprocess.call([f"{working_dir}/THDM_EWPOS/IHDM_allEWPOs_test.bin", str(mH), str(mA), str(mHp), str(l345)], stdout=out)
+    else:
+        out_path = f"{working_dir}/output.txt"
+        out=open(out_path,'w')
+        subprocess.call([f"{working_dir}/THDM_EWPOS/IHDM_allEWPOs.bin", str(mH), str(mA), str(mHp), str(l345)], stdout=out)
 
     out.close()
 
-    val=open(f"{working_dir}/output.txt",'r')
+    val=open(out_path,'r')
 
     for line in val:
         if 'MW1L:' in line:
@@ -53,16 +58,18 @@ def ewpo1L2L(mH,mA,mHp,l345):
 	
 def ewpo1L(mH,mA,mHp,l345, test=False):
 
-    out=open(f"{working_dir}/output.txt",'w')
-
     if test:
+        out_path = f"{working_dir}/output_test.txt"
+        out=open(out_path,'w')
         subprocess.call([f"{working_dir}/THDM_EWPOS/IHDM_allEWPOs_test.bin", str(mH), str(mA), str(mHp), str(l345)], stdout=out)
     else:
+        out_path = f"{working_dir}/output.txt"
+        out=open(out_path,'w')
         subprocess.call([f"{working_dir}/THDM_EWPOS/IHDM_allEWPOs.bin", str(mH), str(mA), str(mHp), str(l345)], stdout=out)
 
     out.close()
 
-    val=open(f"{working_dir}/output.txt",'r')
+    val=open(out_path,'r')
 
     for line in val:
         if 'MW1L:' in line:
@@ -78,16 +85,18 @@ def ewpo1L(mH,mA,mHp,l345, test=False):
 	
 def ewpo2L(mH,mA,mHp,l345, test=False):
 
-    out=open(f"{working_dir}/output.txt",'w')
-
     if test:
+        out_path = f"{working_dir}/output_test.txt"
+        out=open(out_path,'w')
         subprocess.call([f"{working_dir}/THDM_EWPOS/IHDM_allEWPOs_test.bin", str(mH), str(mA), str(mHp), str(l345)], stdout=out)
     else:
+        out_path = f"{working_dir}/output.txt"
+        out=open(out_path,'w')
         subprocess.call([f"{working_dir}/THDM_EWPOS/IHDM_allEWPOs.bin", str(mH), str(mA), str(mHp), str(l345)], stdout=out)
 
     out.close()
 
-    val=open(f"{working_dir}/output.txt",'r')
+    val=open(out_path,'r')
 
     for line in val:
         if 'MW2L:' in line:

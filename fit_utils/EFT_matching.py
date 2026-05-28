@@ -19,7 +19,7 @@ import copy, subprocess
 vev = 246.21965
 Mh = 125.1
 MZ = 91.1882
-MW = 80.379
+MW = 80.360
 
 cw = MW/MZ
 sw = np.sqrt(1-cw**2)

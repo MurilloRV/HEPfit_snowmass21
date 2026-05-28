@@ -216,8 +216,11 @@ def find_tex_label_par(par_tex, par):
     return tex_label
 
 def find_tex_label_obs(obs_tex, obs):
+
+    if obs == "deltalHHH_HLLHC": tex_label = r"$\kappa_\lambda$"
+
     ### FCC-ee_240
-    if obs == "eeZH_FCCee240":         tex_label = r"$\mu_{ZH}$(FCC-ee$_{240}$)"
+    elif obs == "eeZH_FCCee240":         tex_label = r"$\mu_{ZH}$(FCC-ee$_{240}$)"
     elif obs == "eeZHbb_FCCee240":     tex_label = r"$\mu_{ZH,bb}$(FCC-ee$_{240}$)"
     elif obs == "eeHvvbb_FCCee240":    tex_label = r"$\mu_{\nu\nu H,bb}$(FCC-ee$_{240}$)"
     elif obs == "eeZHcc_FCCee240":     tex_label = r"$\mu_{ZH,cc}$(FCC-ee$_{240}$)"
@@ -440,7 +443,10 @@ def read_WC_predictions(
 
                         if observable in observables:
                             idx = observables.index(observable)
-                            obs_predictions[wc][point][idx] = float(columns[2])
+                            if observable == "deltalHHH_HLLHC":
+                                obs_predictions[wc][point][idx] = float(columns[2]) + 1
+                            else:
+                                obs_predictions[wc][point][idx] = float(columns[2])
 
             if np.isnan(obs_predictions[wc][point]).sum() != 0:
                 print(f"Warning: Number of predictions for {wc} does not match number of observables.")
@@ -553,6 +559,7 @@ def find_configuration_files(
         "_all_EW_mods",
         "_with_Af",
         "_EWPO_2L",
+        "_shifted_sin2thetaEff",
         "_noLoopH3d6Quad",
         "_all_EW_mods_noLoopH3d6Quad",
     ]
@@ -665,6 +672,9 @@ def find_configuration_files(
                                                             if "_with_Af" in additional_flag_all:
                                                                 EWPO_conf1_new = EWPO_conf1 + "_with_Af"
                                                                 EWPO_conf4_new = EWPO_conf4 + "_with_Af"
+                                                                if "_shifted_sin2thetaEff" in additional_flag_all:
+                                                                    EWPO_conf1_new = EWPO_conf1_new + "_shifted_sin2thetaEff"
+                                                                    EWPO_conf4_new = EWPO_conf4_new + "_shifted_sin2thetaEff"
                                                                 conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(EWPO_conf1)] = EWPO_conf1_new
                                                                 conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(EWPO_conf4)] = EWPO_conf4_new
                                                                 EWPO_conf1 = EWPO_conf1_new
@@ -672,6 +682,8 @@ def find_configuration_files(
 
                                                                 if "_all_EW_mods" in additional_flag_all:
                                                                     EWPO_conf2_new = EWPO_conf2 + "_with_Af"
+                                                                    if "_shifted_sin2thetaEff" in additional_flag_all:
+                                                                        EWPO_conf2_new = EWPO_conf2_new + "_shifted_sin2thetaEff"
                                                                     conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(EWPO_conf2)] = EWPO_conf2_new
                                                                     EWPO_conf2 = EWPO_conf2_new
 
@@ -723,6 +735,7 @@ def read_configuration_files(
     only_higgs_fccee_obs=False,
     read_model_parameters=False,
     compare_with_SM=False,
+    BP_lambdas=None,
 ):
     """
     Function to read the configuration files for a given fit setup, in order to obtain 
@@ -757,6 +770,9 @@ def read_configuration_files(
     compare_with_SM : bool, optional
         If set to true, use SM predictions as the central values for the 
         pulls. Default is False
+    BP_lambdas : list of floats, optional
+        List of predictions for kappa_lambda for each BP. If set, kappa_lambda will be added as an 
+        observable with the corresponding central value for each BP. 
 
     Returns
     -------
@@ -784,7 +800,7 @@ def read_configuration_files(
     central_values_obs = {}
     input_uncertainties = {}
 
-    for BP in BPs:
+    for BP_idx, BP in enumerate(BPs):
         observables[BP] = {}
         observables_tex[BP] = {}
         central_values_obs[BP] = {}
@@ -815,10 +831,12 @@ def read_configuration_files(
                             if (line.startswith("Observable ") \
                                 or line.startswith("AsyGausObservable ")):
 
-                                if read_model_parameters==False and not (columns[6]=="MCMC" and columns[7]=="weight"):
-                                    continue
-
                                 observable = columns[1]
+
+                                if read_model_parameters==False and \
+                                    not (columns[6]=="MCMC" and columns[7]=="weight") and \
+                                    not (observable == "deltalHHH_HLLHC" and BP_lambdas is not None):
+                                    continue
 
                                 if  (only_obs is not None and observable not in only_obs) or \
                                     (skip_obs is not None and observable in skip_obs) or \
@@ -831,12 +849,16 @@ def read_configuration_files(
                                     uncertainty = 0.0
                                 else:
                                     observable_tex_label = find_tex_label_obs(columns[3], observable)
-                                    central_value = float(columns[8])
-                                    uncertainty = float(columns[9])
+                                    if observable == "deltalHHH_HLLHC" and BP_lambdas is not None:
+                                        central_value = float(BP_lambdas[BP_idx])
+                                        uncertainty = 1.0 # Placeholder; no uncertainty info
+                                    else:
+                                        central_value = float(columns[8])
+                                        uncertainty = float(columns[9])
 
                                 observables[BP][scenario][model_spec].append(observable)
-                                observables_tex[BP][scenario][model_spec].append(observable_tex_label)
                                 central_values_obs[BP][scenario][model_spec].append(central_value)
+                                observables_tex[BP][scenario][model_spec].append(observable_tex_label)
                                 input_uncertainties[BP][scenario][model_spec].append(uncertainty)
                                 
 
@@ -940,8 +962,12 @@ def read_fit_results(
 
                     for line_nr, obs in zip(line_nrs, observables[BP][scenario][model_spec]):                    
                         columns = lines[line_nr + 1].split()
-                        results[BP][scenario][model_spec].append([float(columns[3]),    # Mean
-                                                                  float(columns[5]),])  # Uncertainty
+                        if obs == "deltalHHH_HLLHC":
+                            results[BP][scenario][model_spec].append([float(columns[3])+1,  # Mean
+                                                                      float(columns[5]),])  # Uncertainty
+                        else:
+                            results[BP][scenario][model_spec].append([float(columns[3]),    # Mean
+                                                                      float(columns[5]),])  # Uncertainty
 
                 results[BP][scenario][model_spec] = np.array(results[BP][scenario][model_spec])
 

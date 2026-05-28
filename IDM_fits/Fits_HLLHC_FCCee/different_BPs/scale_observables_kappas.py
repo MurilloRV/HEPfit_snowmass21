@@ -5,6 +5,10 @@ import subprocess
 import argparse
 import numpy as np
 import yaml
+import os, sys
+
+sys.path.append(os.path.abspath("/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/THDM_EWPOs/"))
+import ewpo
 
 # Initialize parser
 parser = argparse.ArgumentParser()
@@ -14,6 +18,7 @@ parser.add_argument("--realistic", help = "Use realistic, asymmetric uncertainti
 parser.add_argument("--ewpos_all", help = "Modify also the EWPO central values for current observables", action="store_true")
 parser.add_argument("--with_Af", help = "Use BSM predictions for sin2theta_eff to evaluate A_f and A_FB_f asymmetries and use these in the fit inputs", action="store_true")
 parser.add_argument("--EWPO_2L", help = "Use 2-loop IDM predictions for EWPO, instead of 1-loop ones", action="store_true")
+parser.add_argument("--shifted_sin2thetaEff", help = "Shift the sin2thetaEff value using the HEPfit prediction for the SM", action="store_true")
 parser.add_argument("--no_1L_BSM_sqrt_s", help = "Do not include momentum dependent BSM 1L corrections to Z->ZH", action="store_true")
 parser.add_argument("--no_1L_BSM", help = "Do not include ANY BSM 1L corrections to Z->ZH", action="store_true")
 parser.add_argument("--pure_1L_BSM", help = "Only includes strictly 1L BSM contributions, no SM-like diagrams with insertions of kappa_lambda", action="store_true")
@@ -38,6 +43,7 @@ realistic_HL_LHC_k_lambda_uncertainties             = args.realistic
 modify_all_ewpos                                    = args.ewpos_all
 with_Af                                             = args.with_Af
 EWPO_2L                                             = args.EWPO_2L
+shifted_sin2thetaEff                                = args.shifted_sin2thetaEff
 no_1L_BSM_sqrt_s                                    = args.no_1L_BSM_sqrt_s
 no_1L_BSM                                           = args.no_1L_BSM
 pure_1L_BSM                                         = args.pure_1L_BSM
@@ -97,6 +103,7 @@ elif exclusive_flag_count == 1 and not realistic_HL_LHC_k_lambda_uncertainties:
         --ewpos_all,
         --with_Af,
         --EWPO_2L,
+        --shifted_sin2thetaEff,
         --no_1L_BSM_sqrt_s,
         --no_1L_BSM,
         --pure_1L_BSM,
@@ -143,6 +150,16 @@ if BP in BP_Names:
             Mw2L           = float(EWPOs['Mw2L'])
             sin2thetaEff2L = float(EWPOs['sin2thetaEff2L'])
             GammaZ2L       = float(EWPOs['GammaZ2L'])
+
+            model_pars = data_loaded['model_pars']
+            mH = float(model_pars['mH'])
+            mA = float(model_pars['mA'])
+            mHp = float(model_pars['mHp'])
+            lam1 = float(model_pars['lam1'])
+            lam2 = float(model_pars['lam2'])
+            lam3 = float(model_pars['lam3'])
+            lam4 = float(model_pars['lam4'])
+            lam5 = float(model_pars['lam5'])
 
         except yaml.YAMLError as exc:
             print(exc)
@@ -648,6 +665,39 @@ elif BP == "BP_new_10":
 else:
     raise ValueError("Could not determine benchmark point!")
 
+
+ewpo.working_dir = "/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/THDM_EWPOs"
+
+large_mass = 100_000
+sl_SM_value_1L = ewpo.sl1L_vec(large_mass, large_mass, large_mass, 0.0, test=True)
+sl_SM_value_2L = ewpo.sl2L_vec(large_mass, large_mass, large_mass, 0.0, test=True)  # 1L and 2L values seem to be very close.
+
+sl_value_HEPfit = 0.2314833512991618
+
+def sin2thetaEff1L_shift_calc(loop_order = 1,):
+    if loop_order == 1:
+        delta_sin2thetaEff_BSM = ewpo.sl1L_vec(mH, mA, mHp, lam3+lam4+lam5, test=True) - sl_SM_value_2L
+    elif loop_order == 2:
+        delta_sin2thetaEff_BSM = ewpo.sl1L_vec(mH, mA, mHp, lam3+lam4+lam5, test=True) - sl_SM_value_2L
+
+    sin2thetaEff_shifted = sl_value_HEPfit + delta_sin2thetaEff_BSM
+
+    return sin2thetaEff_shifted
+
+if shifted_sin2thetaEff:
+    sin2thetaEff1L = sin2thetaEff1L_shift_calc(loop_order=1)
+    sin2thetaEff2L = sin2thetaEff1L_shift_calc(loop_order=2)
+
+if EWPO_2L:
+    Mw = Mw2L
+    sin2thetaEff = sin2thetaEff2L
+    GammaZ = GammaZ2L
+else:
+    Mw = Mw1L
+    sin2thetaEff = sin2thetaEff1L
+    GammaZ = GammaZ1L
+
+
 def A_f(f, sin2thetaEff):
     if f in ['u', 'c', 't']:
         T3 = 0.5
@@ -666,6 +716,50 @@ def A_f(f, sin2thetaEff):
 
     return 2*gV*gA/(gV**2 + gA**2)
 
+def sin2thetaEff_from_Af(f, Af):
+    if f in ['u', 'c', 't']:
+        Q = 2.0/3.0
+    elif f in ['d', 's', 'b']:
+        Q = -1.0/3.0
+    elif f in ['e', 'mu', 'tau']:
+        Q = -1.0
+    else:
+        raise ValueError("Invalid fermion type for A_f calculation")
+
+    return ( np.sqrt(1 - Af**2) - (1 - Af)) / (4*np.abs(Q)*Af)
+
+# def A_f_test(f, sin2thetaEff):
+#     if f in ['u', 'c', 't']:
+#         Q = 2.0/3.0
+#         A_f_SM = 0.6679249978345343  # from HEPfit
+
+#     elif f in ['d', 's', 'b']:
+#         Q = -1.0/3.0
+#         A_f_SM = 0.9347523361749206  # from HEPfit
+
+#     elif f in ['e', 'mu', 'tau']:
+#         Q = -1.0
+#         A_f_SM = 0.1473249852597804  # from HEPfit
+#     else:
+#         raise ValueError("Invalid fermion type for A_f calculation")
+
+#     sin2thetaEff_SM = sin2thetaEff_from_Af(f, A_f_SM)
+#     delta_sin2thetaEff = sin2thetaEff - sin2thetaEff_SM
+
+#     gV_over_gA_SM = (1 - 4*np.abs(Q)*sin2thetaEff_SM)
+
+#     delta_A_f = (2*(1 - gV_over_gA_SM**2)/(1 + gV_over_gA_SM**2)**2) * (-4*np.abs(Q)*delta_sin2thetaEff)
+
+#     A_f_value = A_f_SM + delta_A_f
+
+#     return A_f_value
+
+# def A_FB_f_test(f, sin2thetaEff):
+#     A_f_value = A_f_test(f, sin2thetaEff)
+#     A_e_value = A_f_test('e', sin2thetaEff)
+#     A_FB_value = 3/4 * A_e_value * A_f_value 
+#     return A_FB_value
+
 def A_FB_f(f, sin2thetaEff):
     A_f_value = A_f(f, sin2thetaEff)
     A_e_value = A_f('e', sin2thetaEff)
@@ -673,14 +767,6 @@ def A_FB_f(f, sin2thetaEff):
     return A_FB_value
 
 
-if EWPO_2L:
-    Mw = Mw2L
-    sin2thetaEff = sin2thetaEff2L
-    GammaZ = GammaZ2L
-else:
-    Mw = Mw1L
-    sin2thetaEff = sin2thetaEff1L
-    GammaZ = GammaZ1L
 
 
 if no_1L_BSM_sqrt_s:
@@ -1792,11 +1878,14 @@ if modify_all_ewpos:
 
 if with_Af:
     output_files = [output_file + "_with_Af" for output_file in output_files]
+if shifted_sin2thetaEff:
+    output_files = [output_file + "_shifted_sin2thetaEff" for output_file in output_files]
 
 input_files.append(file_dir + "ObservablesEW_HLLHC")
 input_files.append(file_dir + "ObservablesEW_FCCee_WW_SM",)
 output_files.append(file_dir + "ObservablesEW_HLLHC_kappa_scaled")
 output_files.append(file_dir + "ObservablesEW_FCCee_WW_SM_kappa_scaled")
+
 
 if EWPO_2L:
     output_files = [output_file + "_EWPO_2L" for output_file in output_files]
