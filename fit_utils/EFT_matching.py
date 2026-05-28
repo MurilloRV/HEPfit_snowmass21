@@ -11,15 +11,23 @@ from matplotlib.animation import ArtistAnimation, FuncAnimation
 from matplotlib.backends.backend_pdf import PdfPages
 import copy, subprocess
 
-vev = 246.
-Mh = 125
-MZ = 91.1876
+# vev = 246.
+# Mh = 125
+# MZ = 91.1876
+
+# Use more precise values, matching HEPfit's inputs?
+vev = 246.21965
+Mh = 125.1
+MZ = 91.1882
 MW = 80.379
+
 cw = MW/MZ
 sw = np.sqrt(1-cw**2)
 gL = 2*MW/vev
 gy = np.sqrt(4*MZ**2/vev**2 - gL**2)
 hbar = 1 / (16 * np.pi**2)
+
+
 
 mtop = 172.5  # GeV
 Qren = mtop  # Renormalization scale for loop calculations
