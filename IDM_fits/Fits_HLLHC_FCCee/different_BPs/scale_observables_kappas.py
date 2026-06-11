@@ -18,7 +18,7 @@ parser.add_argument("--realistic", help = "Use realistic, asymmetric uncertainti
 parser.add_argument("--ewpos_all", help = "Modify also the EWPO central values for current observables", action="store_true")
 parser.add_argument("--with_Af", help = "Use BSM predictions for sin2theta_eff to evaluate A_f and A_FB_f asymmetries and use these in the fit inputs", action="store_true")
 parser.add_argument("--EWPO_2L", help = "Use 2-loop IDM predictions for EWPO, instead of 1-loop ones", action="store_true")
-parser.add_argument("--shifted_sin2thetaEff", help = "Shift the sin2thetaEff value using the HEPfit prediction for the SM", action="store_true")
+parser.add_argument("--shifted_sin2thetaEff_fermion_spec", help = "Shift the sin2thetaEff value using the HEPfit prediction for the SM", action="store_true")
 parser.add_argument("--no_1L_BSM_sqrt_s", help = "Do not include momentum dependent BSM 1L corrections to Z->ZH", action="store_true")
 parser.add_argument("--no_1L_BSM", help = "Do not include ANY BSM 1L corrections to Z->ZH", action="store_true")
 parser.add_argument("--pure_1L_BSM", help = "Only includes strictly 1L BSM contributions, no SM-like diagrams with insertions of kappa_lambda", action="store_true")
@@ -44,7 +44,7 @@ realistic_HL_LHC_k_lambda_uncertainties             = args.realistic
 modify_all_ewpos                                    = args.ewpos_all
 with_Af                                             = args.with_Af
 EWPO_2L                                             = args.EWPO_2L
-shifted_sin2thetaEff                                = args.shifted_sin2thetaEff
+shifted_sin2thetaEff_fermion_spec                   = args.shifted_sin2thetaEff_fermion_spec
 no_1L_BSM_sqrt_s                                    = args.no_1L_BSM_sqrt_s
 no_1L_BSM                                           = args.no_1L_BSM
 pure_1L_BSM                                         = args.pure_1L_BSM
@@ -105,7 +105,7 @@ elif exclusive_flag_count == 1 and not realistic_HL_LHC_k_lambda_uncertainties:
         --ewpos_all,
         --with_Af,
         --EWPO_2L,
-        --shifted_sin2thetaEff,
+        --shifted_sin2thetaEff_fermion_spec,
         --no_1L_BSM_sqrt_s,
         --no_1L_BSM,
         --pure_1L_BSM,
@@ -145,13 +145,13 @@ if BP in BP_Names:
                 kappas[key] = float(data_loaded['kappas'][key])
 
             EWPOs = data_loaded['EWPOs']
-            Mw1L           = float(EWPOs['Mw1L'])
-            sin2thetaEff1L = float(EWPOs['sin2thetaEff1L'])
-            GammaZ1L       = float(EWPOs['GammaZ1L'])
+            Mw1L             = float(EWPOs['Mw1L'])
+            sin2thetaEff1L_l = float(EWPOs['sin2thetaEff1L'])
+            GammaZ1L         = float(EWPOs['GammaZ1L'])
 
-            Mw2L           = float(EWPOs['Mw2L'])
-            sin2thetaEff2L = float(EWPOs['sin2thetaEff2L'])
-            GammaZ2L       = float(EWPOs['GammaZ2L'])
+            Mw2L             = float(EWPOs['Mw2L'])
+            sin2thetaEff2L_l = float(EWPOs['sin2thetaEff2L'])
+            GammaZ2L         = float(EWPOs['GammaZ2L'])
 
             model_pars = data_loaded['model_pars']
             mH = float(model_pars['mH'])
@@ -670,33 +670,77 @@ else:
 
 ewpo.working_dir = "/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/THDM_EWPOs"
 
+# THDM_EWPOS only calculates the leptonic angle 
+sin2thetaEff1L_u = sin2thetaEff1L_l
+sin2thetaEff2L_u = sin2thetaEff2L_l
+sin2thetaEff1L_d = sin2thetaEff1L_l
+sin2thetaEff2L_d = sin2thetaEff2L_l
+
 large_mass = 100_000
-sl_SM_value_1L = ewpo.sl1L_vec(large_mass, large_mass, large_mass, 0.0, test=True)
-sl_SM_value_2L = ewpo.sl2L_vec(large_mass, large_mass, large_mass, 0.0, test=True)  # 1L and 2L values seem to be very close.
+sl_l_SM_value_1L = ewpo.sl1L_vec(large_mass, large_mass, large_mass, 0.0, test=True)
+sl_l_SM_value_2L = ewpo.sl2L_vec(large_mass, large_mass, large_mass, 0.0, test=True)  # 1L and 2L values seem to be very close.
 
-sl_value_HEPfit = 0.2314833512991618
+# THDM_EWPOS only calculates the leptonic angle 
+sl_u_SM_value_1L = sl_l_SM_value_1L
+sl_u_SM_value_2L = sl_l_SM_value_2L
+sl_d_SM_value_1L = sl_l_SM_value_1L
+sl_d_SM_value_2L = sl_l_SM_value_2L
 
-def sin2thetaEff1L_shift_calc(loop_order = 1,):
+sl_l_value_HEPfit = 0.2314833512991618
+sl_u_value_HEPfit = 0.2313996282795594
+sl_d_value_HEPfit = 0.23272392335369205
+
+
+
+def sin2thetaEff1L_l_shift_calc(loop_order = 1,):
     if loop_order == 1:
-        delta_sin2thetaEff_BSM = ewpo.sl1L_vec(mH, mA, mHp, lam3+lam4+lam5, test=True) - sl_SM_value_2L
+        delta_sin2thetaEff_BSM = ewpo.sl1L_vec(mH, mA, mHp, lam3+lam4+lam5, test=True) - sl_l_SM_value_2L
     elif loop_order == 2:
-        delta_sin2thetaEff_BSM = ewpo.sl1L_vec(mH, mA, mHp, lam3+lam4+lam5, test=True) - sl_SM_value_2L
+        delta_sin2thetaEff_BSM = ewpo.sl1L_vec(mH, mA, mHp, lam3+lam4+lam5, test=True) - sl_l_SM_value_2L
 
-    sin2thetaEff_shifted = sl_value_HEPfit + delta_sin2thetaEff_BSM
+    sin2thetaEff_shifted = sl_l_value_HEPfit + delta_sin2thetaEff_BSM
 
     return sin2thetaEff_shifted
 
-if shifted_sin2thetaEff:
-    sin2thetaEff1L = sin2thetaEff1L_shift_calc(loop_order=1)
-    sin2thetaEff2L = sin2thetaEff1L_shift_calc(loop_order=2)
+def sin2thetaEff1L_u_shift_calc(loop_order = 1,):
+    if loop_order == 1:
+        delta_sin2thetaEff_BSM = ewpo.sl1L_vec(mH, mA, mHp, lam3+lam4+lam5, test=True) - sl_u_SM_value_2L
+    elif loop_order == 2:
+        delta_sin2thetaEff_BSM = ewpo.sl1L_vec(mH, mA, mHp, lam3+lam4+lam5, test=True) - sl_u_SM_value_2L
+
+    sin2thetaEff_shifted = sl_u_value_HEPfit + delta_sin2thetaEff_BSM
+
+    return sin2thetaEff_shifted
+
+def sin2thetaEff1L_d_shift_calc(loop_order = 1,):
+    if loop_order == 1:
+        delta_sin2thetaEff_BSM = ewpo.sl1L_vec(mH, mA, mHp, lam3+lam4+lam5, test=True) - sl_d_SM_value_2L
+    elif loop_order == 2:
+        delta_sin2thetaEff_BSM = ewpo.sl1L_vec(mH, mA, mHp, lam3+lam4+lam5, test=True) - sl_d_SM_value_2L
+
+    sin2thetaEff_shifted = sl_d_value_HEPfit + delta_sin2thetaEff_BSM
+
+    return sin2thetaEff_shifted
+
+if shifted_sin2thetaEff_fermion_spec:
+    sin2thetaEff1L_l = sin2thetaEff1L_l_shift_calc(loop_order=1)
+    sin2thetaEff2L_l = sin2thetaEff1L_l_shift_calc(loop_order=2)
+    sin2thetaEff1L_u = sin2thetaEff1L_u_shift_calc(loop_order=1)
+    sin2thetaEff2L_u = sin2thetaEff1L_u_shift_calc(loop_order=2)
+    sin2thetaEff1L_d = sin2thetaEff1L_d_shift_calc(loop_order=1)
+    sin2thetaEff2L_d = sin2thetaEff1L_d_shift_calc(loop_order=2)
 
 if EWPO_2L:
     Mw = Mw2L
-    sin2thetaEff = sin2thetaEff2L
+    sin2thetaEff_l = sin2thetaEff2L_l
+    sin2thetaEff_u = sin2thetaEff2L_u
+    sin2thetaEff_d = sin2thetaEff2L_d
     GammaZ = GammaZ2L
 else:
     Mw = Mw1L
-    sin2thetaEff = sin2thetaEff1L
+    sin2thetaEff_l = sin2thetaEff1L_l
+    sin2thetaEff_u = sin2thetaEff1L_u
+    sin2thetaEff_d = sin2thetaEff1L_d
     GammaZ = GammaZ1L
 
 
@@ -762,9 +806,9 @@ def sin2thetaEff_from_Af(f, Af):
 #     A_FB_value = 3/4 * A_e_value * A_f_value 
 #     return A_FB_value
 
-def A_FB_f(f, sin2thetaEff):
-    A_f_value = A_f(f, sin2thetaEff)
-    A_e_value = A_f('e', sin2thetaEff)
+def A_FB_f(f, sin2thetaEff_e, sin2thetaEff_f):
+    A_e_value = A_f('e', sin2thetaEff_e)
+    A_f_value = A_f(f, sin2thetaEff_f)
     A_FB_value = 3/4 * A_e_value * A_f_value 
     return A_FB_value
 
@@ -1916,8 +1960,8 @@ if modify_all_ewpos:
 
 if with_Af:
     output_files = [output_file + "_with_Af" for output_file in output_files]
-if shifted_sin2thetaEff:
-    output_files = [output_file + "_shifted_sin2thetaEff" for output_file in output_files]
+if shifted_sin2thetaEff_fermion_spec:
+    output_files = [output_file + "_shifted_sin2thetaEff_fermion_spec" for output_file in output_files]
 
 input_files.append(file_dir + "ObservablesEW_HLLHC")
 output_files.append(file_dir + "ObservablesEW_HLLHC_kappa_scaled")
@@ -1950,28 +1994,28 @@ for input_file, output_file in zip(input_files, output_files):
 
                 if with_Af:
                     if (columns[2].startswith("Aelectron")):
-                        columns[8] = str(A_f('e', sin2thetaEff))
+                        columns[8] = str(A_f('e', sin2thetaEff_l))
                     elif (columns[2].startswith("Amuon")):
-                        columns[8] = str(A_f('mu', sin2thetaEff))
+                        columns[8] = str(A_f('mu', sin2thetaEff_l))
                     elif (columns[2].startswith("Atau")):
-                        columns[8] = str(A_f('tau', sin2thetaEff))
+                        columns[8] = str(A_f('tau', sin2thetaEff_l))
                     elif (columns[2].startswith("Abottom")):
-                        columns[8] = str(A_f('b', sin2thetaEff))
+                        columns[8] = str(A_f('b', sin2thetaEff_d))
                     elif (columns[2].startswith("Acharm")):
-                        columns[8] = str(A_f('c', sin2thetaEff))
+                        columns[8] = str(A_f('c', sin2thetaEff_u))
                     elif (columns[2].startswith("As")):
-                        columns[8] = str(A_f('s', sin2thetaEff))
+                        columns[8] = str(A_f('s', sin2thetaEff_d))
 
                     elif (columns[2].startswith("AFBelectron")):
-                        columns[8] = str(A_FB_f('e', sin2thetaEff))
+                        columns[8] = str(A_FB_f('e', sin2thetaEff_l, sin2thetaEff_l))
                     elif (columns[2].startswith("AFBmuon")):
-                        columns[8] = str(A_FB_f('mu', sin2thetaEff))
+                        columns[8] = str(A_FB_f('mu', sin2thetaEff_l, sin2thetaEff_l))
                     elif (columns[2].startswith("AFBtau")):
-                        columns[8] = str(A_FB_f('tau', sin2thetaEff))
+                        columns[8] = str(A_FB_f('tau', sin2thetaEff_l, sin2thetaEff_l))
                     elif (columns[2].startswith("AFBbottom")):
-                        columns[8] = str(A_FB_f('b', sin2thetaEff))
+                        columns[8] = str(A_FB_f('b', sin2thetaEff_l, sin2thetaEff_d))
                     elif (columns[2].startswith("AFBcharm")):
-                        columns[8] = str(A_FB_f('c', sin2thetaEff))
+                        columns[8] = str(A_FB_f('c', sin2thetaEff_l, sin2thetaEff_u))
 
                 # Rejoin the columns and write to the output file
                 outfile.write(" ".join(columns) + "\n")
