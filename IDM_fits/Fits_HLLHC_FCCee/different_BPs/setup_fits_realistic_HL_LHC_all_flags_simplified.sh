@@ -14,6 +14,8 @@ BP_others="BP_lambda1"
 
 # Using realistic HL-LHC observables
 
+updated_lumi="true" # Use updated luminosity values for the FCC-ee based on the latest projections (DOI:10.17181/n78xk-qcv56)
+
 # Default behavior: all flags set to false
 # Exclusive flag
 no_1L_BSM_sqrt_s="false" # Excludes the momentum dependence of the BSM k_Zh coupling
@@ -190,6 +192,8 @@ for BP_Name in "${BP_Names_Total[@]}"; do
                 MODEL_CONF_FILE="${MODEL_CONF_FILE}_NPmismatch365_${NPmismatch_FCCee365_path}"
             fi
         fi
+
+        if [ "$updated_lumi" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_updated_lumi"; fi
 
         if [ "$no_1L_BSM_sqrt_s" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_no_1L_BSM_sqrt_s"; fi
         if [ "$no_1L_BSM" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_no_1L_BSM"; fi
@@ -403,6 +407,33 @@ for BP_Name in "${BP_Names_Total[@]}"; do
             HIGGS_CONF="ObservablesHiggs"
         fi
 
+        HIGGS_240_CONF="ObservablesHiggs_FCCee_240_SM"
+        HIGGS_365_CONF="ObservablesHiggs_FCCee_365"
+        HIGGS_PYTHON_ARG=""
+        if [ "$updated_lumi" == "true" ]; then
+            NEW_HIGGS_CONF="${HIGGS_CONF}_updated_lumi"
+            cp ${HIGGS_CONF}.conf ${NEW_HIGGS_CONF}.conf
+            HIGGS_CONF="${NEW_HIGGS_CONF}"
+
+            NEW_HIGGS_240_CONF="ObservablesHiggs_FCCee_240_SM_updated_lumi"
+            cp ${NEW_HIGGS_240_CONF}.conf ${NEW_HIGGS_240_CONF}_kappa_scaled.conf
+            
+            NEW_HIGGS_365_CONF="ObservablesHiggs_FCCee_365_updated_lumi"
+            cp ${NEW_HIGGS_365_CONF}.conf ${NEW_HIGGS_365_CONF}_kappa_scaled.conf
+
+
+            NEW_HIGGS_240="IncludeFile ${NEW_HIGGS_240_CONF}_kappa_scaled.conf"
+            sed -i "\/${HIGGS_240_CONF}_kappa_scaled.conf/c\\$NEW_HIGGS_240" ${HIGGS_CONF}.conf
+            if [[ "${IDM_SCENARIOS[j]}" != "IDM_FCCee240" ]]; then
+                NEW_HIGGS_365="IncludeFile ${NEW_HIGGS_365_CONF}_kappa_scaled.conf"
+                sed -i "\/${HIGGS_365_CONF}_kappa_scaled.conf/c\\$NEW_HIGGS_365" ${HIGGS_CONF}.conf
+            fi
+
+            HIGGS_240_CONF="${NEW_HIGGS_240_CONF}"
+            HIGGS_365_CONF="${NEW_HIGGS_365_CONF}"
+            HIGGS_PYTHON_ARG="--updated_lumi"
+        fi
+
         if [ "$noLoopH3d6Quad" == "true" ]; then
             NEW_FlagLoopH3d6Quad="ModelFlag       LoopH3d6Quad    false"
             sed -i "/ModelFlag       LoopH3d6Quad    true/c\\$NEW_FlagLoopH3d6Quad" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
@@ -466,9 +497,31 @@ for BP_Name in "${BP_Names_Total[@]}"; do
         EWPO_CONF_FILE_FCCee_Zpole="ObservablesEW_FCCee_Zpole_SM_kappa_scaled"
         EWPO_CONF_FILE_FCCee_WW="ObservablesEW_FCCee_WW_SM_kappa_scaled"
 
+        if [ "$updated_lumi" == "true" ]; then
+            NEW_EWPO_CONF_FILE="${EWPO_CONF_FILE}_updated_lumi"
+            cp ${EWPO_CONF_FILE}.conf ${NEW_EWPO_CONF_FILE}.conf
+
+            NEW_EWPO_CONF_FILE_FCCee_Zpole="ObservablesEW_FCCee_Zpole_SM_updated_lumi"
+            cp ${NEW_EWPO_CONF_FILE_FCCee_Zpole}.conf ${NEW_EWPO_CONF_FILE_FCCee_Zpole}_kappa_scaled.conf
+            sed -i "\/IncludeFile ${EWPO_CONF_FILE_FCCee_Zpole}.conf/c\\IncludeFile ${NEW_EWPO_CONF_FILE_FCCee_Zpole}_kappa_scaled.conf" ${NEW_EWPO_CONF_FILE}.conf
+
+            NEW_EWPO_CONF_FILE_FCCee_WW="ObservablesEW_FCCee_WW_SM_updated_lumi"
+            cp ${NEW_EWPO_CONF_FILE_FCCee_WW}.conf ${NEW_EWPO_CONF_FILE_FCCee_WW}_kappa_scaled.conf
+            sed -i "\/IncludeFile ${EWPO_CONF_FILE_FCCee_WW}.conf/c\\IncludeFile ${NEW_EWPO_CONF_FILE_FCCee_WW}_kappa_scaled.conf" ${NEW_EWPO_CONF_FILE}.conf
+
+
+            NEW_MODEL_EWS="IncludeFile ../../${NEW_EWPO_CONF_FILE}.conf "
+            sed -i "\/IncludeFile ..\/..\/${EWPO_CONF_FILE}.conf /c\\$NEW_MODEL_EWS" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
+            sed -i "\/IncludeFile ..\/..\/${EWPO_CONF_FILE}.conf /c\\$NEW_MODEL_EWS" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
+
+            EWPO_CONF_FILE_FCCee_Zpole="${NEW_EWPO_CONF_FILE_FCCee_Zpole}_kappa_scaled"
+            EWPO_CONF_FILE_FCCee_WW="${NEW_EWPO_CONF_FILE_FCCee_WW}_kappa_scaled"
+            EWPO_CONF_FILE="${NEW_EWPO_CONF_FILE}"
+        fi
+
         if [ "$modify_all_ewpos" == "true" ]; then
             NEW_EWPO_CONF_FILE="${EWPO_CONF_FILE}_all_mods"
-            cp ObservablesEW.conf ${NEW_EWPO_CONF_FILE}.conf
+            cp ${EWPO_CONF_FILE}.conf ${NEW_EWPO_CONF_FILE}.conf
 
             NEW_EWPO_CONF_FILE_CURRENT="${EWPO_CONF_FILE_CURRENT}_kappa_scaled"
             sed -i "\/IncludeFile ${EWPO_CONF_FILE_CURRENT}.conf/c\\IncludeFile ${NEW_EWPO_CONF_FILE_CURRENT}.conf" ${NEW_EWPO_CONF_FILE}.conf
@@ -591,11 +644,11 @@ for BP_Name in "${BP_Names_Total[@]}"; do
                     cp ${HIGGS_CONF}.conf ${NEW_HIGGS_CONF}.conf 
                     HIGGS_CONF="${NEW_HIGGS_CONF}"
 
-                    NEW_HIGGS_240="IncludeFile ObservablesHiggs_FCCee_240_SM_kappa_scaled_${FLAG}.conf"
-                    sed -i "\/ObservablesHiggs_FCCee_240_SM_kappa_scaled.conf/c\\$NEW_HIGGS_240" ${HIGGS_CONF}.conf
+                    NEW_HIGGS_240="IncludeFile ${HIGGS_240_CONF}_kappa_scaled_${FLAG}.conf"
+                    sed -i "\/${HIGGS_240_CONF}_kappa_scaled.conf/c\\$NEW_HIGGS_240" ${HIGGS_CONF}.conf
                     if [[ "${IDM_SCENARIOS[j]}" != "IDM_FCCee240" ]]; then
-                        NEW_HIGGS_365="IncludeFile ObservablesHiggs_FCCee_365_kappa_scaled_${FLAG}.conf"
-                        sed -i "\/ObservablesHiggs_FCCee_365_kappa_scaled.conf/c\\$NEW_HIGGS_365" ${HIGGS_CONF}.conf
+                        NEW_HIGGS_365="IncludeFile ${HIGGS_365_CONF}_kappa_scaled_${FLAG}.conf"
+                        sed -i "\/${HIGGS_365_CONF}_kappa_scaled.conf/c\\$NEW_HIGGS_365" ${HIGGS_CONF}.conf
                     fi
                     if [[ "$no_HLLHC_Higgs" != "true" ]]; then
                         NEW_HIGGS_HLLHC="IncludeFile ObservablesHiggs_HLLHC_SM_kappa_scaled_${FLAG}.conf"
@@ -608,12 +661,12 @@ for BP_Name in "${BP_Names_Total[@]}"; do
                     sed -i "\/IncludeFile ..\/..\/ObservablesHiggs.*/c\\$NEW_MODEL_HIGGS" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
                     
 
-                    PYTHON_ARG="--${FLAG}"
+                    HIGGS_PYTHON_ARG="${HIGGS_PYTHON_ARG} --${FLAG}"
 
                     cd $TARGET_PATH
                     python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name}
                     python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name} --realistic
-                    python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name} --realistic ${PYTHON_ARG} --higgsconf ${HIGGS_CONF} ${EWPO_PYTHON_ARG}
+                    python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name} --realistic ${HIGGS_PYTHON_ARG} --higgsconf ${HIGGS_CONF} ${EWPO_PYTHON_ARG}
                     # Running the script also without the flag, so that the main fits (i.e. the ones with the flag set to false) are also set up properly
 
                 fi

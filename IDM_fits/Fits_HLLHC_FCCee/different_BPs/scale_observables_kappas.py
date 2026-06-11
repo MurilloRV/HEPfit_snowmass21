@@ -34,6 +34,7 @@ parser.add_argument("--use_HEPfit_C1_values_WFR_kala2_input_all", help = "Use th
 parser.add_argument("--use_HEPfit_C1_values_decayrates_WFR_kala2_input_all", help = "Use the HEPfit C1 values, also for the Higgs decay rates, instead of the Z2SSM values. Activates WFR_kala2_input_all as well", action="store_true")
 parser.add_argument("--use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all", help = "Include higher-order contributions to the ZZh vertex, beyond the 1L BSM contribution", action="store_true")
 parser.add_argument("--higgsconf", help = "Name of the ObsevablesHiggs configuration file", type=str, default=None)
+parser.add_argument("--updated_lumi", help = "Use updated luminosity values for the FCC-ee based on the latest projections (DOI:10.17181/n78xk-qcv56)", action="store_true")
 
 
 args = parser.parse_args()
@@ -59,6 +60,7 @@ use_HEPfit_C1_values_WFR_kala2_input_all            = args.use_HEPfit_C1_values_
 use_HEPfit_C1_values_decayrates_WFR_kala2_input_all = args.use_HEPfit_C1_values_decayrates_WFR_kala2_input_all
 use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all  = args.use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all
 higgsconf                                           = args.higgsconf
+updated_lumi                                        = args.updated_lumi
 
 exclusive_flag_count = sum([
     no_1L_BSM_sqrt_s, 
@@ -1334,6 +1336,31 @@ for coup, kaps in kappas.items():
 print(final_text)
 
 
+# if updated_lumi:
+#     lumi_FCCee_Zpole_old = 150. # ab^-1
+#     lumi_FCCee_Zpole_new = 205. # ab^-1
+
+#     lumi_FCCee_WW_old = 10.  # ab^-1
+#     lumi_FCCee_WW_new = 19.2 # ab^-1
+
+#     lumi_FCCee_240_old = 5.0  # ab^-1
+#     lumi_FCCee_240_new = 10.8 # ab^-1
+
+#     lumi_FCCee_365_old = 1.5 # ab^-1
+#     lumi_FCCee_365_new = 2.7 # ab^-1
+
+#     lumi_scale_FCCee_Zpole = sqrt(lumi_FCCee_Zpole_old/lumi_FCCee_Zpole_new)
+#     lumi_scale_FCCee_WW    = sqrt(lumi_FCCee_WW_old/lumi_FCCee_WW_new)
+#     lumi_scale_FCCee_240   = sqrt(lumi_FCCee_240_old/lumi_FCCee_240_new)
+#     lumi_scale_FCCee_365   = sqrt(lumi_FCCee_365_old/lumi_FCCee_365_new)
+
+# else:
+#     lumi_scale_FCCee_Zpole = 1.0
+#     lumi_scale_FCCee_WW    = 1.0
+#     lumi_scale_FCCee_240   = 1.0
+#     lumi_scale_FCCee_365   = 1.0
+
+
 ###########################################################################################
 ###########################################################################################
 #################################   FCC-ee at 240 GeV   ###################################
@@ -1341,31 +1368,37 @@ print(final_text)
 ###########################################################################################
 
 # Open the FCCee_240 input file in read mode and output file in write mode
-input_file_FCCee240 =  file_dir + "ObservablesHiggs_FCCee_240_SM.conf"
-output_file_FCCee240 = file_dir + "ObservablesHiggs_FCCee_240_SM_kappa_scaled.conf"
+if updated_lumi:
+    input_file_FCCee240  = file_dir + "ObservablesHiggs_FCCee_240_SM_updated_lumi"
+    output_file_FCCee240 = file_dir + "ObservablesHiggs_FCCee_240_SM_updated_lumi_kappa_scaled"
+else:
+    input_file_FCCee240  = file_dir + "ObservablesHiggs_FCCee_240_SM"
+    output_file_FCCee240 = file_dir + "ObservablesHiggs_FCCee_240_SM_kappa_scaled"
 
 output_file_flag_map = {
-    no_1L_BSM_sqrt_s: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_no_1L_BSM_sqrt_s.conf",
-    no_1L_BSM: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_no_1L_BSM.conf",
-    pure_1L_BSM: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_pure_1L_BSM.conf",
-    no_quad: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_no_quad.conf",
-    smeft_formula: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_smeft_formula.conf",
-    smeft_formula_sqrt: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_smeft_formula_sqrt.conf",
-    smeft_formula_no_cross: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_smeft_formula_no_cross.conf",
-    smeft_formula_external_leg: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_smeft_formula_external_leg.conf",
-    smeft_formula_all: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_smeft_formula_all.conf",
-    WFR_kala2_input: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_WFR_kala2_input.conf",
-    WFR_kala2_input_all: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_WFR_kala2_input_all.conf",
-    use_HEPfit_C1_values_WFR_kala2_input_all: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_use_HEPfit_C1_values_WFR_kala2_input_all.conf",
-    use_HEPfit_C1_values_decayrates_WFR_kala2_input_all: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_use_HEPfit_C1_values_decayrates_WFR_kala2_input_all.conf",
-    use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all: "ObservablesHiggs_FCCee_240_SM_kappa_scaled_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all.conf",
+    no_1L_BSM_sqrt_s: "_no_1L_BSM_sqrt_s",
+    no_1L_BSM: "_no_1L_BSM",
+    pure_1L_BSM: "_pure_1L_BSM",
+    no_quad: "_no_quad",
+    smeft_formula: "_smeft_formula",
+    smeft_formula_sqrt: "_smeft_formula_sqrt",
+    smeft_formula_no_cross: "_smeft_formula_no_cross",
+    smeft_formula_external_leg: "_smeft_formula_external_leg",
+    smeft_formula_all: "_smeft_formula_all",
+    WFR_kala2_input: "_WFR_kala2_input",
+    WFR_kala2_input_all: "_WFR_kala2_input_all",
+    use_HEPfit_C1_values_WFR_kala2_input_all: "_use_HEPfit_C1_values_WFR_kala2_input_all",
+    use_HEPfit_C1_values_decayrates_WFR_kala2_input_all: "_use_HEPfit_C1_values_decayrates_WFR_kala2_input_all",
+    use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all: "_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all",
 }
 
-for condition, filename in output_file_flag_map.items():
+for condition, filename_suffix in output_file_flag_map.items():
     if condition:
-        output_file_FCCee240 = file_dir + filename
+        output_file_FCCee240 += filename_suffix
         break
 
+input_file_FCCee240  += ".conf"
+output_file_FCCee240 += ".conf"
 
 with open(input_file_FCCee240, 'r') as infile, open(output_file_FCCee240, 'w') as outfile:
     for line in infile:
@@ -1443,30 +1476,37 @@ print(f"Modified content saved to {output_file_FCCee240}.")
 if (scenario == "IDM_FCCee240_FCCee365" 
     or scenario == "IDM_FCCee240_FCCee365_HLLHClambda"):
     # Open the FCCee_365 input file in read mode and output file in write mode
-    input_file_FCCee365 =  file_dir + "ObservablesHiggs_FCCee_365.conf"
-    output_file_FCCee365 = file_dir + "ObservablesHiggs_FCCee_365_kappa_scaled.conf"
+    if updated_lumi:
+        output_file_FCCee365 = file_dir + "ObservablesHiggs_FCCee_365_updated_lumi_kappa_scaled"
+        input_file_FCCee365  = file_dir + "ObservablesHiggs_FCCee_365_updated_lumi"
+    else:
+        input_file_FCCee365  = file_dir + "ObservablesHiggs_FCCee_365"
+        output_file_FCCee365 = file_dir + "ObservablesHiggs_FCCee_365_kappa_scaled"
 
     output_file_flag_map = {
-        no_1L_BSM_sqrt_s: "ObservablesHiggs_FCCee_365_kappa_scaled_no_1L_BSM_sqrt_s.conf",
-        no_1L_BSM: "ObservablesHiggs_FCCee_365_kappa_scaled_no_1L_BSM.conf",
-        pure_1L_BSM: "ObservablesHiggs_FCCee_365_kappa_scaled_pure_1L_BSM.conf",
-        no_quad: "ObservablesHiggs_FCCee_365_kappa_scaled_no_quad.conf",
-        smeft_formula: "ObservablesHiggs_FCCee_365_kappa_scaled_smeft_formula.conf",
-        smeft_formula_sqrt: "ObservablesHiggs_FCCee_365_kappa_scaled_smeft_formula_sqrt.conf",
-        smeft_formula_no_cross: "ObservablesHiggs_FCCee_365_kappa_scaled_smeft_formula_no_cross.conf",
-        smeft_formula_external_leg: "ObservablesHiggs_FCCee_365_kappa_scaled_smeft_formula_external_leg.conf",
-        smeft_formula_all: "ObservablesHiggs_FCCee_365_kappa_scaled_smeft_formula_all.conf",
-        WFR_kala2_input: "ObservablesHiggs_FCCee_365_kappa_scaled_WFR_kala2_input.conf",
-        WFR_kala2_input_all: "ObservablesHiggs_FCCee_365_kappa_scaled_WFR_kala2_input_all.conf",
-        use_HEPfit_C1_values_WFR_kala2_input_all: "ObservablesHiggs_FCCee_365_kappa_scaled_use_HEPfit_C1_values_WFR_kala2_input_all.conf",
-        use_HEPfit_C1_values_decayrates_WFR_kala2_input_all: "ObservablesHiggs_FCCee_365_kappa_scaled_use_HEPfit_C1_values_decayrates_WFR_kala2_input_all.conf",
-        use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all: "ObservablesHiggs_FCCee_365_kappa_scaled_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all.conf",
+        no_1L_BSM_sqrt_s: "_no_1L_BSM_sqrt_s",
+        no_1L_BSM: "_no_1L_BSM",
+        pure_1L_BSM: "_pure_1L_BSM",
+        no_quad: "_no_quad",
+        smeft_formula: "_smeft_formula",
+        smeft_formula_sqrt: "_smeft_formula_sqrt",
+        smeft_formula_no_cross: "_smeft_formula_no_cross",
+        smeft_formula_external_leg: "_smeft_formula_external_leg",
+        smeft_formula_all: "_smeft_formula_all",
+        WFR_kala2_input: "_WFR_kala2_input",
+        WFR_kala2_input_all: "_WFR_kala2_input_all",
+        use_HEPfit_C1_values_WFR_kala2_input_all: "_use_HEPfit_C1_values_WFR_kala2_input_all",
+        use_HEPfit_C1_values_decayrates_WFR_kala2_input_all: "_use_HEPfit_C1_values_decayrates_WFR_kala2_input_all",
+        use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all: "_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all",
     }
 
-    for condition, filename in output_file_flag_map.items():
+    for condition, filename_suffix in output_file_flag_map.items():
         if condition:
-            output_file_FCCee365 = file_dir + filename
+            output_file_FCCee365 += filename_suffix
             break
+
+    input_file_FCCee365  += ".conf"
+    output_file_FCCee365 += ".conf"
 
 
     with open(input_file_FCCee365, 'r') as infile, open(output_file_FCCee365, 'w') as outfile:
@@ -1860,17 +1900,15 @@ if scenario == "IDM_FCCee240_FCCee365_HLLHClambda":
 ###########################################################################################
 ###########################################################################################
 
-input_files =  [
-            #    file_dir + "ObservablesEW_HLLHC",
-            #    file_dir + "ObservablesEW_FCCee_WW_SM",
-               file_dir + "ObservablesEW_FCCee_Zpole_SM",
-               ]
+input_files =  []
+output_files = []
 
-output_files = [
-            #    file_dir + "ObservablesEW_HLLHC_kappa_scaled",
-            #    file_dir + "ObservablesEW_FCCee_WW_SM_kappa_scaled",
-               file_dir + "ObservablesEW_FCCee_Zpole_SM_kappa_scaled",
-              ]
+if updated_lumi:
+    input_files.append(file_dir + "ObservablesEW_FCCee_Zpole_SM_updated_lumi")
+    output_files.append(file_dir + "ObservablesEW_FCCee_Zpole_SM_updated_lumi_kappa_scaled")
+else:
+    input_files.append(file_dir + "ObservablesEW_FCCee_Zpole_SM")
+    output_files.append(file_dir + "ObservablesEW_FCCee_Zpole_SM_kappa_scaled")
 
 if modify_all_ewpos:
     input_files.append(file_dir + "ObservablesEW_Current_SM_noLFU")
@@ -1882,9 +1920,14 @@ if shifted_sin2thetaEff:
     output_files = [output_file + "_shifted_sin2thetaEff" for output_file in output_files]
 
 input_files.append(file_dir + "ObservablesEW_HLLHC")
-input_files.append(file_dir + "ObservablesEW_FCCee_WW_SM",)
 output_files.append(file_dir + "ObservablesEW_HLLHC_kappa_scaled")
-output_files.append(file_dir + "ObservablesEW_FCCee_WW_SM_kappa_scaled")
+
+if updated_lumi:
+    input_files.append(file_dir + "ObservablesEW_FCCee_WW_SM_updated_lumi")
+    output_files.append(file_dir + "ObservablesEW_FCCee_WW_SM_updated_lumi_kappa_scaled")
+else:
+    input_files.append(file_dir + "ObservablesEW_FCCee_WW_SM")
+    output_files.append(file_dir + "ObservablesEW_FCCee_WW_SM_kappa_scaled")
 
 
 if EWPO_2L:
