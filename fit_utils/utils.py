@@ -903,7 +903,7 @@ def generate_klam_latex_table(
         table_text += "\\hline\n"
         table_text += f"{column} & {BP_lambda:.3g}"
         for model_spec in model_specs[scenario]:
-            klam = kappa_lambda_results[BP][scenario][model_spec][0,0] + 1
+            klam = kappa_lambda_results[BP][scenario][model_spec][0,0]
             klam_err_abs = kappa_lambda_results[BP][scenario][model_spec][0,1]
             klam_err_rel = klam_err_abs / klam
             table_text += rf" & ${klam:.2f}\pm{klam_err_abs:.2f}\;[\textcolor{{violet}}{{{100*klam_err_rel:.2g}\%}}]$"
@@ -911,7 +911,7 @@ def generate_klam_latex_table(
 
     n_model_specs = len(model_specs[scenario])
     with open(table_tex_output_file, "w") as out_file:
-        print_to_file("\\begin{tabular}{c||"+ "c|"*n_model_specs +"}", file=out_file)
+        print_to_file("\\begin{tabular}{c||"+ "c|"*(n_model_specs + 1) +"}", file=out_file)
         print_to_file(table_text, file=out_file)
         print_to_file("\\end{tabular}", file=out_file)
         # print("\\hline\n\\end{tabular}", file=out_file)

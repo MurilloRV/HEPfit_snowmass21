@@ -14,7 +14,7 @@ BP_others="BP_lambda1"
 
 # Using realistic HL-LHC observables
 
-updated_lumi="false" # Use updated luminosity values for the FCC-ee based on the latest projections (DOI:10.17181/n78xk-qcv56)
+updated_lumi="true" # Use updated luminosity values for the FCC-ee based on the latest projections (DOI:10.17181/n78xk-qcv56)
 
 # Default behavior: all flags set to false
 # Exclusive flag

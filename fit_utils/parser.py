@@ -220,11 +220,13 @@ def find_tex_label_obs(obs_tex, obs):
     if obs == "deltalHHH_HLLHC": tex_label = r"$\kappa_\lambda$"
 
     ### FCC-ee_240
-    elif obs == "eeZH_FCCee240":         tex_label = r"$\mu_{ZH}$(FCC-ee$_{240}$)"
+    elif obs == "eeZH_FCCee240":       tex_label = r"$\mu_{ZH}$(FCC-ee$_{240}$)"
     elif obs == "eeZHbb_FCCee240":     tex_label = r"$\mu_{ZH,bb}$(FCC-ee$_{240}$)"
     elif obs == "eeHvvbb_FCCee240":    tex_label = r"$\mu_{\nu\nu H,bb}$(FCC-ee$_{240}$)"
     elif obs == "eeZHcc_FCCee240":     tex_label = r"$\mu_{ZH,cc}$(FCC-ee$_{240}$)"
+    elif obs == "eeHvvcc_FCCee240":    tex_label = r"$\mu_{\nu\nu H,cc}$(FCC-ee$_{240}$)"
     elif obs == "eeZHgg_FCCee240":     tex_label = r"$\mu_{ZH,gg}$(FCC-ee$_{240}$)"
+    elif obs == "eeHvvgg_FCCee240":    tex_label = r"$\mu_{\nu\nu H,gg}$(FCC-ee$_{240}$)"
     elif obs == "eeZHWW_FCCee240":     tex_label = r"$\mu_{ZH,WW}$(FCC-ee$_{240}$)"
     elif obs == "eeZHZZ_FCCee240":     tex_label = r"$\mu_{ZH,ZZ}$(FCC-ee$_{240}$)"
     elif obs == "eeZHtautau_FCCee240": tex_label = r"$\mu_{ZH,\tau\tau}$(FCC-ee$_{240}$)"
@@ -513,7 +515,7 @@ def find_configuration_files(
 
     fccee_projections_flags = [
         "",
-        "_updated_lumi",
+        "updated_lumi_",
     ]
 
 
@@ -656,7 +658,7 @@ def find_configuration_files(
                                                                     conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("d6Ops_corr")] = "d6Ops_corr_no_C_HG"
 
                                                             else:
-                                                                if fccee_projections_flag == "_updated_lumi":
+                                                                if fccee_projections_flag == "updated_lumi_":
                                                                     Higgs_conf1_new = f"{Higgs_conf1}_updated_lumi"
                                                                     Higgs_conf2_new = f"ObservablesHiggs_FCCee_240_SM_updated_lumi_kappa_scaled"
                                                                     Higgs_conf3_new = f"ObservablesHiggs_FCCee_365_updated_lumi_kappa_scaled"
@@ -691,12 +693,16 @@ def find_configuration_files(
                                                                 EWPO_conf1 = "ObservablesEW"
                                                                 EWPO_conf2 = "ObservablesEW_Current_SM_noLFU"
                                                                 EWPO_conf3 = "ObservablesEW_HLLHC_kappa_scaled"
-                                                                if fccee_projections_flag == "_updated_lumi":
-                                                                    EWPO_conf4 = "ObservablesEW_FCCee_Zpole_SM_updated_lumi_kappa_scaled"
-                                                                    EWPO_conf5 = "ObservablesEW_FCCee_WW_SM_updated_lumi_kappa_scaled"
-                                                                else:
-                                                                    EWPO_conf4 = "ObservablesEW_FCCee_Zpole_SM_kappa_scaled"
-                                                                    EWPO_conf5 = "ObservablesEW_FCCee_WW_SM_kappa_scaled"
+                                                                EWPO_conf5 = "ObservablesEW_FCCee_WW_SM_kappa_scaled"
+                                                                EWPO_conf4 = "ObservablesEW_FCCee_Zpole_SM_kappa_scaled"
+
+                                                                if fccee_projections_flag == "updated_lumi_":
+                                                                    EWPO_conf4_new = "ObservablesEW_FCCee_Zpole_SM_updated_lumi_kappa_scaled"
+                                                                    EWPO_conf5_new = "ObservablesEW_FCCee_WW_SM_updated_lumi_kappa_scaled"
+                                                                    conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(EWPO_conf4)] = EWPO_conf4_new
+                                                                    conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(EWPO_conf5)] = EWPO_conf5_new
+                                                                    EWPO_conf4 = EWPO_conf4_new
+                                                                    EWPO_conf5 = EWPO_conf5_new
 
                                                                 if "_all_EW_mods" in additional_flag_all:
                                                                     EWPO_conf1_new = EWPO_conf1 + "_all_mods"
