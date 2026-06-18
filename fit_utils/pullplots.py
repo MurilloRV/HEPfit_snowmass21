@@ -844,7 +844,7 @@ def generate_pull_plots_obs(
     plot_titles : dict
         A dictionary containing the titles for the plots.
     model : str
-        The BSM model considered. Currently can be either "IDM" or "Z2SSM" or "SM"
+        The BSM model considered. Currently can be either "IDM", "Z2SSM", "SM", or "SM_updated_lumi".
     only_obs : list of str, optional
         List of observables to include. If set, only these observables will be
         processed.
@@ -895,8 +895,8 @@ def generate_pull_plots_obs(
         # Default matplotlib color cycle
         colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
-    if model not in ["IDM", "Z2SSM", "SM"]:
-        raise ValueError(f"Invalid model specified ({model}). Please choose either 'IDM', 'Z2SSM', or 'SM'.")
+    if model not in ["IDM", "Z2SSM", "SM", "SM_updated_lumi"]:
+        raise ValueError(f"Invalid model specified ({model}). Please choose either 'IDM', 'Z2SSM', 'SM', or 'SM_updated_lumi'.")
 
     files = {}
     for BP in BPs:
@@ -935,11 +935,11 @@ def generate_pull_plots_obs(
             for scenario in scenarios:
                 results[BP][scenario] = {}
                 for model_spec in model_specs[scenario]:
-                    results[BP][scenario][model_spec] = np.zeros((len(observables["Config_Files"]["."]['fits_small_priors_strict']), 2))
+                    results[BP][scenario][model_spec] = np.zeros((len(list(observables["Config_Files"]["."].values())[0]), 2))
                     results[BP][scenario][model_spec] = np.array( 
                         [
-                            central_values_obs["Config_Files"]["."]['fits_small_priors_strict'],
-                            input_uncertainties["Config_Files"]["."]['fits_small_priors_strict'],
+                            list(central_values_obs["Config_Files"]["."].values())[0],
+                            list(input_uncertainties["Config_Files"]["."].values())[0],
                         ] 
                     ).T
         WC_labels = [ find_tex_label_par(None, wc) for wc in WC_list_for_prediction_pulls ]
@@ -1045,8 +1045,8 @@ def generate_pull_plots_obs(
 
                 if WC_list_for_prediction_pulls is not None:
                     for i, wc in enumerate(WC_list_for_prediction_pulls):
-                        plotted_results_low = deepcopy( (obs_predictions[wc][0] - results["Config_Files"]["."]['fits_small_priors_strict'][:,0])/results["Config_Files"]["."]['fits_small_priors_strict'][:,1] )
-                        plotted_results_high = deepcopy( (obs_predictions[wc][1] - results["Config_Files"]["."]['fits_small_priors_strict'][:,0])/results["Config_Files"]["."]['fits_small_priors_strict'][:,1] )
+                        plotted_results_low = deepcopy( (obs_predictions[wc][0] - list(results["Config_Files"]["."].values())[0][:,0])/list(results["Config_Files"]["."].values())[0][:,1] )
+                        plotted_results_high = deepcopy( (obs_predictions[wc][1] - list(results["Config_Files"]["."].values())[0][:,0])/list(results["Config_Files"]["."].values())[0][:,1] )
                         ax.plot(
                             plotted_results_low[param_breaks[k]:param_breaks[k+1]],
                             -y+y_shift[i], 

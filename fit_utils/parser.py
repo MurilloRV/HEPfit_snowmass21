@@ -72,86 +72,154 @@ def observable_order(obs):
     order_dict = {
         "deltalHHH_HLLHC": 1,
 
+        ### FCC-ee_240
         "eeZH_FCCee240":       2,
         "eeZHbb_FCCee240":     3,
         "eeHvvbb_FCCee240":    4,
         "eeZHcc_FCCee240":     5,
-        "eeZHgg_FCCee240":     6,
-        "eeZHWW_FCCee240":     7,
-        "eeZHZZ_FCCee240":     8,
-        "eeZHtautau_FCCee240": 9,
-        "eeZHgaga_FCCee240":   10,
-        "eeZHmumu_FCCee240":   11,
-        "eeZHZga_FCCee240":    12,
+        "eeHvvcc_FCCee240":    6,
+        "eeZHgg_FCCee240":     7,
+        "eeHvvgg_FCCee240":    8,
+        "eeZHWW_FCCee240":     9,
+        "eeZHZZ_FCCee240":     10,
+        "eeZHtautau_FCCee240": 11,
+        "eeZHgaga_FCCee240":   12,
+        "eeZHmumu_FCCee240":   13,
+        "eeZHZga_FCCee240":    14,
 
         ### FCC-ee_365
-        "eeZH_FCCee365":        13,
-        "eeZHbb_FCCee365":      14,
-        "eeHvvbb_FCCee365":     15,
-        "eeZHcc_FCCee365":      16,
-        "eeHvvcc_FCCee365":     17,
-        "eeZHgg_FCCee365":      18,
-        "eeHvvgg_FCCee365":     19,
-        "eeZHWW_FCCee365":      20,
-        "eeHvvWW_FCCee365":     21,
-        "eeZHZZ_FCCee365":      22,
-        "eeHvvZZ_FCCee365":     23,
-        "eeZHtautau_FCCee365":  24,
-        "eeHvvtautau_FCCee365": 25,
-        "eeZHgaga_FCCee365":    26,
-        "eeHvvgaga_FCCee365":   27,
-        "eeZHmumu_FCCee365":    28,
-        # "eeHvvmumu_FCCee365":   29,
+        "eeZH_FCCee365":        15,
+        "eeZHbb_FCCee365":      16,
+        "eeHvvbb_FCCee365":     17,
+        "eeZHcc_FCCee365":      18,
+        "eeHvvcc_FCCee365":     19,
+        "eeZHgg_FCCee365":      20,
+        "eeHvvgg_FCCee365":     21,
+        "eeZHWW_FCCee365":      22,
+        "eeHvvWW_FCCee365":     23,
+        "eeZHZZ_FCCee365":      24,
+        "eeHvvZZ_FCCee365":     25,
+        "eeZHtautau_FCCee365":  26,
+        "eeHvvtautau_FCCee365": 27,
+        "eeZHgaga_FCCee365":    28,
+        "eeHvvgaga_FCCee365":   29,
+        "eeZHmumu_FCCee365":    30,
+        # "eeHvvmumu_FCCee365":   31,
+        "eeZHZga_FCCee365":     32,
+        "eeHvvZga_FCCee365":    33,
+
 
         ### HL-LHC
-        "muggHgagaHL":    29,
-        "muggHZZ4lHL":    30,
-        "muggHWW2l2vHL":  31,
-        "muggHtautauHL":  32,
-        "muggHbbHL":      33,
-        "muggHmumuHL":    34,
-        "muggHZgaHL":     35,
+        "muggHgagaHL":    34,
+        "muggHZZ4lHL":    35,
+        "muggHWW2l2vHL":  36,
+        "muggHtautauHL":  37,
+        "muggHbbHL":      38,
+        "muggHmumuHL":    39,
+        "muggHZgaHL":     40,
 
-        "muVBFgagaHL":    36,
-        "muVBFZZ4lHL":    37,
-        "muVBFWW2l2vHL":  38,
-        "muVBFtautauHL":  39,
-        "muVBFmumuHL":    40,
-        "muVBFZgaHL":     41,
+        "muVBFgagaHL":    41,
+        "muVBFZZ4lHL":    42,
+        "muVBFWW2l2vHL":  43,
+        "muVBFtautauHL":  44,
+        "muVBFmumuHL":    45,
+        "muVBFZgaHL":     46,
 
-        "muWHgagaHL":     42,
-        "muWHZZ4lHL":     43,
-        "muWHWW2l2vHL":   44,
-        "muWHbbHL":       45,
+        "muWHgagaHL":     47,
+        "muWHZZ4lHL":     48,
+        "muWHWW2l2vHL":   49,
+        "muWHbbHL":       50,
 
-        "muZHgagaHL":     46,
-        "muZHZZ4lHL":     47,
-        "muZHWW2l2vHL":   48,
-        "muZHbbHL":       49,
+        "muZHgagaHL":     51,
+        "muZHZZ4lHL":     52,
+        "muZHWW2l2vHL":   53,
+        "muZHbbHL":       54,
 
-        "muttHgagaHL":    50,
-        "muttHZZ4lHL":    51,
-        "muttHWW2l2vHL":  52,
-        "muttHtautauHL":  53,
-        "muttHbbHL":      54,
+        "muttHgagaHL":    55,
+        "muttHZZ4lHL":    56,
+        "muttHWW2l2vHL":  57,
+        "muttHtautauHL":  58,
+        "muttHbbHL":      59,
     }
 
     if obs in order_dict:
         order = order_dict[obs]
     elif obs.endswith("_C"):
-        order = 10000
+        order = 1000
     elif obs.endswith("_FCCee"):
-        order = 20000
+        order = 2000
     elif obs.endswith("_FCCee161"):
-        order = 30000
+        order = 3000
     elif obs.endswith("_FCCee240"):
-        order = 40000
+        order = 4000
     elif obs.endswith("_FCCee365"):
-        order = 50000
+        order = 5000
     elif obs.endswith("_HLLHC") or obs.endswith("_HLLHC_OO"):
-        order = 60000
+        order = 6000
     else:
         order = 999999
+
+    if obs.startswith("Mz"):
+        order += 10001
+    elif obs.startswith("GammaZ"):
+        order += 10002
+    elif obs.startswith("Mw"):
+        order += 10003
+    elif obs.startswith("GammaW"):
+        order += 10004
+    elif obs.startswith("sigmaHadron_C"):
+        order += 10005
+    elif obs.startswith("Relectron"):
+        order += 10006
+    elif obs.startswith("Rmuon"):
+        order += 10007
+    elif obs.startswith("Rtau"):
+        order += 10008
+    elif obs.startswith("Rbottom"):
+        order += 10009
+    elif obs.startswith("Rcharm"):
+        order += 10010
+    elif obs.startswith("Aelectron"):
+        order += 10011
+    elif obs.startswith("Amuon"):
+        order += 10012
+    elif obs.startswith("Atau"):
+        order += 10013
+    elif obs.startswith("Abottom"):
+        order += 10014
+    elif obs.startswith("Acharm"):
+        order += 10015
+    elif obs.startswith("As"):
+        order += 10016
+    elif obs.startswith("AFBelectron"):
+        order += 10017
+    elif obs.startswith("AFBmuon"):
+        order += 10018
+    elif obs.startswith("AFBtau"):
+        order += 10019
+    elif obs.startswith("AFBbottom"):
+        order += 10020
+    elif obs.startswith("AFBcharm"):
+        order += 10021
+        
+    elif obs.startswith("deltag1Z"):
+        order += 20001
+    elif obs.startswith("deltaKgamma"):
+        order += 20002
+    elif obs.startswith("lambdaZ"):
+        order += 20003
+    elif obs.startswith("deltageL"):
+        order += 20004
+    elif obs.startswith("deltageR"):
+        order += 20005
+    elif obs.startswith("deltaUev"):
+        order += 20006
+    elif obs.startswith("BrWelectron"):
+        order += 20007
+    elif obs.startswith("BrWmuon"):
+        order += 20008
+    elif obs.startswith("BrWtau"):
+        order += 20009
 
     return order
 
@@ -475,7 +543,7 @@ def find_configuration_files(
         Dictionary mapping scenarios to a list of model specifications.
     model : str
         The BSM model considered. Currently can be either "IDM" or "Z2SSM". Can
-        also be set to "SM".
+        also be set to "SM" or "SM_updated_lumi".
     read_WCs : bool, optional
         If set to True, the function will find the configuration files with the 
         Wilson coefficients, instead of the observables
@@ -513,10 +581,29 @@ def find_configuration_files(
 
         return conf_files
 
-    fccee_projections_flags = [
-        "",
-        "updated_lumi_",
-    ]
+    elif model == "SM_updated_lumi" and not read_WCs:
+        conf_file_list = [
+            "ObservablesEW_updated_lumi.conf",
+            "ObservablesEW_Current_SM_noLFU.conf",
+            "ObservablesEW_FCCee_Zpole_SM_updated_lumi.conf",
+            "ObservablesEW_FCCee_WW_SM_updated_lumi.conf",
+            "ObservablesEW_HLLHC.conf",
+            "ObservablesHiggs_updated_lumi.conf",
+            "ObservablesHiggs_FCCee_240_SM_updated_lumi.conf",
+            "ObservablesHiggs_FCCee_365_updated_lumi.conf",
+            "ObservablesHiggs_HLLHC_SM.conf",
+            "ObservablesVV.conf",
+            "aTGC_observables_Current.conf",
+            "aTGC_observables_HLLHC_Full.conf",
+            "ObservablesVV_OO_FCCee_161.conf",
+            "ObservablesVV_OO_FCCee_240.conf",
+            "ObservablesVV_OO_FCCee_365.conf",
+            "EffVHcouplings_QFU12.conf",
+            "HiggsEW_Par_Corr.conf",
+        ]
+        conf_files = { scenario : {spec : conf_file_list for spec in model_specs[scenario]} for scenario in scenarios}
+        
+        return conf_files
 
 
     HEPfit_flags = [
@@ -534,7 +621,14 @@ def find_configuration_files(
 
         # IDM
         "use_new_NPs_klam_dependent_a240_8.42e-06_b240_6.93e-05_c240_0.000124_a365_1.99e-05_b365_-2.66e-05_c365_0.000313_",  # IDM: Estimates EXCLUDING the O(1/Lambda_NP^2) curve
+        "use_new_NPs_klam_dependent_est1_",
         "use_new_NPs_klam_dependent_a240_0.000763_b240_-0.00152_c240_0.000761_a365_0.000792_b365_-0.00162_c365_0.000835_",   # IDM: Estimates INCLUDING the O(1/Lambda_NP^2) curve
+        "use_new_NPs_klam_dependent_est2_",
+    ]
+
+    fccee_projections_flags = [
+        "",
+        "updated_lumi_",
     ]
 
     loop_order_flags = [
@@ -646,7 +740,7 @@ def find_configuration_files(
                                             for additional_flag3 in additional_flag_list:
                                                 for priors_flag in priors_flag_list:
                                                     for MC_flag in MC_flag_list:
-                                                        full_flag = fccee_projections_flag + hepfit_flag + loop_order_flag + exclusive_flag + additional_flag1 + additional_flag2 + additional_flag3 + priors_flag + MC_flag
+                                                        full_flag = hepfit_flag + fccee_projections_flag + loop_order_flag + exclusive_flag + additional_flag1 + additional_flag2 + additional_flag3 + priors_flag + MC_flag
                                                         if model_spec == f"fits_realistic_HL_LHC_{full_flag}":
                                                             print(f"Full fit flag: {full_flag}")
                                                             found_flag = True

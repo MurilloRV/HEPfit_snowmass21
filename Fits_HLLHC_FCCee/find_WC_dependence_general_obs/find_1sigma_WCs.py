@@ -12,10 +12,11 @@ sys.path.append(os.path.abspath("/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmas
 from fit_utils.parser import read_fit_results_pars, find_tex_label_par
 
 
-def find_1sigma_WCs(wilson_coefficients):
+def find_1sigma_WCs(wilson_coefficients, model_specs=None):
     working_dir = "."
     BPs = ["SM_fit", ]
-    model_specs = {"." : ["fits_small_priors_strict", ]}
+    if model_specs is None:
+        model_specs = {"." : ["fits_small_priors_strict", ]}
     scenarios = model_specs.keys()
     model = "SM"
 

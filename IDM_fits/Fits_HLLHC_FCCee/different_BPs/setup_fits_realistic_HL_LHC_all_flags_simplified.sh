@@ -45,7 +45,7 @@ no_C_HG="false" # Exclude the C_HG operator from the fit
 no_HLLHC_Higgs="false" # Exclude the HL-LHC Higgs observables from the fit
 LoopH3d6Full="false" # Use the full expansion of the ZH cross-section in terms of C1 and dZH
 
-use_new_NPs="false" # Use newly implementent theory nuisance parameters
+use_new_NPs="true" # Use newly implementent theory nuisance parameters
 UseKlamDependentUncertainties="true" # A boolean flag that is true if using klam-dependent theoretical uncertainties in the ee->Zh cross-section predictions.
 
 # Changed default values to 1.0!
@@ -73,6 +73,7 @@ NPmismatch_FCCee365_input="DEFAULT"
 # theoerr_FCCee365_function_x2_coef_input="0.00001992550937285446"
 # theoerr_FCCee365_function_x1_coef_input="-0.00002663878133908424"
 # theoerr_FCCee365_function_x0_coef_input="0.00031254668713761978"
+# model_conf_suffix="_est1"
 
 # # Estimates INCLUDING the O(1/Lambda_NP^2) curve
 theoerr_FCCee240_function_x2_coef_input="0.00076325757128542970"
@@ -81,6 +82,7 @@ theoerr_FCCee240_function_x0_coef_input="0.00076121051962415318"
 theoerr_FCCee365_function_x2_coef_input="0.00079217047454317366"
 theoerr_FCCee365_function_x1_coef_input="-0.00161839280277012226"
 theoerr_FCCee365_function_x0_coef_input="0.00083463246355167890"
+model_conf_suffix="_est2"
 
 
 set_nuisance_parameter() {
@@ -167,19 +169,19 @@ for BP_Name in "${BP_Names_Total[@]}"; do
                 if [[ "$theoerr_FCCee240_input" != "DEFAULT" || "$theoerr_FCCee365_input" != "DEFAULT" ]]; then
                     echo "Warning: using kappa_lambda dependent uncertainties, but theoerr_FCCee240_input and theoerr_FCCee365_input are not set to DEFAULT (1.0)."
                 fi
-                MODEL_CONF_FILE="${MODEL_CONF_FILE}_klam_dependent"
+                MODEL_CONF_FILE="${MODEL_CONF_FILE}_klam_dependent${model_conf_suffix}"
                 theoerr_FCCee240_function_x2_coef_path=$(printf "%.3g" "$(echo "$theoerr_FCCee240_function_x2_coef_input" | bc)" )
                 theoerr_FCCee240_function_x1_coef_path=$(printf "%.3g" "$(echo "$theoerr_FCCee240_function_x1_coef_input" | bc)" )
                 theoerr_FCCee240_function_x0_coef_path=$(printf "%.3g" "$(echo "$theoerr_FCCee240_function_x0_coef_input" | bc)" )
                 theoerr_FCCee365_function_x2_coef_path=$(printf "%.3g" "$(echo "$theoerr_FCCee365_function_x2_coef_input" | bc)" )
                 theoerr_FCCee365_function_x1_coef_path=$(printf "%.3g" "$(echo "$theoerr_FCCee365_function_x1_coef_input" | bc)" )
                 theoerr_FCCee365_function_x0_coef_path=$(printf "%.3g" "$(echo "$theoerr_FCCee365_function_x0_coef_input" | bc)" )
-                MODEL_CONF_FILE="${MODEL_CONF_FILE}_a240_${theoerr_FCCee240_function_x2_coef_path}"
-                MODEL_CONF_FILE="${MODEL_CONF_FILE}_b240_${theoerr_FCCee240_function_x1_coef_path}"
-                MODEL_CONF_FILE="${MODEL_CONF_FILE}_c240_${theoerr_FCCee240_function_x0_coef_path}"
-                MODEL_CONF_FILE="${MODEL_CONF_FILE}_a365_${theoerr_FCCee365_function_x2_coef_path}"
-                MODEL_CONF_FILE="${MODEL_CONF_FILE}_b365_${theoerr_FCCee365_function_x1_coef_path}"
-                MODEL_CONF_FILE="${MODEL_CONF_FILE}_c365_${theoerr_FCCee365_function_x0_coef_path}"
+                # MODEL_CONF_FILE="${MODEL_CONF_FILE}_a240_${theoerr_FCCee240_function_x2_coef_path}"
+                # MODEL_CONF_FILE="${MODEL_CONF_FILE}_b240_${theoerr_FCCee240_function_x1_coef_path}"
+                # MODEL_CONF_FILE="${MODEL_CONF_FILE}_c240_${theoerr_FCCee240_function_x0_coef_path}"
+                # MODEL_CONF_FILE="${MODEL_CONF_FILE}_a365_${theoerr_FCCee365_function_x2_coef_path}"
+                # MODEL_CONF_FILE="${MODEL_CONF_FILE}_b365_${theoerr_FCCee365_function_x1_coef_path}"
+                # MODEL_CONF_FILE="${MODEL_CONF_FILE}_c365_${theoerr_FCCee365_function_x0_coef_path}"
             fi
 
             if [[ "$NPmismatch_FCCee240_input" != "DEFAULT" ]]; then
