@@ -38,7 +38,7 @@ modify_all_ewpos="true" # Modify also the EWPO central values for *current* obse
 with_Af="true" # Use BSM predictions for sin2theta_eff to evaluate A_f and A_FB_f asymmetries and use these in the fit inputs
 EWPO_2L="false" # Use 2-loop IDM predictions for EWPO, instead of 1-loop ones
 shifted_sin2thetaEff_fermion_spec="true" # Shift the sin2thetaEff value using the HEPfit prediction for the SM
-with_Rf="false" # Use BSM predictions for R_f in the fit inputs. Automatically shifts the SM prediction to the HEPfit calculation
+with_Rf="true" # Use BSM predictions for R_f in the fit inputs. Automatically shifts the SM prediction to the HEPfit calculation
 LoopHd6NoSubleading="false" # Do not include the subleading corrections (resummation) in kappa_lambda NLO effects. That is, Sets dZH1 = dZH2 = dZH
 noLoopH3d6Quad="false" # Do not include quadratic modifications in the SM loops in Higgs observables due to the dim 6 interactions that contribute to the trilinear Higgs coupling. That is, sets cLH3d62 = 0.0
 LoopHd6noWFR="false" # Completely remove the wavefunction renormalization contribution to the kappa_lambda NLO effects. That is, sets dZH1 = dZH2 = 0.0
@@ -46,7 +46,7 @@ no_C_HG="false" # Exclude the C_HG operator from the fit
 no_HLLHC_Higgs="false" # Exclude the HL-LHC Higgs observables from the fit
 LoopH3d6Full="false" # Use the full expansion of the ZH cross-section in terms of C1 and dZH
 
-use_new_NPs="true" # Use newly implementent theory nuisance parameters
+use_new_NPs="false" # Use newly implementent theory nuisance parameters
 UseKlamDependentUncertainties="true" # A boolean flag that is true if using klam-dependent theoretical uncertainties in the ee->Zh cross-section predictions.
 
 # Changed default values to 1.0!

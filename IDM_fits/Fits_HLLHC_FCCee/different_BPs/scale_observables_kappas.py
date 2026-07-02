@@ -8,7 +8,12 @@ import yaml
 import os, sys
 
 sys.path.append(os.path.abspath("/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/THDM_EWPOs/"))
+sys.path.append(os.path.abspath("/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/"))
 import ewpo
+ewpo.working_dir = "/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/THDM_EWPOs"
+
+from fit_utils.parser import read_WC_predictions
+
 
 # Initialize parser
 parser = argparse.ArgumentParser()
@@ -126,8 +131,8 @@ elif exclusive_flag_count == 1 and not realistic_HL_LHC_k_lambda_uncertainties:
         """)
 
 
+smeft_matching_predictions_dir = "/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/IDM_fits/Fits_HLLHC_FCCee/smeft_matching_inputs"
 
-# file_dir = "/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/Fits_HLLHC_ILC_250/Z2SSM_BenchmarkPoint_fits_HLLHC_ILC_250"
 file_dir = f"{BP}/{scenario}/"
 
 
@@ -671,7 +676,6 @@ else:
     raise ValueError("Could not determine benchmark point!")
 
 
-ewpo.working_dir = "/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/THDM_EWPOs"
 
 
 #############################################
@@ -737,36 +741,31 @@ if shifted_sin2thetaEff_fermion_spec:
     sin2thetaEff1L_d = sin2thetaEff1L_d_shift_calc(loop_order=1)
     sin2thetaEff2L_d = sin2thetaEff1L_d_shift_calc(loop_order=2)
 
+if with_Rf:
+    R_f_obs = ["Relectron_FCCee", "Rmuon_FCCee", "Rtau_FCCee", "Rbottom_FCCee", "Rcharm_FCCee",]
+    BPs_main = ["BP_lambda1", "BPB_2", "BPB_4", "BPB_6"]
+    if BP not in BPs_main:
+        raise ValueError(f"The `with_Rf` option is only available for the following BPs: {BPs_main}")
+    observables = {BP_main: {scenario: R_f_obs } for BP_main in BPs_main}
+    obs_predictions = read_WC_predictions(
+        working_dir=smeft_matching_predictions_dir,
+        WCs=BPs_main,
+        n_WC_values=1,
+        observables=observables,
+        matched_predictions=True,
+    )
+    print(obs_predictions)
+    obs_predictions = obs_predictions[BP][0]
+    Relectron = obs_predictions[0]
+    Rmuon     = obs_predictions[1]
+    Rtau      = obs_predictions[2]
+    Rbottom   = obs_predictions[3]
+    Rcharm    = obs_predictions[4]
+
 
 #############################################
 ####### GammaZ_f and R_f calculations #######
 #############################################
-
-# Relectron_HEPfit_SM = 20.73303451165756
-# Rmuon_HEPfit_SM = 20.73303451165756
-# Rtau_HEPfit_SM = 20.78004762131171
-# Rbottom_HEPfit_SM = 0.2158545260418787
-# Rcharm_HEPfit_SM = 0.1722132737582865
-# GammaZ_had_HEPfit_SM  = 1.741274448593552
-
-Relectron_HEPfit_SM= 20.73216216706557
-Rmuon_HEPfit_SM= 20.732328232343
-Rtau_HEPfit_SM= 20.77921710159025
-Rbottom_HEPfit_SM= 0.2158077007915846
-Rcharm_HEPfit_SM= 0.1722022753259724
-GammaZ_had_HEPfit_SM = 1.741533973035208
-
-GammaZ_ee_HEPfit_SM = GammaZ_had_HEPfit_SM / Relectron_HEPfit_SM
-GammaZ_mumu_HEPfit_SM = GammaZ_had_HEPfit_SM / Rmuon_HEPfit_SM
-GammaZ_tautau_HEPfit_SM = GammaZ_had_HEPfit_SM / Rtau_HEPfit_SM
-GammaZ_bb_HEPfit_SM = GammaZ_had_HEPfit_SM * Rbottom_HEPfit_SM
-GammaZ_cc_HEPfit_SM = GammaZ_had_HEPfit_SM * Rcharm_HEPfit_SM
-
-GamZpartial1L = ewpo.GamZpartial1L_vec(mH, mA, mHp, lam3+lam4+lam5, mod=True)
-GamZpartial2L = ewpo.GamZpartial2L_vec(mH, mA, mHp, lam3+lam4+lam5, mod=True)
-
-GamZpartial_SM_value_1L = ewpo.GamZpartial1L_vec(large_mass, large_mass, large_mass, 0.0, mod=True) # 1L and 2L values seem to be very close.
-GamZpartial_SM_value_2L = ewpo.GamZpartial2L_vec(large_mass, large_mass, large_mass, 0.0, mod=True)
 
 if EWPO_2L:
     Mw = Mw2L
@@ -775,111 +774,12 @@ if EWPO_2L:
     sin2thetaEff_d = sin2thetaEff2L_d
     GammaZ = GammaZ2L
 
-    GammaZ_had = GammaZ_had_HEPfit_SM + np.sum(GamZpartial2L[4:] - GamZpartial_SM_value_2L[4:])
-    GammaZ_ee = GammaZ_ee_HEPfit_SM + (GamZpartial2L[1] - GamZpartial_SM_value_2L[1])
-    GammaZ_mumu = GammaZ_mumu_HEPfit_SM + (GamZpartial2L[2] - GamZpartial_SM_value_2L[2])
-    GammaZ_tautau = GammaZ_tautau_HEPfit_SM + (GamZpartial2L[3] - GamZpartial_SM_value_2L[3])
-    GammaZ_bb = GammaZ_bb_HEPfit_SM + (GamZpartial2L[8] - GamZpartial_SM_value_2L[8])
-    GammaZ_cc = GammaZ_cc_HEPfit_SM + (GamZpartial2L[6] - GamZpartial_SM_value_2L[6])
-
 else:
     Mw = Mw1L
     sin2thetaEff_l = sin2thetaEff1L_l
     sin2thetaEff_u = sin2thetaEff1L_u
     sin2thetaEff_d = sin2thetaEff1L_d
     GammaZ = GammaZ1L
-
-    GammaZ_had = GammaZ_had_HEPfit_SM + np.sum(GamZpartial1L[4:] - GamZpartial_SM_value_1L[4:])
-    GammaZ_ee = GammaZ_ee_HEPfit_SM + (GamZpartial1L[1] - GamZpartial_SM_value_1L[1])
-    GammaZ_mumu = GammaZ_mumu_HEPfit_SM + (GamZpartial1L[2] - GamZpartial_SM_value_1L[2])
-    GammaZ_tautau = GammaZ_tautau_HEPfit_SM + (GamZpartial1L[3] - GamZpartial_SM_value_1L[3])
-    GammaZ_bb = GammaZ_bb_HEPfit_SM + (GamZpartial1L[8] - GamZpartial_SM_value_1L[8])
-    GammaZ_cc = GammaZ_cc_HEPfit_SM + (GamZpartial1L[6] - GamZpartial_SM_value_1L[6])
-
-Relectron = GammaZ_had / GammaZ_ee
-Rmuon = GammaZ_had / GammaZ_mumu
-Rtau = GammaZ_had / GammaZ_tautau
-Rbottom = GammaZ_bb / GammaZ_had
-Rcharm = GammaZ_cc / GammaZ_had
-
-
-# ########### TEST 1 #########33
-# if EWPO_2L:
-#     Mw = Mw2L
-#     sin2thetaEff_l = sin2thetaEff2L_l
-#     sin2thetaEff_u = sin2thetaEff2L_u
-#     sin2thetaEff_d = sin2thetaEff2L_d
-#     GammaZ = GammaZ2L
-
-# else:
-#     Mw = Mw1L
-#     sin2thetaEff_l = sin2thetaEff1L_l
-#     sin2thetaEff_u = sin2thetaEff1L_u
-#     sin2thetaEff_d = sin2thetaEff1L_d
-#     GammaZ = GammaZ1L
-
-#     GammaZ_had = np.sum(GamZpartial1L[4:])
-#     GammaZ_ee = GamZpartial1L[1]
-#     GammaZ_mumu = GamZpartial1L[2]
-#     GammaZ_tautau = GamZpartial1L[3]
-#     GammaZ_bb = GamZpartial1L[8]
-#     GammaZ_cc = GamZpartial1L[6]
-
-#     Relectron_BSM = GammaZ_had / GammaZ_ee
-#     Rmuon_BSM = GammaZ_had / GammaZ_mumu
-#     Rtau_BSM = GammaZ_had / GammaZ_tautau
-#     Rbottom_BSM = GammaZ_bb / GammaZ_had
-#     Rcharm_BSM = GammaZ_cc / GammaZ_had
-
-#     GammaZ_had_SM_value = np.sum(GamZpartial_SM_value_1L[4:])
-#     GammaZ_ee_SM_value = GamZpartial_SM_value_1L[1]
-#     GammaZ_mumu_SM_value = GamZpartial_SM_value_1L[2]
-#     GammaZ_tautau_SM_value = GamZpartial_SM_value_1L[3]
-#     GammaZ_bb_SM_value = GamZpartial_SM_value_1L[8]
-#     GammaZ_cc_SM_value = GamZpartial_SM_value_1L[6]
-
-#     Relectron_SM_value = GammaZ_had_SM_value / GammaZ_ee_SM_value
-#     Rmuon_SM_value = GammaZ_had_SM_value / GammaZ_mumu_SM_value
-#     Rtau_SM_value = GammaZ_had_SM_value / GammaZ_tautau_SM_value
-#     Rbottom_SM_value = GammaZ_bb_SM_value / GammaZ_had_SM_value
-#     Rcharm_SM_value = GammaZ_cc_SM_value / GammaZ_had_SM_value
-
-#     Relectron = Relectron_HEPfit_SM + (Relectron_BSM - Relectron_SM_value)
-#     Rmuon = Rmuon_HEPfit_SM + (Rmuon_BSM - Rmuon_SM_value)
-#     Rtau = Rtau_HEPfit_SM + (Rtau_BSM - Rtau_SM_value)
-#     Rbottom = Rbottom_HEPfit_SM + (Rbottom_BSM - Rbottom_SM_value)
-#     Rcharm = Rcharm_HEPfit_SM + (Rcharm_BSM - Rcharm_SM_value)
-
-
-
-# ########### TEST 2 #########33
-# if EWPO_2L:
-#     Mw = Mw2L
-#     sin2thetaEff_l = sin2thetaEff2L_l
-#     sin2thetaEff_u = sin2thetaEff2L_u
-#     sin2thetaEff_d = sin2thetaEff2L_d
-#     GammaZ = GammaZ2L
-
-# else:
-#     Mw = Mw1L
-#     sin2thetaEff_l = sin2thetaEff1L_l
-#     sin2thetaEff_u = sin2thetaEff1L_u
-#     sin2thetaEff_d = sin2thetaEff1L_d
-#     GammaZ = GammaZ1L
-
-#     GammaZ_had = np.sum(GamZpartial1L[4:])
-#     GammaZ_ee = GamZpartial1L[1]
-#     GammaZ_mumu = GamZpartial1L[2]
-#     GammaZ_tautau = GamZpartial1L[3]
-#     GammaZ_bb = GamZpartial1L[8]
-#     GammaZ_cc = GamZpartial1L[6]
-
-#     Relectron = GammaZ_had / GammaZ_ee
-#     Rmuon = GammaZ_had / GammaZ_mumu
-#     Rtau = GammaZ_had / GammaZ_tautau
-#     Rbottom = GammaZ_bb / GammaZ_had
-#     Rcharm = GammaZ_cc / GammaZ_had
-
 
 
 #############################################
@@ -916,37 +816,6 @@ def sin2thetaEff_from_Af(f, Af):
 
     return ( np.sqrt(1 - Af**2) - (1 - Af)) / (4*np.abs(Q)*Af)
 
-# def A_f_test(f, sin2thetaEff):
-#     if f in ['u', 'c', 't']:
-#         Q = 2.0/3.0
-#         A_f_SM = 0.6679249978345343  # from HEPfit
-
-#     elif f in ['d', 's', 'b']:
-#         Q = -1.0/3.0
-#         A_f_SM = 0.9347523361749206  # from HEPfit
-
-#     elif f in ['e', 'mu', 'tau']:
-#         Q = -1.0
-#         A_f_SM = 0.1473249852597804  # from HEPfit
-#     else:
-#         raise ValueError("Invalid fermion type for A_f calculation")
-
-#     sin2thetaEff_SM = sin2thetaEff_from_Af(f, A_f_SM)
-#     delta_sin2thetaEff = sin2thetaEff - sin2thetaEff_SM
-
-#     gV_over_gA_SM = (1 - 4*np.abs(Q)*sin2thetaEff_SM)
-
-#     delta_A_f = (2*(1 - gV_over_gA_SM**2)/(1 + gV_over_gA_SM**2)**2) * (-4*np.abs(Q)*delta_sin2thetaEff)
-
-#     A_f_value = A_f_SM + delta_A_f
-
-#     return A_f_value
-
-# def A_FB_f_test(f, sin2thetaEff):
-#     A_f_value = A_f_test(f, sin2thetaEff)
-#     A_e_value = A_f_test('e', sin2thetaEff)
-#     A_FB_value = 3/4 * A_e_value * A_f_value 
-#     return A_FB_value
 
 def A_FB_f(f, sin2thetaEff_e, sin2thetaEff_f):
     A_e_value = A_f('e', sin2thetaEff_e)
