@@ -58,6 +58,9 @@ for ((i=0; i<${#CH_values[@]}; i++)); do
     NEW_RotateCHWCHB_FLAG="ModelFlag       RotateCHWCHB    false"
     sed -i "/ModelFlag       RotateCHWCHB  .*/c\\$NEW_RotateCHWCHB_FLAG" $MODEL_CONF
 
+    # sed -i "12a\#" $MODEL_CONF
+    # sed -i "12a\ModelFlag  NoApproximateGammaZ  true" $MODEL_CONF
+
     cd ../observables_results
     analysis "../Config_Files/${MODEL_CONF}" --noMC |& tee "observables_BP${i}.txt"
     cd $ORIGINAL_PATH/Config_Files/

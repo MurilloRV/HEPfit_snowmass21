@@ -38,6 +38,7 @@ modify_all_ewpos="true" # Modify also the EWPO central values for *current* obse
 with_Af="true" # Use BSM predictions for sin2theta_eff to evaluate A_f and A_FB_f asymmetries and use these in the fit inputs
 EWPO_2L="false" # Use 2-loop IDM predictions for EWPO, instead of 1-loop ones
 shifted_sin2thetaEff_fermion_spec="true" # Shift the sin2thetaEff value using the HEPfit prediction for the SM
+with_Rf="false" # Use BSM predictions for R_f in the fit inputs. Automatically shifts the SM prediction to the HEPfit calculation
 LoopHd6NoSubleading="false" # Do not include the subleading corrections (resummation) in kappa_lambda NLO effects. That is, Sets dZH1 = dZH2 = dZH
 noLoopH3d6Quad="false" # Do not include quadratic modifications in the SM loops in Higgs observables due to the dim 6 interactions that contribute to the trilinear Higgs coupling. That is, sets cLH3d62 = 0.0
 LoopHd6noWFR="false" # Completely remove the wavefunction renormalization contribution to the kappa_lambda NLO effects. That is, sets dZH1 = dZH2 = 0.0
@@ -67,22 +68,22 @@ NPmismatch_FCCee365_input="DEFAULT"
 
 
 # Estimates EXCLUDING the O(1/Lambda_NP^2) curve
-# theoerr_FCCee240_function_x2_coef_input="0.00000841930087633563"
-# theoerr_FCCee240_function_x1_coef_input="0.00006932472446483649"
-# theoerr_FCCee240_function_x0_coef_input="0.00012365304251529146"
-# theoerr_FCCee365_function_x2_coef_input="0.00001992550937285446"
-# theoerr_FCCee365_function_x1_coef_input="-0.00002663878133908424"
-# theoerr_FCCee365_function_x0_coef_input="0.00031254668713761978"
-# model_conf_suffix="_est1"
+theoerr_FCCee240_function_x2_coef_input="0.00000841930087633563"
+theoerr_FCCee240_function_x1_coef_input="0.00006932472446483649"
+theoerr_FCCee240_function_x0_coef_input="0.00012365304251529146"
+theoerr_FCCee365_function_x2_coef_input="0.00001992550937285446"
+theoerr_FCCee365_function_x1_coef_input="-0.00002663878133908424"
+theoerr_FCCee365_function_x0_coef_input="0.00031254668713761978"
+model_conf_suffix="_est1"
 
 # # Estimates INCLUDING the O(1/Lambda_NP^2) curve
-theoerr_FCCee240_function_x2_coef_input="0.00076325757128542970"
-theoerr_FCCee240_function_x1_coef_input="-0.00151726083157403824"
-theoerr_FCCee240_function_x0_coef_input="0.00076121051962415318"
-theoerr_FCCee365_function_x2_coef_input="0.00079217047454317366"
-theoerr_FCCee365_function_x1_coef_input="-0.00161839280277012226"
-theoerr_FCCee365_function_x0_coef_input="0.00083463246355167890"
-model_conf_suffix="_est2"
+# theoerr_FCCee240_function_x2_coef_input="0.00076325757128542970"
+# theoerr_FCCee240_function_x1_coef_input="-0.00151726083157403824"
+# theoerr_FCCee240_function_x0_coef_input="0.00076121051962415318"
+# theoerr_FCCee365_function_x2_coef_input="0.00079217047454317366"
+# theoerr_FCCee365_function_x1_coef_input="-0.00161839280277012226"
+# theoerr_FCCee365_function_x0_coef_input="0.00083463246355167890"
+# model_conf_suffix="_est2"
 
 
 set_nuisance_parameter() {
@@ -216,6 +217,7 @@ for BP_Name in "${BP_Names_Total[@]}"; do
         if [ "$with_Af" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_with_Af"; fi
         if [ "$EWPO_2L" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_EWPO_2L"; fi
         if [ "$shifted_sin2thetaEff_fermion_spec" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_shifted_sin2thetaEff_fermion_spec"; fi
+        if [ "$with_Rf" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_with_Rf"; fi
         if [ "$noLoopH3d6Quad" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_noLoopH3d6Quad"; fi
         if [ "$LoopHd6NoSubleading" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_LoopHd6NoSubleading"; fi
         if [ "$LoopHd6noWFR" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_LoopHd6noWFR"; fi
@@ -604,6 +606,30 @@ for BP_Name in "${BP_Names_Total[@]}"; do
             EWPO_CONF_FILE_HLLHC="${NEW_EWPO_CONF_FILE_HLLHC}"
             EWPO_CONF_FILE_FCCee_Zpole="${NEW_EWPO_CONF_FILE_FCCee_Zpole}"
             EWPO_CONF_FILE_FCCee_WW="${NEW_EWPO_CONF_FILE_FCCee_WW}"
+        fi
+
+        if [ "$with_Rf" == "true" ]; then
+            NEW_EWPO_CONF_FILE="${EWPO_CONF_FILE}_with_Rf"
+            cp ${EWPO_CONF_FILE}.conf ${NEW_EWPO_CONF_FILE}.conf
+            
+            if [ "$modify_all_ewpos" == "true" ]; then
+                NEW_EWPO_CONF_FILE_CURRENT="${EWPO_CONF_FILE_CURRENT}_with_Rf"
+                sed -i "\/IncludeFile ${EWPO_CONF_FILE_CURRENT}.conf/c\\IncludeFile ${NEW_EWPO_CONF_FILE_CURRENT}.conf" ${NEW_EWPO_CONF_FILE}.conf
+            fi
+
+            NEW_EWPO_CONF_FILE_FCCee_Zpole="${EWPO_CONF_FILE_FCCee_Zpole}_with_Rf"
+            sed -i "\/IncludeFile ${EWPO_CONF_FILE_FCCee_Zpole}.conf/c\\IncludeFile ${NEW_EWPO_CONF_FILE_FCCee_Zpole}.conf" ${NEW_EWPO_CONF_FILE}.conf
+
+            NEW_MODEL_EWS="IncludeFile ../../${NEW_EWPO_CONF_FILE}.conf "
+            sed -i "\/IncludeFile ..\/..\/${EWPO_CONF_FILE}.conf /c\\$NEW_MODEL_EWS" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
+            sed -i "\/IncludeFile ..\/..\/${EWPO_CONF_FILE}.conf /c\\$NEW_MODEL_EWS" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
+
+            EWPO_PYTHON_ARG="${EWPO_PYTHON_ARG} --with_Rf"
+            EWPO_CONF_FILE="${NEW_EWPO_CONF_FILE}"
+
+            EWPO_CONF_FILE_CURRENT="${NEW_EWPO_CONF_FILE_CURRENT}"
+            EWPO_CONF_FILE_FCCee_Zpole="${NEW_EWPO_CONF_FILE_FCCee_Zpole}"
+
         fi
 
         

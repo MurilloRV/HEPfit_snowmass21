@@ -893,30 +893,31 @@ def generate_klam_latex_table(
         files=files,
     )
 
-    table_tex_output_file = working_dir + f'/comparison_plots/results_{results_dir}/klam_results_table.tex'
-    headers = ["", "True value",] + spec_labels
-    columns = BP_names
-    # table_text = "\\hline\n" + " & ".join(headers) + "\\\\\n"
-    table_text = " & ".join(headers) + "\\\\\n"
-    table_text += "\\hline"
-    for idx, (column, BP, BP_lambda) in enumerate(zip(columns, BPs, BP_lambdas)):
-        table_text += "\\hline\n"
-        table_text += f"{column} & {BP_lambda:.3g}"
-        for model_spec in model_specs[scenario]:
-            klam = kappa_lambda_results[BP][scenario][model_spec][0,0]
-            klam_err_abs = kappa_lambda_results[BP][scenario][model_spec][0,1]
-            klam_err_rel = klam_err_abs / klam
-            table_text += rf" & ${klam:.2f}\pm{klam_err_abs:.2f}\;[\textcolor{{violet}}{{{100*klam_err_rel:.2g}\%}}]$"
-        table_text += "\\\\"
+    for scenario in scenarios:
+        table_tex_output_file = working_dir + f'/comparison_plots/results_{results_dir}/klam_results_table_{scenario}.tex'
+        headers = ["", "True value",] + spec_labels
+        columns = BP_names
+        # table_text = "\\hline\n" + " & ".join(headers) + "\\\\\n"
+        table_text = " & ".join(headers) + "\\\\\n"
+        table_text += "\\hline"
+        for idx, (column, BP, BP_lambda) in enumerate(zip(columns, BPs, BP_lambdas)):
+            table_text += "\\hline\n"
+            table_text += f"{column} & {BP_lambda:.3g}"
+            for model_spec in model_specs[scenario]:
+                klam = kappa_lambda_results[BP][scenario][model_spec][0,0]
+                klam_err_abs = kappa_lambda_results[BP][scenario][model_spec][0,1]
+                klam_err_rel = klam_err_abs / klam
+                table_text += rf" & ${klam:.2f}\pm{klam_err_abs:.2f}\;[\textcolor{{violet}}{{{100*klam_err_rel:.2g}\%}}]$"
+            table_text += "\\\\"
 
-    n_model_specs = len(model_specs[scenario])
-    with open(table_tex_output_file, "w") as out_file:
-        print_to_file("\\begin{tabular}{c||"+ "c|"*(n_model_specs + 1) +"}", file=out_file)
-        print_to_file(table_text, file=out_file)
-        print_to_file("\\end{tabular}", file=out_file)
-        # print("\\hline\n\\end{tabular}", file=out_file)
+        n_model_specs = len(model_specs[scenario])
+        with open(table_tex_output_file, "w") as out_file:
+            print_to_file("\\begin{tabular}{c||"+ "c|"*(n_model_specs + 1) +"}", file=out_file)
+            print_to_file(table_text, file=out_file)
+            print_to_file("\\end{tabular}", file=out_file)
+            # print("\\hline\n\\end{tabular}", file=out_file)
 
-    print(f"Saved summary latex table onto file {table_tex_output_file}")
+        print(f"Saved summary latex table onto file {table_tex_output_file}")
 
 
 def read_klam_hist_uproot(

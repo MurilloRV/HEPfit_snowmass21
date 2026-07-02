@@ -8,6 +8,7 @@ COPY_PATH="/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/Fits_HLLHC_FCCee/d
 mkdir -p observables_results
 
 modify_scheme="MIX"
+# modify_scheme="false"
 
 # Copying the configuration files 
 mkdir -p $ORIGINAL_PATH/Config_Files_SM_model/Globalfits/AllOps
@@ -42,14 +43,14 @@ if [ "$modify_scheme" != "false" ]; then
         # sed -i "12a\#" $MODEL_CONF
         # sed -i "12a\ModelFlag  NoApproximateGammaZ  true" $MODEL_CONF
     else 
-        sed -i "12a\#" $MODEL_CONF
-        sed -i "12a\ModelFlag  KappaZ  OMSI" $MODEL_CONF
-        sed -i "12a\#" $MODEL_CONF
-        sed -i "12a\ModelFlag  RhoZ  OMSII" $MODEL_CONF
-        sed -i "12a\#" $MODEL_CONF
-        sed -i "12a\ModelFlag  Mw  OMSII" $MODEL_CONF
         # sed -i "12a\#" $MODEL_CONF
-        # sed -i "12a\ModelFlag  NoApproximateGammaZ  true" $MODEL_CONF
+        # sed -i "12a\ModelFlag  KappaZ  OMSI" $MODEL_CONF
+        # sed -i "12a\#" $MODEL_CONF
+        # sed -i "12a\ModelFlag  RhoZ  OMSII" $MODEL_CONF
+        # sed -i "12a\#" $MODEL_CONF
+        # sed -i "12a\ModelFlag  Mw  OMSII" $MODEL_CONF
+        sed -i "12a\#" $MODEL_CONF
+        sed -i "12a\ModelFlag  NoApproximateGammaZ  true" $MODEL_CONF
     fi
 
     output_file="${output_file}_${modify_scheme}"
@@ -66,6 +67,11 @@ echo "#" >> $EWPO_CURRENT_CONF
 echo "######################################################################" >> $EWPO_CURRENT_CONF
 echo "Observable  sin2thetaEff_C sin2thetaEff sin^{2}#theta_{eff}^{lept} 1. -1. noMCMC noweight" >> $EWPO_CURRENT_CONF
 
+EWPO_CONF="./ObservablesEW.conf"
+echo "#" >> $EWPO_CONF
+echo "######################################################################" >> $EWPO_CONF
+echo "# Add observable below to obtain HEPfit prediction for Gamma_{Z,had} (not used in the fit)" >> $EWPO_CONF
+echo "Observable GammaZhad        GammaZhad         #Gamma_{Z,had} 1. -1.  noMCMC noweight" >> $EWPO_CONF
 
 cd ../observables_results
 analysis "../Config_Files_SM_model/${MODEL_CONF}" --noMC |& tee "${output_file}.txt"
