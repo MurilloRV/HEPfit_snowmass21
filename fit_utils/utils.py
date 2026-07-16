@@ -6,6 +6,7 @@ from matplotlib import pyplot as plt
 import matplotlib
 import numpy as np
 import os.path
+from math import floor, log10
 
 from .parser import read_fit_results
 
@@ -15,6 +16,14 @@ plt.rcParams.update({
     'savefig.dpi' : 300,
 })
 
+
+def format_sig(x, sig=6):
+    if x == 0:
+        return "0."
+
+    decimals = max(0, sig - 1 - floor(log10(abs(x))))
+    s = f"{x:.{decimals}f}"
+    return s.rstrip('0') #.rstrip('.')
 
 def print_to_file(message, file):
     """

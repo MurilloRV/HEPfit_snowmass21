@@ -475,24 +475,62 @@ def read_WC_predictions(
     working_dir,
     WCs,
     n_WC_values,
-    observables,
+    observables=None,
     matched_predictions=False,
 ):
+    """
+    Read the predictions for the observables given a set of Wilson coefficients (WCs) and their values.
+    
+    Parameters
+    ----------
+    working_dir : str
+        The working directory where the predictions are stored.
+    WCs : list of str
+        List of Wilson coefficients for which predictions are to be read. If matched_predictions is True,
+        then WCs should refer to the different BSM benchmark points (BP) instead of the Wilson coefficients.
+    n_WC_values : int
+        Number of specific values considered for each Wilson coefficient. If matched_predictions is True,
+        then n_WC_values should be set to 1, as there is one set of predictions for each BSM benchmark point.
+    observables : list of str, optional
+        List of observables for which predictions are to be read. If None, all observables will be read.
+    matched_predictions : bool, optional
+        If True, the function will read the HEPfit predictions obtained by matching BSM benchmark points onto 
+        SMEFT. In this case, the predictions are stored in a different directory and the WCs parameter should 
+        refer to the different BSM benchmark points (BP) instead of the Wilson coefficients.
 
-    for _ in range(2):
-        observables = list(observables.values())[0]
+    Returns
+    -------
+    obs_predictions : dict
+        Dictionary containing the predictions for each observable, organized by Wilson coefficient and point.
+    observables_list : dict (only returned if observables is None)
+        Dictionary containing the predictions for each observable, organized by Wilson coefficient and point.
+
+    """
+
+    if observables is not None:
+        observables_list = copy.deepcopy(observables)
+        for _ in range(2):
+            observables_list = list(observables_list.values())[0]
+        
+    else:
+        observables_list = {}
 
     if matched_predictions and n_WC_values != 1:
         print("Warning: Matched predictions should only with n_WC_values=1.")
         n_WC_values = 1
 
-    print("observables:", observables)
+    print("observables:", observables_list)
 
     obs_predictions = {}
     for idx, wc in enumerate(WCs):
         obs_predictions[wc] = {}
+        if observables is None: observables_list[wc] = {}
         for point in range(n_WC_values):
-            obs_predictions[wc][point] = np.full(len(observables), np.nan)
+            if observables is not None:
+                obs_predictions[wc][point] = np.full(len(observables_list), np.nan)
+            else:
+                obs_predictions[wc][point] = {}
+                observables_list[wc][point] = []
 
             if matched_predictions:
                 filename = f"{working_dir}/../smeft_matching_inputs/observables_results/observables_BP{idx}.txt"
@@ -500,32 +538,57 @@ def read_WC_predictions(
                 filename = f"{working_dir}/observables_results/observables_{wc}_{point}.txt"
             with open(filename, "r") as input_file:
                 print("Reading Observables:")
+
+                found_start = False
                 for line_nr, input_line in enumerate(input_file):
-                    # Skip the empty line after "Observables"
-                    if line_nr == 0:
+                    # Find the line that starts with "Observables: " to start reading the observables predictions
+                    if not found_start:
+                        if input_line == "Observables: \n":
+                            found_start = True
                         continue
-                    
+
+                    # Skip the empty lines
                     if input_line in ['\n', '\r\n']:
                         continue
                     else:
                         columns = input_line.split()
+                        # Ignore lines that do not have the expected format (observable = value)
+                        if len(columns) != 3 or columns[1] != "=":
+                            continue
                         observable = columns[0]
 
-                        if observable in observables:
-                            idx = observables.index(observable)
-                            if observable == "deltalHHH_HLLHC":
-                                obs_predictions[wc][point][idx] = float(columns[2]) + 1
+                        if observables is not None:
+                            if observable in observables_list:
+                                idx = observables_list.index(observable)
+                                if observable == "deltalHHH_HLLHC":
+                                    obs_predictions[wc][point][idx] = float(columns[2]) + 1
+                                else:
+                                    obs_predictions[wc][point][idx] = float(columns[2])
                             else:
-                                obs_predictions[wc][point][idx] = float(columns[2])
+                                continue
+                        else:
+                            observables_list[wc][point].append(observable)
+                            if observable == "deltalHHH_HLLHC":
+                                obs_predictions[wc][point][observable] = float(columns[2]) + 1
+                            else:
+                                obs_predictions[wc][point][observable] = float(columns[2])
 
-            if np.isnan(obs_predictions[wc][point]).sum() != 0:
+
+            if observables is not None and np.isnan(obs_predictions[wc][point]).sum() != 0:
                 print(f"Warning: Number of predictions for {wc} does not match number of observables.")
                 print(f"Number of predictions: {len(obs_predictions[wc][point]) - np.isnan(obs_predictions[wc][point]).sum()}")
-                print(f"Number of observables: {len(observables)}")
+                print(f"Number of observables: {len(observables_list)}")
+                print(observables_list)
 
-    return obs_predictions
+            if observables is None and len(obs_predictions[wc][point]) != len(observables_list[wc][point]):
+                print(f"Warning: Number of predictions for {wc} does not match number of observables.")
+                print(f"Number of predictions: {len(obs_predictions[wc][point].values())}")
+                print(f"Number of observables: {len(observables_list[wc][point])}")
 
-
+    if observables is not None:
+        return obs_predictions
+    else:
+        return obs_predictions, observables_list
 
 
 
@@ -666,6 +729,7 @@ def find_configuration_files(
         "_shifted_sin2thetaEff_fermion_spec",
         "_shifted_sin2thetaEff",
         "_with_Rf",
+        "_with_HEPfit_EWPOs"
     ]
     priors_flag_list = [
         "_test_small_priors",
@@ -816,6 +880,13 @@ def find_configuration_files(
                                                     EWPO_conf5 = "ObservablesEW_FCCee_WW_SM_kappa_scaled"
                                                     EWPO_conf4 = "ObservablesEW_FCCee_Zpole_SM_kappa_scaled"
 
+                                                    VV_OO_conf1 = "ObservablesVV"
+                                                    VV_OO_conf2 = "ObservablesVV_OO_FCCee_161"
+                                                    VV_OO_conf3 = "ObservablesVV_OO_FCCee_240"
+                                                    VV_OO_conf4 = "ObservablesVV_OO_FCCee_365"
+                                                    VV_OO_conf5 = "aTGC_observables_Current"
+                                                    VV_OO_conf6 = "aTGC_observables_HLLHC_Full"
+
                                                     if fccee_projections_flag == "updated_lumi_":
                                                         EWPO_conf1_new = "ObservablesEW_updated_lumi"
                                                         EWPO_conf4_new = "ObservablesEW_FCCee_Zpole_SM_updated_lumi_kappa_scaled"
@@ -835,6 +906,49 @@ def find_configuration_files(
                                                         EWPO_conf1 = EWPO_conf1_new
                                                         EWPO_conf2 = EWPO_conf2_new
                                                     
+                                                    if "_with_HEPfit_EWPOs" in additional_flag_all:
+                                                        EWPO_conf1_new = EWPO_conf1 + "_with_HEPfit_EWPOs"
+                                                        EWPO_conf3_new = EWPO_conf3 + "_with_HEPfit_EWPOs"
+                                                        EWPO_conf4_new = EWPO_conf4 + "_with_HEPfit_EWPOs"
+                                                        EWPO_conf5_new = EWPO_conf5 + "_with_HEPfit_EWPOs"
+                                                        conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(EWPO_conf1)] = EWPO_conf1_new
+                                                        conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(EWPO_conf3)] = EWPO_conf3_new
+                                                        conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(EWPO_conf4)] = EWPO_conf4_new
+                                                        conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(EWPO_conf5)] = EWPO_conf5_new
+                                                        EWPO_conf1 = EWPO_conf1_new
+                                                        EWPO_conf3 = EWPO_conf3_new
+                                                        EWPO_conf4 = EWPO_conf4_new
+                                                        EWPO_conf5 = EWPO_conf5_new
+
+                                                        VV_OO_conf1_new = VV_OO_conf1 + "_kappa_scaled_with_HEPfit_EWPOs"
+                                                        VV_OO_conf2_new = VV_OO_conf2 + "_kappa_scaled_with_HEPfit_EWPOs"
+                                                        VV_OO_conf3_new = VV_OO_conf3 + "_kappa_scaled_with_HEPfit_EWPOs"
+                                                        VV_OO_conf5_new = VV_OO_conf5 + "_kappa_scaled_with_HEPfit_EWPOs"
+                                                        VV_OO_conf6_new = VV_OO_conf6 + "_kappa_scaled_with_HEPfit_EWPOs"
+                                                        conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(VV_OO_conf1)] = VV_OO_conf1_new
+                                                        conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(VV_OO_conf2)] = VV_OO_conf2_new
+                                                        conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(VV_OO_conf3)] = VV_OO_conf3_new
+                                                        conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(VV_OO_conf5)] = VV_OO_conf5_new
+                                                        conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(VV_OO_conf6)] = VV_OO_conf6_new
+                                                        VV_OO_conf1 = VV_OO_conf1_new
+                                                        VV_OO_conf2 = VV_OO_conf2_new
+                                                        VV_OO_conf3 = VV_OO_conf3_new
+                                                        VV_OO_conf5 = VV_OO_conf5_new
+                                                        VV_OO_conf6 = VV_OO_conf6_new
+
+                                                        if scenario == f"{model}_FCCee240_FCCee365" or scenario == f"{model}_FCCee240_FCCee365_HLLHClambda":
+                                                            VV_OO_conf4_new = VV_OO_conf4 + "_kappa_scaled_with_HEPfit_EWPOs"
+                                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(VV_OO_conf4)] = VV_OO_conf4_new
+                                                            VV_OO_conf4 = VV_OO_conf4_new
+
+
+
+                                                        if "_all_EW_mods" in additional_flag_all:
+                                                            EWPO_conf2_new = EWPO_conf2 + "_with_HEPfit_EWPOs"
+                                                            conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(EWPO_conf2)] = EWPO_conf2_new
+                                                            EWPO_conf2 = EWPO_conf2_new
+
+
                                                     if "_with_Af" in additional_flag_all:
                                                         EWPO_conf1_new = EWPO_conf1 + "_with_Af"
                                                         EWPO_conf4_new = EWPO_conf4 + "_with_Af"

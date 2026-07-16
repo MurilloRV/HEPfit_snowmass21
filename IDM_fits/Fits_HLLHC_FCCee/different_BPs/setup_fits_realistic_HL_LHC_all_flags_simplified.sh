@@ -35,10 +35,11 @@ use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all="false" # I
 
 # Additional, independent flags
 modify_all_ewpos="true" # Modify also the EWPO central values for *current* observables, not just future ones
-with_Af="true" # Use BSM predictions for sin2theta_eff to evaluate A_f and A_FB_f asymmetries and use these in the fit inputs
+with_Af="false" # Use BSM predictions for sin2theta_eff to evaluate A_f and A_FB_f asymmetries and use these in the fit inputs
 EWPO_2L="false" # Use 2-loop IDM predictions for EWPO, instead of 1-loop ones
-shifted_sin2thetaEff_fermion_spec="true" # Shift the sin2thetaEff value using the HEPfit prediction for the SM
-with_Rf="true" # Use BSM predictions for R_f in the fit inputs. Automatically shifts the SM prediction to the HEPfit calculation
+shifted_sin2thetaEff_fermion_spec="false" # Shift the sin2thetaEff value using the HEPfit prediction for the SM
+with_Rf="false" # Use BSM predictions for R_f in the fit inputs. Automatically shifts the SM prediction to the HEPfit calculation
+with_HEPfit_EWPOs="true" # Use the HEPfit SMEFT expressions for the EWPOs, instead of IDM ones. HEPfit predictions are obtained by matching IDM BPs onto SMEFT
 LoopHd6NoSubleading="false" # Do not include the subleading corrections (resummation) in kappa_lambda NLO effects. That is, Sets dZH1 = dZH2 = dZH
 noLoopH3d6Quad="false" # Do not include quadratic modifications in the SM loops in Higgs observables due to the dim 6 interactions that contribute to the trilinear Higgs coupling. That is, sets cLH3d62 = 0.0
 LoopHd6noWFR="false" # Completely remove the wavefunction renormalization contribution to the kappa_lambda NLO effects. That is, sets dZH1 = dZH2 = 0.0
@@ -134,6 +135,12 @@ if [ "$true_count" -gt 1 ]; then
 fi
 
 
+if [[ "$with_HEPfit_EWPOs" == "true" && ( "$with_Af" == "true" || "$with_Rf" == "true" || "$EWPO_2L" == "true" || "$shifted_sin2thetaEff_fermion_spec" == "true" ) ]]; then
+    echo "Error: The --with_HEPfit_EWPOs option cannot be used together with any of the following options: --with_Af, --with_Rf, --EWPO_2L, --shifted_sin2thetaEff_fermion_spec."
+    return 1
+fi
+
+
 # BP_Names_Total=("${BP_Names[@]}" "${BPO_Names[@]}" "${BPB_Names[@]}" "${BP_New_Names[@]}")
 BP_Names_Total=("${BPO_Names[@]}" "${BPB_Names[@]}")
 BP_Names_Total+=("$BP_others")
@@ -218,6 +225,7 @@ for BP_Name in "${BP_Names_Total[@]}"; do
         if [ "$EWPO_2L" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_EWPO_2L"; fi
         if [ "$shifted_sin2thetaEff_fermion_spec" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_shifted_sin2thetaEff_fermion_spec"; fi
         if [ "$with_Rf" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_with_Rf"; fi
+        if [ "$with_HEPfit_EWPOs" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_with_HEPfit_EWPOs"; fi
         if [ "$noLoopH3d6Quad" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_noLoopH3d6Quad"; fi
         if [ "$LoopHd6NoSubleading" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_LoopHd6NoSubleading"; fi
         if [ "$LoopHd6noWFR" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_LoopHd6noWFR"; fi
@@ -501,6 +509,13 @@ for BP_Name in "${BP_Names_Total[@]}"; do
         EWPO_CONF_FILE_FCCee_Zpole="ObservablesEW_FCCee_Zpole_SM_kappa_scaled"
         EWPO_CONF_FILE_FCCee_WW="ObservablesEW_FCCee_WW_SM_kappa_scaled"
 
+        VV_OO_CONF_FILE="ObservablesVV"
+        VV_OO_CONF_FILE_FCCee_161="ObservablesVV_OO_FCCee_161"
+        VV_OO_CONF_FILE_FCCee_240="ObservablesVV_OO_FCCee_240"
+        VV_OO_CONF_FILE_FCCee_365="ObservablesVV_OO_FCCee_365"
+        VV_OO_CONF_FILE_aTGC_CURRENT="aTGC_observables_Current"
+        VV_OO_CONF_FILE_aTGC_HLLHC="aTGC_observables_HLLHC_Full"
+
         if [ "$updated_lumi" == "true" ]; then
             NEW_EWPO_CONF_FILE="${EWPO_CONF_FILE}_updated_lumi"
             cp ${EWPO_CONF_FILE}.conf ${NEW_EWPO_CONF_FILE}.conf
@@ -539,6 +554,67 @@ for BP_Name in "${BP_Names_Total[@]}"; do
             EWPO_CONF_FILE_CURRENT="${NEW_EWPO_CONF_FILE_CURRENT}"
         fi
 
+
+        if [ "$with_HEPfit_EWPOs" == "true" ]; then
+            NEW_EWPO_CONF_FILE="${EWPO_CONF_FILE}_with_HEPfit_EWPOs"
+            cp ${EWPO_CONF_FILE}.conf ${NEW_EWPO_CONF_FILE}.conf
+
+            if [ "$modify_all_ewpos" == "true" ]; then
+                NEW_EWPO_CONF_FILE_CURRENT="${EWPO_CONF_FILE_CURRENT}_with_HEPfit_EWPOs"
+                sed -i "\/IncludeFile ${EWPO_CONF_FILE_CURRENT}.conf/c\\IncludeFile ${NEW_EWPO_CONF_FILE_CURRENT}.conf" ${NEW_EWPO_CONF_FILE}.conf
+            else
+                NEW_EWPO_CONF_FILE_CURRENT="${EWPO_CONF_FILE_CURRENT}"
+            fi
+
+            NEW_EWPO_CONF_FILE_HLLHC="${EWPO_CONF_FILE_HLLHC}_with_HEPfit_EWPOs"
+            sed -i "\/IncludeFile ${EWPO_CONF_FILE_HLLHC}.conf/c\\IncludeFile ${NEW_EWPO_CONF_FILE_HLLHC}.conf" ${NEW_EWPO_CONF_FILE}.conf
+
+            NEW_EWPO_CONF_FILE_FCCee_Zpole="${EWPO_CONF_FILE_FCCee_Zpole}_with_HEPfit_EWPOs"
+            sed -i "\/IncludeFile ${EWPO_CONF_FILE_FCCee_Zpole}.conf/c\\IncludeFile ${NEW_EWPO_CONF_FILE_FCCee_Zpole}.conf" ${NEW_EWPO_CONF_FILE}.conf
+
+            NEW_EWPO_CONF_FILE_FCCee_WW="${EWPO_CONF_FILE_FCCee_WW}_with_HEPfit_EWPOs"
+            sed -i "\/IncludeFile ${EWPO_CONF_FILE_FCCee_WW}.conf/c\\IncludeFile ${NEW_EWPO_CONF_FILE_FCCee_WW}.conf" ${NEW_EWPO_CONF_FILE}.conf
+
+            NEW_MODEL_EWS="IncludeFile ../../${NEW_EWPO_CONF_FILE}.conf "
+            sed -i "\/IncludeFile ..\/..\/${EWPO_CONF_FILE}.conf /c\\$NEW_MODEL_EWS" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
+            sed -i "\/IncludeFile ..\/..\/${EWPO_CONF_FILE}.conf /c\\$NEW_MODEL_EWS" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
+
+            EWPO_PYTHON_ARG="${EWPO_PYTHON_ARG} --with_HEPfit_EWPOs"
+            EWPO_CONF_FILE="${NEW_EWPO_CONF_FILE}"
+
+            EWPO_CONF_FILE_CURRENT="${NEW_EWPO_CONF_FILE_CURRENT}"
+            EWPO_CONF_FILE_HLLHC="${NEW_EWPO_CONF_FILE_HLLHC}"
+            EWPO_CONF_FILE_FCCee_Zpole="${NEW_EWPO_CONF_FILE_FCCee_Zpole}"
+            EWPO_CONF_FILE_FCCee_WW="${NEW_EWPO_CONF_FILE_FCCee_WW}"
+
+
+            # Diboson observables:
+            NEW_VV_OO_CONF_FILE="ObservablesVV_kappa_scaled_with_HEPfit_EWPOs"
+            cp ${VV_OO_CONF_FILE}.conf ${NEW_VV_OO_CONF_FILE}.conf
+
+            NEW_VV_OO_CONF_FILE_FCCee_161="ObservablesVV_OO_FCCee_161_kappa_scaled_with_HEPfit_EWPOs"
+            NEW_VV_OO_CONF_FILE_FCCee_240="ObservablesVV_OO_FCCee_240_kappa_scaled_with_HEPfit_EWPOs"
+            NEW_VV_OO_CONF_FILE_FCCee_365="ObservablesVV_OO_FCCee_365_kappa_scaled_with_HEPfit_EWPOs"
+            NEW_VV_OO_CONF_FILE_aTGC_CURRENT="aTGC_observables_Current_kappa_scaled_with_HEPfit_EWPOs"
+            NEW_VV_OO_CONF_FILE_aTGC_HLLHC="aTGC_observables_HLLHC_Full_kappa_scaled_with_HEPfit_EWPOs"
+            
+            sed -i "\/IncludeFile ${VV_OO_CONF_FILE_FCCee_161}.conf/c\\IncludeFile ${NEW_VV_OO_CONF_FILE_FCCee_161}.conf" ${NEW_VV_OO_CONF_FILE}.conf
+            sed -i "\/IncludeFile ${VV_OO_CONF_FILE_FCCee_240}.conf/c\\IncludeFile ${NEW_VV_OO_CONF_FILE_FCCee_240}.conf" ${NEW_VV_OO_CONF_FILE}.conf
+            sed -i "\/IncludeFile ${VV_OO_CONF_FILE_FCCee_365}.conf/c\\IncludeFile ${NEW_VV_OO_CONF_FILE_FCCee_365}.conf" ${NEW_VV_OO_CONF_FILE}.conf
+            sed -i "\/IncludeFile ${VV_OO_CONF_FILE_aTGC_CURRENT}.conf/c\\IncludeFile ${NEW_VV_OO_CONF_FILE_aTGC_CURRENT}.conf" ${NEW_VV_OO_CONF_FILE}.conf
+            sed -i "\/IncludeFile ${VV_OO_CONF_FILE_aTGC_HLLHC}.conf/c\\IncludeFile ${NEW_VV_OO_CONF_FILE_aTGC_HLLHC}.conf" ${NEW_VV_OO_CONF_FILE}.conf
+
+            NEW_MODEL_VV="IncludeFile ../../${NEW_VV_OO_CONF_FILE}.conf "
+            sed -i "\/IncludeFile ..\/..\/${VV_OO_CONF_FILE}.conf /c\\$NEW_MODEL_VV" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
+            sed -i "\/IncludeFile ..\/..\/${VV_OO_CONF_FILE}.conf /c\\$NEW_MODEL_VV" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
+
+            VV_OO_CONF_FILE_FCCee_161="${NEW_VV_OO_CONF_FILE_FCCee_161}"
+            VV_OO_CONF_FILE_FCCee_240="${NEW_VV_OO_CONF_FILE_FCCee_240}"
+            VV_OO_CONF_FILE_FCCee_365="${NEW_VV_OO_CONF_FILE_FCCee_365}"
+            VV_OO_CONF_FILE_aTGC_CURRENT="${NEW_VV_OO_CONF_FILE_aTGC_CURRENT}"
+            VV_OO_CONF_FILE_aTGC_HLLHC="${NEW_VV_OO_CONF_FILE_aTGC_HLLHC}"
+        fi
+
         if [ "$with_Af" == "true" ]; then
             NEW_EWPO_CONF_FILE="${EWPO_CONF_FILE}_with_Af"
             if [ "$shifted_sin2thetaEff_fermion_spec" == "true" ]; then NEW_EWPO_CONF_FILE="${NEW_EWPO_CONF_FILE}_shifted_sin2thetaEff_fermion_spec"; fi
@@ -548,19 +624,17 @@ for BP_Name in "${BP_Names_Total[@]}"; do
                 NEW_EWPO_CONF_FILE_CURRENT="${EWPO_CONF_FILE_CURRENT}_with_Af"
                 if [ "$shifted_sin2thetaEff_fermion_spec" == "true" ]; then NEW_EWPO_CONF_FILE_CURRENT="${NEW_EWPO_CONF_FILE_CURRENT}_shifted_sin2thetaEff_fermion_spec"; fi
                 sed -i "\/IncludeFile ${EWPO_CONF_FILE_CURRENT}.conf/c\\IncludeFile ${NEW_EWPO_CONF_FILE_CURRENT}.conf" ${NEW_EWPO_CONF_FILE}.conf
+            else 
+                NEW_EWPO_CONF_FILE_CURRENT="${EWPO_CONF_FILE_CURRENT}"
             fi
 
             # No A_f/A_FB_f obs for HL-LHC
-            # NEW_EWPO_CONF_FILE_HLLHC="${EWPO_CONF_FILE_HLLHC}_with_Af"
-            # sed -i "\/IncludeFile ObservablesEW_HLLHC_kappa_scaled.conf/c\\IncludeFile ${NEW_EWPO_CONF_FILE_HLLHC}.conf" ${NEW_EWPO_CONF_FILE}.conf
 
             NEW_EWPO_CONF_FILE_FCCee_Zpole="${EWPO_CONF_FILE_FCCee_Zpole}_with_Af"
             if [ "$shifted_sin2thetaEff_fermion_spec" == "true" ]; then NEW_EWPO_CONF_FILE_FCCee_Zpole="${NEW_EWPO_CONF_FILE_FCCee_Zpole}_shifted_sin2thetaEff_fermion_spec"; fi
             sed -i "\/IncludeFile ${EWPO_CONF_FILE_FCCee_Zpole}.conf/c\\IncludeFile ${NEW_EWPO_CONF_FILE_FCCee_Zpole}.conf" ${NEW_EWPO_CONF_FILE}.conf
 
             # No A_f/A_FB_f obs for FCC_ee_WW
-            # NEW_EWPO_CONF_FILE_FCCee_WW="${EWPO_CONF_FILE_FCCee_WW}_with_Af"
-            # sed -i "\/IncludeFile ObservablesEW_FCCee_WW_SM_kappa_scaled.conf/c\\IncludeFile ${NEW_EWPO_CONF_FILE_FCCee_WW}.conf" ${NEW_EWPO_CONF_FILE}.conf
 
             NEW_MODEL_EWS="IncludeFile ../../${NEW_EWPO_CONF_FILE}.conf "
             sed -i "\/IncludeFile ..\/..\/${EWPO_CONF_FILE}.conf /c\\$NEW_MODEL_EWS" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
@@ -584,6 +658,8 @@ for BP_Name in "${BP_Names_Total[@]}"; do
             if [ "$modify_all_ewpos" == "true" ]; then
                 NEW_EWPO_CONF_FILE_CURRENT="${EWPO_CONF_FILE_CURRENT}_EWPO_2L"
                 sed -i "\/IncludeFile ${EWPO_CONF_FILE_CURRENT}.conf/c\\IncludeFile ${NEW_EWPO_CONF_FILE_CURRENT}.conf" ${NEW_EWPO_CONF_FILE}.conf
+            else
+                NEW_EWPO_CONF_FILE_CURRENT="${EWPO_CONF_FILE_CURRENT}"
             fi
 
             NEW_EWPO_CONF_FILE_HLLHC="${EWPO_CONF_FILE_HLLHC}_EWPO_2L"
@@ -615,6 +691,8 @@ for BP_Name in "${BP_Names_Total[@]}"; do
             if [ "$modify_all_ewpos" == "true" ]; then
                 NEW_EWPO_CONF_FILE_CURRENT="${EWPO_CONF_FILE_CURRENT}_with_Rf"
                 sed -i "\/IncludeFile ${EWPO_CONF_FILE_CURRENT}.conf/c\\IncludeFile ${NEW_EWPO_CONF_FILE_CURRENT}.conf" ${NEW_EWPO_CONF_FILE}.conf
+            else
+                NEW_EWPO_CONF_FILE_CURRENT="${EWPO_CONF_FILE_CURRENT}"
             fi
 
             NEW_EWPO_CONF_FILE_FCCee_Zpole="${EWPO_CONF_FILE_FCCee_Zpole}_with_Rf"

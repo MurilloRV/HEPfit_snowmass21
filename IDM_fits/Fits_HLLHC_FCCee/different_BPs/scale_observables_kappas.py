@@ -13,6 +13,7 @@ import ewpo
 ewpo.working_dir = "/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/THDM_EWPOs"
 
 from fit_utils.parser import read_WC_predictions
+from fit_utils.utils import format_sig
 
 
 # Initialize parser
@@ -25,6 +26,7 @@ parser.add_argument("--with_Af", help = "Use BSM predictions for sin2theta_eff t
 parser.add_argument("--with_Rf", help = "Use BSM predictions for R_f in the fit inputs. Automatically shifts the SM prediction to the HEPfit calculation", action="store_true")
 parser.add_argument("--EWPO_2L", help = "Use 2-loop IDM predictions for EWPO, instead of 1-loop ones", action="store_true")
 parser.add_argument("--shifted_sin2thetaEff_fermion_spec", help = "Shift the sin2thetaEff value using the HEPfit prediction for the SM", action="store_true")
+parser.add_argument("--with_HEPfit_EWPOs", help = "Use the HEPfit SMEFT expressions for the EWPOs, instead of IDM ones. HEPfit predictions are obtained by matching IDM BPs onto SMEFT", action="store_true")
 parser.add_argument("--no_1L_BSM_sqrt_s", help = "Do not include momentum dependent BSM 1L corrections to Z->ZH", action="store_true")
 parser.add_argument("--no_1L_BSM", help = "Do not include ANY BSM 1L corrections to Z->ZH", action="store_true")
 parser.add_argument("--pure_1L_BSM", help = "Only includes strictly 1L BSM contributions, no SM-like diagrams with insertions of kappa_lambda", action="store_true")
@@ -52,6 +54,7 @@ with_Af                                             = args.with_Af
 with_Rf                                             = args.with_Rf
 EWPO_2L                                             = args.EWPO_2L
 shifted_sin2thetaEff_fermion_spec                   = args.shifted_sin2thetaEff_fermion_spec
+with_HEPfit_EWPOs                                   = args.with_HEPfit_EWPOs
 no_1L_BSM_sqrt_s                                    = args.no_1L_BSM_sqrt_s
 no_1L_BSM                                           = args.no_1L_BSM
 pure_1L_BSM                                         = args.pure_1L_BSM
@@ -114,6 +117,7 @@ elif exclusive_flag_count == 1 and not realistic_HL_LHC_k_lambda_uncertainties:
         --with_Rf,
         --EWPO_2L,
         --shifted_sin2thetaEff_fermion_spec,
+        --with_HEPfit_EWPOs,
         --no_1L_BSM_sqrt_s,
         --no_1L_BSM,
         --pure_1L_BSM,
@@ -128,6 +132,14 @@ elif exclusive_flag_count == 1 and not realistic_HL_LHC_k_lambda_uncertainties:
         --use_HEPfit_C1_values_WFR_kala2_input_all
         --use_HEPfit_C1_values_decayrates_WFR_kala2_input_all
         --use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all,
+        """)
+
+elif with_HEPfit_EWPOs and (with_Af or with_Rf or EWPO_2L or shifted_sin2thetaEff_fermion_spec):
+    raise ValueError("""The --with_HEPfit_EWPOs option cannot be used together with any of the following options:
+        --with_Af,
+        --with_Rf,
+        --EWPO_2L,
+        --shifted_sin2thetaEff_fermion_spec,
         """)
 
 
@@ -741,9 +753,9 @@ if shifted_sin2thetaEff_fermion_spec:
     sin2thetaEff1L_d = sin2thetaEff1L_d_shift_calc(loop_order=1)
     sin2thetaEff2L_d = sin2thetaEff1L_d_shift_calc(loop_order=2)
 
+BPs_main = ["BP_lambda1", "BPB_2", "BPB_4", "BPB_6"]
 if with_Rf:
     R_f_obs = ["Relectron_FCCee", "Rmuon_FCCee", "Rtau_FCCee", "Rbottom_FCCee", "Rcharm_FCCee",]
-    BPs_main = ["BP_lambda1", "BPB_2", "BPB_4", "BPB_6"]
     if BP not in BPs_main:
         raise ValueError(f"The `with_Rf` option is only available for the following BPs: {BPs_main}")
     observables = {BP_main: {scenario: R_f_obs } for BP_main in BPs_main}
@@ -761,6 +773,7 @@ if with_Rf:
     Rtau      = obs_predictions[2]
     Rbottom   = obs_predictions[3]
     Rcharm    = obs_predictions[4]
+
 
 
 #############################################
@@ -825,27 +838,43 @@ def A_FB_f(f, sin2thetaEff_e, sin2thetaEff_f):
 
 
 
+if with_HEPfit_EWPOs:
+    if BP not in BPs_main:
+        raise ValueError(f"The `with_HEPfit_EWPOs` option is only available for the following BPs: {BPs_main}")
+    obs_predictions_smeft_matching, observables_list_smeft_matching = read_WC_predictions(
+        working_dir=smeft_matching_predictions_dir,
+        WCs=BPs_main,
+        n_WC_values=1,
+        observables=None,
+        matched_predictions=True,
+    )
+    # print(obs_predictions_smeft_matching)
+    # print(observables_list_smeft_matching)
+    obs_predictions_smeft_matching = obs_predictions_smeft_matching[BP][0]
+
+
+
 
 if no_1L_BSM_sqrt_s:
     kappas['ZZ_0'] = kappas['ZZ_0_no_1L_BSM_sqrt_s']
-    kappas['ZZ_240'] = kappas['ZZ_240_no_1L_BSM_sqrt_s']
     # kappas['ZZ_125'] = kappas['ZZ_125_no_1L_BSM_sqrt_s']
+    kappas['ZZ_240'] = kappas['ZZ_240_no_1L_BSM_sqrt_s']
     kappas['ZZ_365'] = kappas['ZZ_365_no_1L_BSM_sqrt_s']
     kappas['ZZ_500'] = kappas['ZZ_500_no_1L_BSM_sqrt_s']
     kappas['ZZ_550'] = kappas['ZZ_550_no_1L_BSM_sqrt_s']
 
 if no_1L_BSM:
     kappas['ZZ_0'] = kappas['ZZ_0_no_1L_BSM']
-    kappas['ZZ_240'] = kappas['ZZ_240_no_1L_BSM']
     # kappas['ZZ_125'] = kappas['ZZ_125_no_1L_BSM']
+    kappas['ZZ_240'] = kappas['ZZ_240_no_1L_BSM']
     kappas['ZZ_365'] = kappas['ZZ_365_no_1L_BSM']
     kappas['ZZ_500'] = kappas['ZZ_500_no_1L_BSM']
     kappas['ZZ_550'] = kappas['ZZ_550_no_1L_BSM']
 
 if pure_1L_BSM:
     kappas['ZZ_0'] = kappas['ZZ_0_pure_1L_BSM']
-    kappas['ZZ_240'] = kappas['ZZ_240_pure_1L_BSM']
     # kappas['ZZ_125'] = kappas['ZZ_125_pure_1L_BSM']
+    kappas['ZZ_240'] = kappas['ZZ_240_pure_1L_BSM']
     kappas['ZZ_365'] = kappas['ZZ_365_pure_1L_BSM']
     kappas['ZZ_500'] = kappas['ZZ_500_pure_1L_BSM']
     kappas['ZZ_550'] = kappas['ZZ_550_pure_1L_BSM']
@@ -1390,30 +1419,6 @@ for coup, kaps in kappas.items():
 
 print(final_text)
 
-
-# if updated_lumi:
-#     lumi_FCCee_Zpole_old = 150. # ab^-1
-#     lumi_FCCee_Zpole_new = 205. # ab^-1
-
-#     lumi_FCCee_WW_old = 10.  # ab^-1
-#     lumi_FCCee_WW_new = 19.2 # ab^-1
-
-#     lumi_FCCee_240_old = 5.0  # ab^-1
-#     lumi_FCCee_240_new = 10.8 # ab^-1
-
-#     lumi_FCCee_365_old = 1.5 # ab^-1
-#     lumi_FCCee_365_new = 2.7 # ab^-1
-
-#     lumi_scale_FCCee_Zpole = sqrt(lumi_FCCee_Zpole_old/lumi_FCCee_Zpole_new)
-#     lumi_scale_FCCee_WW    = sqrt(lumi_FCCee_WW_old/lumi_FCCee_WW_new)
-#     lumi_scale_FCCee_240   = sqrt(lumi_FCCee_240_old/lumi_FCCee_240_new)
-#     lumi_scale_FCCee_365   = sqrt(lumi_FCCee_365_old/lumi_FCCee_365_new)
-
-# else:
-#     lumi_scale_FCCee_Zpole = 1.0
-#     lumi_scale_FCCee_WW    = 1.0
-#     lumi_scale_FCCee_240   = 1.0
-#     lumi_scale_FCCee_365   = 1.0
 
 
 ###########################################################################################
@@ -1986,9 +1991,11 @@ else:
     input_files.append(file_dir + "ObservablesEW_FCCee_WW_SM")
     output_files.append(file_dir + "ObservablesEW_FCCee_WW_SM_kappa_scaled")
 
-
 if EWPO_2L:
     output_files = [output_file + "_EWPO_2L" for output_file in output_files]
+
+if with_HEPfit_EWPOs:
+    output_files = [output_file + "_with_HEPfit_EWPOs" for output_file in output_files]
 
 for input_file, output_file in zip(input_files, output_files):
     input_file = input_file  + ".conf"
@@ -2042,6 +2049,11 @@ for input_file, output_file in zip(input_files, output_files):
                     elif (columns[2].startswith("Rcharm")):
                         columns[8] = str(Rcharm)
 
+                if with_HEPfit_EWPOs:
+                    obs = columns[1]
+                    if obs in obs_predictions_smeft_matching.keys():
+                        columns[8] = format_sig(obs_predictions_smeft_matching[obs], sig=16)
+
                 # Rejoin the columns and write to the output file
                 outfile.write(" ".join(columns) + "\n")
             else:
@@ -2052,3 +2064,56 @@ for input_file, output_file in zip(input_files, output_files):
         outfile.write(final_text)
 
     print(f"Modified content saved to {output_file}.")
+
+
+
+
+
+
+###########################################################################################
+###########################################################################################
+################################   Diboson Observables   ##################################
+###########################################################################################
+###########################################################################################
+
+if with_HEPfit_EWPOs:
+
+    input_files =  []
+    output_files = []
+
+    input_files.append(file_dir + "ObservablesVV_OO_FCCee_161")
+    input_files.append(file_dir + "ObservablesVV_OO_FCCee_240")
+    input_files.append(file_dir + "ObservablesVV_OO_FCCee_365")
+    input_files.append(file_dir + "aTGC_observables_Current")
+    input_files.append(file_dir + "aTGC_observables_HLLHC_Full")
+    
+    output_files.append(file_dir + "ObservablesVV_OO_FCCee_161_kappa_scaled_with_HEPfit_EWPOs")
+    output_files.append(file_dir + "ObservablesVV_OO_FCCee_240_kappa_scaled_with_HEPfit_EWPOs")
+    output_files.append(file_dir + "ObservablesVV_OO_FCCee_365_kappa_scaled_with_HEPfit_EWPOs")
+    output_files.append(file_dir + "aTGC_observables_Current_kappa_scaled_with_HEPfit_EWPOs")
+    output_files.append(file_dir + "aTGC_observables_HLLHC_Full_kappa_scaled_with_HEPfit_EWPOs")
+
+
+    for input_file, output_file in zip(input_files, output_files):
+        input_file = input_file  + ".conf"
+        output_file = output_file + ".conf"
+        with open(input_file, 'r') as infile, open(output_file, 'w') as outfile:
+            for line in infile:
+                if line.startswith("Observable"):
+                    # Split the line into columns by whitespace
+                    columns = line.split()
+
+                    obs = columns[1]
+                    if obs in obs_predictions_smeft_matching.keys():
+                        columns[8] = format_sig(obs_predictions_smeft_matching[obs], sig=16)
+
+                    # Rejoin the columns and write to the output file
+                    outfile.write(" ".join(columns) + "\n")
+                else:
+                    # Write unmodified lines to the output file
+                    outfile.write(line)
+
+        with open(output_file, 'a') as outfile:
+            outfile.write(final_text)
+
+        print(f"Modified content saved to {output_file}.")
