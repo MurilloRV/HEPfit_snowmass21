@@ -772,6 +772,7 @@ for BP_Name in "${BP_Names_Total[@]}"; do
                     cd $TARGET_PATH
                     python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name}
                     python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name} --realistic
+                    if [ "$updated_lumi" == "true" ]; then python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name} --realistic --updated_lumi; fi
                     python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name} --realistic ${HIGGS_PYTHON_ARG} --higgsconf ${HIGGS_CONF} ${EWPO_PYTHON_ARG}
                     # Running the script also without the flag, so that the main fits (i.e. the ones with the flag set to false) are also set up properly
 
@@ -784,6 +785,7 @@ for BP_Name in "${BP_Names_Total[@]}"; do
             cd $TARGET_PATH
             python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name}
             python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name} --realistic
+            if [ "$updated_lumi" == "true" ]; then python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name} --realistic --updated_lumi; fi
             python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name} --realistic  --higgsconf ${HIGGS_CONF} ${EWPO_PYTHON_ARG}
         fi
 
