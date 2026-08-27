@@ -608,6 +608,7 @@ for BP_Name in "${BP_Names_Total[@]}"; do
             sed -i "\/IncludeFile ..\/..\/${VV_OO_CONF_FILE}.conf /c\\$NEW_MODEL_VV" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
             sed -i "\/IncludeFile ..\/..\/${VV_OO_CONF_FILE}.conf /c\\$NEW_MODEL_VV" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
 
+            VV_OO_CONF_FILE="${NEW_VV_OO_CONF_FILE}"
             VV_OO_CONF_FILE_FCCee_161="${NEW_VV_OO_CONF_FILE_FCCee_161}"
             VV_OO_CONF_FILE_FCCee_240="${NEW_VV_OO_CONF_FILE_FCCee_240}"
             VV_OO_CONF_FILE_FCCee_365="${NEW_VV_OO_CONF_FILE_FCCee_365}"
@@ -641,7 +642,7 @@ for BP_Name in "${BP_Names_Total[@]}"; do
             sed -i "\/IncludeFile ..\/..\/${EWPO_CONF_FILE}.conf /c\\$NEW_MODEL_EWS" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
 
             EWPO_PYTHON_ARG="${EWPO_PYTHON_ARG} --with_Af"
-             if [ "$shifted_sin2thetaEff_fermion_spec" == "true" ]; then EWPO_PYTHON_ARG="${EWPO_PYTHON_ARG} --shifted_sin2thetaEff_fermion_spec"; fi
+            if [ "$shifted_sin2thetaEff_fermion_spec" == "true" ]; then EWPO_PYTHON_ARG="${EWPO_PYTHON_ARG} --shifted_sin2thetaEff_fermion_spec"; fi
             EWPO_CONF_FILE="${NEW_EWPO_CONF_FILE}"
 
             EWPO_CONF_FILE_CURRENT="${NEW_EWPO_CONF_FILE_CURRENT}"
@@ -775,6 +776,7 @@ for BP_Name in "${BP_Names_Total[@]}"; do
                     if [ "$updated_lumi" == "true" ]; then python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name} --realistic --updated_lumi; fi
                     python scale_observables_kappas.py --scenario ${IDM_SCENARIOS[j]} --bp ${BP_Name} --realistic ${HIGGS_PYTHON_ARG} --higgsconf ${HIGGS_CONF} ${EWPO_PYTHON_ARG}
                     # Running the script also without the flag, so that the main fits (i.e. the ones with the flag set to false) are also set up properly
+                    # Note: the "updated_lumi" flag, if set to True, is already included in the HIGGS_PYTHON_ARG, so it will be automatically included in the last run of the script
 
                 fi
             done

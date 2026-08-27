@@ -20,6 +20,9 @@ from fit_utils.utils import format_sig
 parser = argparse.ArgumentParser()
 parser.add_argument("-s", "--scenario", help = "Name of the scenario (e.g. IDM_FCCee240)", type=str)
 parser.add_argument("-b", "--bp", help = "Which benchmark point to use", type=str)
+parser.add_argument("--not_asimov", help = "Asimov fits set the central value of pseudo-measurements to corresponding BSM predictions. If set to 'true', pseudo-measurements will deviate from predictions according to the projected uncertainty, as a more realistic experiment", action="store_true")
+parser.add_argument("--fit_idx", help = "Index of the toy fit to be performed, corresponding to a different set of pseudo-measurements", type=int, default=0)
+parser.add_argument("--random_seed", help = "Random seed for generation of pseudo-measurements", type=int, default=137)
 parser.add_argument("--realistic", help = "Use realistic, asymmetric uncertainties for the on-shell kappa_lambda measurement at HL-LHC", action="store_true")
 parser.add_argument("--ewpos_all", help = "Modify also the EWPO central values for current observables", action="store_true")
 parser.add_argument("--with_Af", help = "Use BSM predictions for sin2theta_eff to evaluate A_f and A_FB_f asymmetries and use these in the fit inputs", action="store_true")
@@ -48,6 +51,9 @@ parser.add_argument("--updated_lumi", help = "Use updated luminosity values for 
 args = parser.parse_args()
 scenario                                            = args.scenario
 BP                                                  = args.bp
+not_asimov                                          = args.not_asimov
+fit_idx                                             = args.fit_idx
+random_seed                                         = args.random_seed
 realistic_HL_LHC_k_lambda_uncertainties             = args.realistic
 modify_all_ewpos                                    = args.ewpos_all
 with_Af                                             = args.with_Af
@@ -146,6 +152,8 @@ elif with_HEPfit_EWPOs and (with_Af or with_Rf or EWPO_2L or shifted_sin2thetaEf
 smeft_matching_predictions_dir = "/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/IDM_fits/Fits_HLLHC_FCCee/smeft_matching_inputs"
 
 file_dir = f"{BP}/{scenario}/"
+if not_asimov: 
+    file_dir += f"toy_fits/"
 
 
 kappas={}
@@ -1420,6 +1428,17 @@ for coup, kaps in kappas.items():
 print(final_text)
 
 
+if not_asimov:
+    if BP not in BPs_main: 
+        raise ValueError(f"Chosen BP ({BP}) is not in BPs_main list. Non-asimov fits are currently only possible with the main BPs.")
+    BP_index = BPs_main.index(BP)
+    fit_random_seed = int(1e7*random_seed + 1e5*BP_index + fit_idx)
+    rng = np.random.default_rng(seed=fit_random_seed)
+    final_text += f"# Random seed for the pseudo-measurements: {fit_random_seed}\n"
+
+gaussian_noise_scale = 1.0  # Scale factor for the Gaussian noise. Useful for tests, e.g. setting to zero
+
+
 
 ###########################################################################################
 ###########################################################################################
@@ -1458,14 +1477,19 @@ for condition, filename_suffix in output_file_flag_map.items():
         break
 
 input_file_FCCee240  += ".conf"
-output_file_FCCee240 += ".conf"
+if not_asimov:
+    output_file_FCCee240 += f"_toyfit{fit_idx}.conf"
+else:
+    output_file_FCCee240 += ".conf"
 
 with open(input_file_FCCee240, 'r') as infile, open(output_file_FCCee240, 'w') as outfile:
     for line in infile:
         if line.startswith("Observable"):
             # Split the line into columns by whitespace
             columns = line.split()
-            
+            if columns[6] != "MCMC" or columns[7] != "weight":
+                continue  # Skip lines with observables not considered in the MCMC fit
+
             if (columns[1].startswith("eeZH_")):
                 columns[8] = str(kappas2["ZZ_240"]*float(columns[8]))
                 columns[9] = str(kappas2["ZZ_240"]*float(columns[9]))
@@ -1509,6 +1533,11 @@ with open(input_file_FCCee240, 'r') as infile, open(output_file_FCCee240, 'w') a
             elif (columns[1].startswith("eeZHZga_")):
                 columns[8] = str(kappas2["ZZ_240"]*kappas2["Zgam"]*float(columns[8])/kappas2["H"])
                 columns[9] = str(kappas2["ZZ_240"]*kappas2["Zgam"]*float(columns[9])/kappas2["H"])
+
+            if not_asimov:
+                # Add random Gaussian noise to the modified values
+                columns[8] = str(rng.normal(loc=float(columns[8]), scale=float(columns[9]) * gaussian_noise_scale))
+                # The uncertainty remains unchanged (columns[9])
 
             # Rejoin the columns and write to the output file
             outfile.write(" ".join(columns) + "\n")
@@ -1566,7 +1595,10 @@ if (scenario == "IDM_FCCee240_FCCee365"
             break
 
     input_file_FCCee365  += ".conf"
-    output_file_FCCee365 += ".conf"
+    if not_asimov:
+        output_file_FCCee365 += f"_toyfit{fit_idx}.conf"
+    else:
+        output_file_FCCee365 += ".conf"
 
 
     with open(input_file_FCCee365, 'r') as infile, open(output_file_FCCee365, 'w') as outfile:
@@ -1574,6 +1606,8 @@ if (scenario == "IDM_FCCee240_FCCee365"
             if line.startswith("Observable"):
                 # Split the line into columns by whitespace
                 columns = line.split()
+                if columns[6] != "MCMC" or columns[7] != "weight":
+                    continue  # Skip lines with observables not considered in the MCMC fit
                 
                 if (columns[1].startswith("eeZH_")):
                     columns[8] = str(kappas2["ZZ_365"]*float(columns[8]))
@@ -1647,6 +1681,11 @@ if (scenario == "IDM_FCCee240_FCCee365"
                     columns[8] = str(kappas2["ZZ_365"]*kappas2["mumu"]*float(columns[8])/kappas2["H"])
                     columns[9] = str(kappas2["ZZ_365"]*kappas2["mumu"]*float(columns[9])/kappas2["H"])
 
+                if not_asimov:
+                    # Add random Gaussian noise to the modified values
+                    columns[8] = str(rng.normal(loc=float(columns[8]), scale=float(columns[9]) * gaussian_noise_scale))
+                    # The uncertainty remains unchanged (columns[9])
+
 
                 # Rejoin the columns and write to the output file
                 outfile.write(" ".join(columns) + "\n")
@@ -1672,24 +1711,24 @@ if (scenario == "IDM_FCCee240_FCCee365"
 
 
 # Open the HL-LHC input file in read mode and output file in write mode
-input_file_HLLHC =  file_dir + "ObservablesHiggs_HLLHC_SM.conf"
-output_file_HLLHC = file_dir + "ObservablesHiggs_HLLHC_SM_kappa_scaled.conf"
+input_file_HLLHC =  file_dir + "ObservablesHiggs_HLLHC_SM"
+output_file_HLLHC = file_dir + "ObservablesHiggs_HLLHC_SM_kappa_scaled"
 
 output_file_flag_map = {
-    no_1L_BSM_sqrt_s: "ObservablesHiggs_HLLHC_SM_kappa_scaled_no_1L_BSM_sqrt_s.conf",
-    no_1L_BSM: "ObservablesHiggs_HLLHC_SM_kappa_scaled_no_1L_BSM.conf",
-    pure_1L_BSM: "ObservablesHiggs_HLLHC_SM_kappa_scaled_pure_1L_BSM.conf",
-    no_quad: "ObservablesHiggs_HLLHC_SM_kappa_scaled_no_quad.conf",
-    smeft_formula: "ObservablesHiggs_HLLHC_SM_kappa_scaled_smeft_formula.conf",
-    smeft_formula_sqrt: "ObservablesHiggs_HLLHC_SM_kappa_scaled_smeft_formula_sqrt.conf",
-    smeft_formula_no_cross: "ObservablesHiggs_HLLHC_SM_kappa_scaled_smeft_formula_no_cross.conf",
-    smeft_formula_external_leg: "ObservablesHiggs_HLLHC_SM_kappa_scaled_smeft_formula_external_leg.conf",
-    smeft_formula_all: "ObservablesHiggs_HLLHC_SM_kappa_scaled_smeft_formula_all.conf",
-    WFR_kala2_input: "ObservablesHiggs_HLLHC_SM_kappa_scaled_WFR_kala2_input.conf",
-    WFR_kala2_input_all: "ObservablesHiggs_HLLHC_SM_kappa_scaled_WFR_kala2_input_all.conf",
-    use_HEPfit_C1_values_WFR_kala2_input_all: "ObservablesHiggs_HLLHC_SM_kappa_scaled_use_HEPfit_C1_values_WFR_kala2_input_all.conf",
-    use_HEPfit_C1_values_decayrates_WFR_kala2_input_all: "ObservablesHiggs_HLLHC_SM_kappa_scaled_use_HEPfit_C1_values_decayrates_WFR_kala2_input_all.conf",
-    use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all: "ObservablesHiggs_HLLHC_SM_kappa_scaled_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all.conf",
+    no_1L_BSM_sqrt_s: "ObservablesHiggs_HLLHC_SM_kappa_scaled_no_1L_BSM_sqrt_s",
+    no_1L_BSM: "ObservablesHiggs_HLLHC_SM_kappa_scaled_no_1L_BSM",
+    pure_1L_BSM: "ObservablesHiggs_HLLHC_SM_kappa_scaled_pure_1L_BSM",
+    no_quad: "ObservablesHiggs_HLLHC_SM_kappa_scaled_no_quad",
+    smeft_formula: "ObservablesHiggs_HLLHC_SM_kappa_scaled_smeft_formula",
+    smeft_formula_sqrt: "ObservablesHiggs_HLLHC_SM_kappa_scaled_smeft_formula_sqrt",
+    smeft_formula_no_cross: "ObservablesHiggs_HLLHC_SM_kappa_scaled_smeft_formula_no_cross",
+    smeft_formula_external_leg: "ObservablesHiggs_HLLHC_SM_kappa_scaled_smeft_formula_external_leg",
+    smeft_formula_all: "ObservablesHiggs_HLLHC_SM_kappa_scaled_smeft_formula_all",
+    WFR_kala2_input: "ObservablesHiggs_HLLHC_SM_kappa_scaled_WFR_kala2_input",
+    WFR_kala2_input_all: "ObservablesHiggs_HLLHC_SM_kappa_scaled_WFR_kala2_input_all",
+    use_HEPfit_C1_values_WFR_kala2_input_all: "ObservablesHiggs_HLLHC_SM_kappa_scaled_use_HEPfit_C1_values_WFR_kala2_input_all",
+    use_HEPfit_C1_values_decayrates_WFR_kala2_input_all: "ObservablesHiggs_HLLHC_SM_kappa_scaled_use_HEPfit_C1_values_decayrates_WFR_kala2_input_all",
+    use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all: "ObservablesHiggs_HLLHC_SM_kappa_scaled_use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all",
 }
 
 for condition, filename in output_file_flag_map.items():
@@ -1697,12 +1736,21 @@ for condition, filename in output_file_flag_map.items():
         output_file_HLLHC = file_dir + filename
         break
 
+input_file_HLLHC += ".conf"
+if not_asimov:
+    output_file_HLLHC += f"_toyfit{fit_idx}.conf"
+else:
+    output_file_HLLHC += ".conf"
+
+
 
 with open(input_file_HLLHC, 'r') as infile, open(output_file_HLLHC, 'w') as outfile:
     for line in infile:
         if line.startswith("Observable"):
             # Split the line into columns by whitespace
             columns = line.split()
+            if columns[6] != "MCMC" or columns[7] != "weight":
+                continue  # Skip lines with observables not considered in the MCMC fit
 
             # ggF
             if (columns[1].startswith("muggHgagaHL")):
@@ -1822,6 +1870,11 @@ with open(input_file_HLLHC, 'r') as infile, open(output_file_HLLHC, 'w') as outf
                 columns[8] = str(kappas2["ttH_HLLHC"]*kappas2["tautau"]*float(columns[8])/kappas2["H"])
                 columns[9] = str(kappas2["ttH_HLLHC"]*kappas2["tautau"]*float(columns[9])/kappas2["H"])
 
+            if not_asimov:
+                # Add random Gaussian noise to the modified values
+                columns[8] = str(rng.normal(loc=float(columns[8]), scale=float(columns[9]) * gaussian_noise_scale))
+                # The uncertainty remains unchanged (columns[9])
+
             # Rejoin the columns and write to the output file
             outfile.write(" ".join(columns) + "\n")
         else:
@@ -1914,6 +1967,8 @@ if scenario == "IDM_FCCee240_FCCee365_HLLHClambda":
     else:
         input_file = file_dir + higgsconf
 
+    if not_asimov: input_file += f"_toyfit{fit_idx}"
+
     output_file = input_file + "_temp.conf"
     input_file  = input_file  + ".conf"
     
@@ -1923,6 +1978,8 @@ if scenario == "IDM_FCCee240_FCCee365_HLLHClambda":
             if line.startswith("Observable"):
                 # Split the line into columns by whitespace
                 columns = line.split()
+                if columns[6] != "MCMC" or columns[7] != "weight":
+                    continue  # Skip lines with observables not considered in the MCMC fit
                 
                 if (columns[2].startswith("deltalHHH")):
                     columns[8] = str(kappas['lam']-1)
@@ -1936,7 +1993,10 @@ if scenario == "IDM_FCCee240_FCCee365_HLLHClambda":
                     if kappas['lam'] < -1.5 or kappas['lam'] > 8.:
                         print("Warning: kappa_lambda outside of the (-1.5, 8) range. Uncertainty evaluated at closest interval edge")
 
-
+                if not_asimov:
+                    # Add random Gaussian noise to the modified values
+                    columns[8] = str(rng.normal(loc=float(columns[8]), scale=float(columns[9]) * gaussian_noise_scale))
+                    # The uncertainty remains unchanged (columns[9])
 
                 # Rejoin the columns and write to the output file
                 outfile.write(" ".join(columns) + "\n")
@@ -1959,6 +2019,86 @@ if scenario == "IDM_FCCee240_FCCee365_HLLHClambda":
 #######################################   EWPOs   #########################################
 ###########################################################################################
 ###########################################################################################
+
+def rewrite_observable_line_EWPO(
+    line, 
+    outfile, 
+    rng, 
+    not_asimov=False, 
+    corr_gaussian_noise=None,
+):
+    # Split the line into columns by whitespace
+    columns = line.split()
+    if len(columns) < 8 or columns[6] != "MCMC" or columns[7] != "weight":
+        return line  # Skip lines with observables not considered in the MCMC fit
+
+    ###################################
+    ###### Obtain BSM prediction ######
+    ###################################
+    if (columns[2].startswith("GammaZ")):
+        columns[8] = str(GammaZ)
+
+    elif (columns[2].startswith("Mw")):
+        columns[8] = str(Mw)
+
+    if with_Af:
+        if (columns[2].startswith("Aelectron")):
+            columns[8] = str(A_f('e', sin2thetaEff_l))
+        elif (columns[2].startswith("Amuon")):
+            columns[8] = str(A_f('mu', sin2thetaEff_l))
+        elif (columns[2].startswith("Atau")):
+            columns[8] = str(A_f('tau', sin2thetaEff_l))
+        elif (columns[2].startswith("Abottom")):
+            columns[8] = str(A_f('b', sin2thetaEff_d))
+        elif (columns[2].startswith("Acharm")):
+            columns[8] = str(A_f('c', sin2thetaEff_u))
+        elif (columns[2].startswith("As")):
+            columns[8] = str(A_f('s', sin2thetaEff_d))
+
+        elif (columns[2].startswith("AFBelectron")):
+            columns[8] = str(A_FB_f('e', sin2thetaEff_l, sin2thetaEff_l))
+        elif (columns[2].startswith("AFBmuon")):
+            columns[8] = str(A_FB_f('mu', sin2thetaEff_l, sin2thetaEff_l))
+        elif (columns[2].startswith("AFBtau")):
+            columns[8] = str(A_FB_f('tau', sin2thetaEff_l, sin2thetaEff_l))
+        elif (columns[2].startswith("AFBbottom")):
+            columns[8] = str(A_FB_f('b', sin2thetaEff_l, sin2thetaEff_d))
+        elif (columns[2].startswith("AFBcharm")):
+            columns[8] = str(A_FB_f('c', sin2thetaEff_l, sin2thetaEff_u))
+
+    if with_Rf:
+        if (columns[2].startswith("Relectron")):
+            columns[8] = str(Relectron)
+        elif (columns[2].startswith("Rmuon")):
+            columns[8] = str(Rmuon)
+        elif (columns[2].startswith("Rtau")):
+            columns[8] = str(Rtau)
+        elif (columns[2].startswith("Rbottom")):
+            columns[8] = str(Rbottom)
+        elif (columns[2].startswith("Rcharm")):
+            columns[8] = str(Rcharm)
+
+    if with_HEPfit_EWPOs:
+        obs = columns[1]
+        if obs in obs_predictions_smeft_matching.keys():
+            columns[8] = format_sig(obs_predictions_smeft_matching[obs], sig=16)
+    
+    ################################################
+    #### Add Gaussian noise for non-Asimov fits ####
+    ################################################
+    if not_asimov:
+        if corr_gaussian_noise is None:
+            columns[8] = str(rng.normal(loc=float(columns[8]), scale=float(columns[9]) * gaussian_noise_scale))
+            # The uncertainty remains unchanged (columns[9])       
+        else:
+            # Use the provided correlated Gaussian noise for this observable. This needs to be provided
+            # since the covariance matrix depends on input from the lines for other observables
+            columns[8] = str(float(columns[8]) + corr_gaussian_noise * gaussian_noise_scale)
+
+    # Rejoin the columns and write to the output file
+    outfile.write(" ".join(columns) + "\n")
+
+
 
 input_files =  []
 output_files = []
@@ -1999,66 +2139,57 @@ if with_HEPfit_EWPOs:
 
 for input_file, output_file in zip(input_files, output_files):
     input_file = input_file  + ".conf"
-    output_file = output_file + ".conf"
+    if not_asimov:
+        output_file += f"_toyfit{fit_idx}.conf"
+    else:
+        output_file += ".conf"
     with open(input_file, 'r') as infile, open(output_file, 'w') as outfile:
         for line in infile:
-            if line.startswith("Observable"):
-                # Split the line into columns by whitespace
+            if not_asimov and line.startswith("CorrelatedGaussianObservables "):
                 columns = line.split()
-                
-                if (columns[2].startswith("GammaZ")):
-                    columns[8] = str(GammaZ)
+                n_corr_obs = int(columns[2])
+                outfile.write(line)
 
-                elif (columns[2].startswith("Mw")):
-                    columns[8] = str(Mw)
+                obs_lines = [next(infile) for _ in range(n_corr_obs)]
 
-                if with_Af:
-                    if (columns[2].startswith("Aelectron")):
-                        columns[8] = str(A_f('e', sin2thetaEff_l))
-                    elif (columns[2].startswith("Amuon")):
-                        columns[8] = str(A_f('mu', sin2thetaEff_l))
-                    elif (columns[2].startswith("Atau")):
-                        columns[8] = str(A_f('tau', sin2thetaEff_l))
-                    elif (columns[2].startswith("Abottom")):
-                        columns[8] = str(A_f('b', sin2thetaEff_d))
-                    elif (columns[2].startswith("Acharm")):
-                        columns[8] = str(A_f('c', sin2thetaEff_u))
-                    elif (columns[2].startswith("As")):
-                        columns[8] = str(A_f('s', sin2thetaEff_d))
+                corr_matrix_lines = [next(infile) for _j in range(n_corr_obs)]
+                corr_matrix = [line.split() for line in corr_matrix_lines]
+                corr_matrix = np.array(corr_matrix, dtype=float)
 
-                    elif (columns[2].startswith("AFBelectron")):
-                        columns[8] = str(A_FB_f('e', sin2thetaEff_l, sin2thetaEff_l))
-                    elif (columns[2].startswith("AFBmuon")):
-                        columns[8] = str(A_FB_f('mu', sin2thetaEff_l, sin2thetaEff_l))
-                    elif (columns[2].startswith("AFBtau")):
-                        columns[8] = str(A_FB_f('tau', sin2thetaEff_l, sin2thetaEff_l))
-                    elif (columns[2].startswith("AFBbottom")):
-                        columns[8] = str(A_FB_f('b', sin2thetaEff_l, sin2thetaEff_d))
-                    elif (columns[2].startswith("AFBcharm")):
-                        columns[8] = str(A_FB_f('c', sin2thetaEff_l, sin2thetaEff_u))
+                std_devs = np.array([float(obs_line.split()[9]) for obs_line in obs_lines])
+                cov_matrix = np.outer(std_devs, std_devs) * corr_matrix
 
-                if with_Rf:
-                    if (columns[2].startswith("Relectron")):
-                        columns[8] = str(Relectron)
-                    elif (columns[2].startswith("Rmuon")):
-                        columns[8] = str(Rmuon)
-                    elif (columns[2].startswith("Rtau")):
-                        columns[8] = str(Rtau)
-                    elif (columns[2].startswith("Rbottom")):
-                        columns[8] = str(Rbottom)
-                    elif (columns[2].startswith("Rcharm")):
-                        columns[8] = str(Rcharm)
+                corr_gaussian_noise = rng.multivariate_normal(mean=np.zeros(n_corr_obs), cov=cov_matrix)
+                for obs_line, noise in zip(obs_lines, corr_gaussian_noise):
+                    rewrite_observable_line_EWPO(obs_line, outfile, rng, not_asimov, corr_gaussian_noise=noise)
+                for line in corr_matrix_lines:
+                    outfile.write(line)
 
-                if with_HEPfit_EWPOs:
-                    obs = columns[1]
-                    if obs in obs_predictions_smeft_matching.keys():
-                        columns[8] = format_sig(obs_predictions_smeft_matching[obs], sig=16)
+            elif not_asimov and line.startswith("ObservablesWithCovarianceInverse "):
+                columns = line.split()
+                n_corr_obs = int(columns[2])
+                outfile.write(line)
 
-                # Rejoin the columns and write to the output file
-                outfile.write(" ".join(columns) + "\n")
+                obs_lines = [next(infile) for _ in range(n_corr_obs)]
+
+                inv_cov_matrix_lines = [next(infile) for _j in range(n_corr_obs)]
+                inv_cov_matrix = [line.split() for line in inv_cov_matrix_lines]
+                inv_cov_matrix = np.array(inv_cov_matrix, dtype=float)
+
+                cov_matrix = np.linalg.inv(inv_cov_matrix)
+
+                corr_gaussian_noise = rng.multivariate_normal(mean=np.zeros(n_corr_obs), cov=cov_matrix)
+                for obs_line, noise in zip(obs_lines, corr_gaussian_noise):
+                    rewrite_observable_line_EWPO(obs_line, outfile, rng, not_asimov, corr_gaussian_noise=noise)
+                for line in inv_cov_matrix_lines:
+                    outfile.write(line)
+
+            elif line.startswith("Observable "):
+                rewrite_observable_line_EWPO(line, outfile, rng, not_asimov)
             else:
                 # Write unmodified lines to the output file
                 outfile.write(line)
+
 
     with open(output_file, 'a') as outfile:
         outfile.write(final_text)
@@ -2075,6 +2206,37 @@ for input_file, output_file in zip(input_files, output_files):
 ################################   Diboson Observables   ##################################
 ###########################################################################################
 ###########################################################################################
+
+
+def rewrite_observable_line_VV(
+    line, 
+    outfile, 
+    rng, 
+    not_asimov=False, 
+    corr_gaussian_noise=None,
+):
+    # Split the line into columns by whitespace
+    columns = line.split()
+    if len(columns) < 8 or columns[6] != "MCMC" or columns[7] != "weight":
+        return line  # Skip lines with observables not considered in the MCMC fit
+
+    obs = columns[1]
+    if obs in obs_predictions_smeft_matching.keys():
+        columns[8] = format_sig(obs_predictions_smeft_matching[obs], sig=16)
+
+    if not_asimov:
+        # Add random Gaussian noise to the modified values
+        if corr_gaussian_noise is None:
+            columns[8] = str(rng.normal(loc=float(columns[8]), scale=float(columns[9]) * gaussian_noise_scale))
+            # The uncertainty remains unchanged (columns[9])       
+        else:
+            # Use the provided correlated Gaussian noise for this observable. This needs to be provided
+            # since the covariance matrix depends on input from the lines for other observables
+            columns[8] = str(float(columns[8]) + corr_gaussian_noise * gaussian_noise_scale)
+
+    # Rejoin the columns and write to the output file
+    outfile.write(" ".join(columns) + "\n")
+
 
 if with_HEPfit_EWPOs:
 
@@ -2096,19 +2258,53 @@ if with_HEPfit_EWPOs:
 
     for input_file, output_file in zip(input_files, output_files):
         input_file = input_file  + ".conf"
-        output_file = output_file + ".conf"
+        if not_asimov:
+            output_file += f"_toyfit{fit_idx}.conf"
+        else:
+            output_file += ".conf"
         with open(input_file, 'r') as infile, open(output_file, 'w') as outfile:
-            for line in infile:
-                if line.startswith("Observable"):
-                    # Split the line into columns by whitespace
+            for line_idx, line in enumerate(infile):
+                if not_asimov and line.startswith("CorrelatedGaussianObservables "):
                     columns = line.split()
+                    n_corr_obs = int(columns[2])
+                    outfile.write(line)
 
-                    obs = columns[1]
-                    if obs in obs_predictions_smeft_matching.keys():
-                        columns[8] = format_sig(obs_predictions_smeft_matching[obs], sig=16)
+                    obs_lines = [next(infile) for _ in range(n_corr_obs)]
 
-                    # Rejoin the columns and write to the output file
-                    outfile.write(" ".join(columns) + "\n")
+                    corr_matrix_lines = [next(infile) for _j in range(n_corr_obs)]
+                    corr_matrix = [line.split() for line in corr_matrix_lines]
+                    corr_matrix = np.array(corr_matrix, dtype=float)
+
+                    std_devs = np.array([float(obs_line.split()[9]) for obs_line in obs_lines])
+                    cov_matrix = np.outer(std_devs, std_devs) * corr_matrix
+
+                    corr_gaussian_noise = rng.multivariate_normal(mean=np.zeros(n_corr_obs), cov=cov_matrix)
+                    for obs_line, noise in zip(obs_lines, corr_gaussian_noise):
+                        rewrite_observable_line_VV(obs_line, outfile, rng, not_asimov, corr_gaussian_noise=noise)
+                    for line in corr_matrix_lines:
+                        outfile.write(line)
+
+                elif not_asimov and line.startswith("ObservablesWithCovarianceInverse "):
+                    columns = line.split()
+                    n_corr_obs = int(columns[2])
+                    outfile.write(line)
+
+                    obs_lines = [next(infile) for _ in range(n_corr_obs)]
+
+                    inv_cov_matrix_lines = [next(infile) for _j in range(n_corr_obs)]
+                    inv_cov_matrix = [line.split() for line in inv_cov_matrix_lines]
+                    inv_cov_matrix = np.array(inv_cov_matrix, dtype=float)
+
+                    cov_matrix = np.linalg.inv(inv_cov_matrix)
+
+                    corr_gaussian_noise = rng.multivariate_normal(mean=np.zeros(n_corr_obs), cov=cov_matrix)
+                    for obs_line, noise in zip(obs_lines, corr_gaussian_noise):
+                        rewrite_observable_line_VV(obs_line, outfile, rng, not_asimov, corr_gaussian_noise=noise)
+                    for line in inv_cov_matrix_lines:
+                        outfile.write(line)
+
+                elif line.startswith("Observable "):
+                    rewrite_observable_line_VV(line, outfile, rng, not_asimov)
                 else:
                     # Write unmodified lines to the output file
                     outfile.write(line)

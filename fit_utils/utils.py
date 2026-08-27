@@ -944,6 +944,12 @@ def read_klam_hist_uproot(
 
     os.chdir(file_path)
     try:
+        if os.path.exists("./lmbd_hist.npz"):
+            hist = np.load("./lmbd_hist.npz")
+            hist_lmbd_x = hist["hist_lmbd_x"]
+            hist_lmbd_y = hist["hist_lmbd_y"]
+            return hist_lmbd_x, hist_lmbd_y
+        
         with uproot.open("./MCout.root") as file:
 
             hist_lmbd_y, hist_lmbd_x = file["deltalHHH_HLLHC"].to_numpy()

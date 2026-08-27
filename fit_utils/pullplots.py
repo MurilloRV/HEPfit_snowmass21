@@ -819,6 +819,7 @@ def generate_pull_plots_obs(
     compare_with_SM=False,
     WC_list_for_prediction_pulls=None,
     matched_predictions_vs_BSM=False,
+    compare_model_spec_predictions=False,
     BP_lambdas=None,
     figsize=(5, 7),
     legend_loc="best",
@@ -866,11 +867,14 @@ def generate_pull_plots_obs(
         pulls. Default is False
     WC_list_for_prediction_pulls: list of str, optional
         If set, the pulls in the plots will illustrate the deviation between
-        the predictions for the given WC values and the SM predictions.This
+        the predictions for the given WC values and the SM predictions. This
         list should contain the names of the WCs to be included.
     matched_predictions_vs_BSM : bool, optional
         If True, this function will evaluate the pulls of the BSM model 
         predictions w.r.t. to the SMEFT predictions using matched Wilson coef.
+    compare_model_spec_predictions : bool, optional
+        If True, this function will evaluate the pulls of the BSM model predictions between
+        the two model specifications given as input, for comparison purposes
     BP_lambdas : list of floats, optional
         List of predictions for kappa_lambda for each BP. If set, kappa_lambda will be added as an 
         observable with the corresponding central value for each BP. 
@@ -891,6 +895,9 @@ def generate_pull_plots_obs(
 
     scenarios = model_specs.keys()
 
+    if compare_model_spec_predictions and (matched_predictions_vs_BSM or WC_list_for_prediction_pulls is not None):
+        raise ValueError("The option 'compare_model_spec_predictions' is not compatible with 'matched_predictions_vs_BSM' or 'WC_list_for_prediction_pulls'")
+
     if colors is None:
         # Default matplotlib color cycle
         colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
@@ -904,7 +911,10 @@ def generate_pull_plots_obs(
         for scenario in scenarios:
             files[BP][scenario] = {}
             for model_spec in model_specs[scenario]:
-                files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/results_{model_spec}/Observables/Statistics.txt"
+                if "toyfit" in model_spec:
+                    files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/toy_fits/results_{model_spec}/Observables/Statistics.txt"
+                else:
+                    files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/results_{model_spec}/Observables/Statistics.txt"
 
     # Create the output directory, if it does not yet exist
     subprocess.run(["mkdir", "-p", f"{working_dir}/comparison_plots/results_{results_dir}"])
@@ -944,7 +954,7 @@ def generate_pull_plots_obs(
                     ).T
         WC_labels = [ find_tex_label_par(None, wc) for wc in WC_list_for_prediction_pulls ]
     
-    elif matched_predictions_vs_BSM:
+    elif matched_predictions_vs_BSM or compare_model_spec_predictions:
         results = {}
         for BP in BPs:
             results[BP] = {}
@@ -1091,8 +1101,17 @@ def generate_pull_plots_obs(
                 else:
                     for spec_index, model_spec in enumerate(model_specs[scenario]):
 
-                        results_means  = np.copy((results[BP][scenario][model_spec][:,0] - central_values_obs[BP][scenario][model_spec]) / results[BP][scenario][model_spec][:,1] )
-                        results_errors = np.copy( results[BP][scenario][model_spec][:,1] / results[BP][scenario][model_spec][:,1] )
+                        if not compare_model_spec_predictions:
+                            results_means  = np.copy((results[BP][scenario][model_spec][:,0] - central_values_obs[BP][scenario][model_spec]) / results[BP][scenario][model_spec][:,1] )
+                            results_errors = np.copy( results[BP][scenario][model_spec][:,1] / results[BP][scenario][model_spec][:,1] )
+                        else:
+                            results_means  = np.copy((central_values_obs[BP][scenario][model_spec]) / results[BP][scenario][model_spec][:,1] )
+                            results_errors = np.copy( results[BP][scenario][model_spec][:,1] / results[BP][scenario][model_spec][:,1] )
+
+                            if spec_index == 0:
+                                results_subtract = np.copy(results_means)
+
+                            results_means = np.copy(results_means - results_subtract)
 
                         ax.errorbar(results_means[param_breaks[k]:param_breaks[k+1]],
                                     -y+y_shift[spec_index], 

@@ -752,6 +752,9 @@ def find_configuration_files(
 
             print(f"\nSetting configuration files for scenario: {scenario} model spec: {model_spec}")
 
+            toy_fits = False
+            fit_idx = None
+
             if read_WCs:
                 conf_files[scenario][model_spec] = [
                     "Globalfits/AllOps/d6Ops_corr",
@@ -795,11 +798,17 @@ def find_configuration_files(
                     Higgs_conf1 = Higgs_conf1_new
 
                 def determine_flags_in_model_spec(conf_files):
-                    nonlocal Higgs_conf1, Higgs_conf2, Higgs_conf3
+                    nonlocal Higgs_conf1, Higgs_conf2, Higgs_conf3, toy_fits, fit_idx
                     found_flag = False
 
+                    if "toyfit" in model_spec:
+                        toy_fits = True
+                        fit_idx = int(re.search(r'toyfit(\d+)', model_spec).group(1))
+                        toy_fit_flag = f"_toyfit{fit_idx}"
+                    else:
+                        toy_fit_flag = ""
+
                     model_spec_copy = model_spec.lstrip("fits_realistic_HL_LHC_")
-                    model_spec_copy.lstrip("fits_realistic_HL_LHC_")
                     for hepfit_flag in HEPfit_flags:
                         if model_spec_copy.startswith(hepfit_flag):
                             model_spec_copy = model_spec_copy.replace(hepfit_flag, "", 1)
@@ -830,7 +839,17 @@ def find_configuration_files(
                                 for additional_flag4 in additional_flag_list:
                                     for priors_flag in priors_flag_list:
                                         for MC_flag in MC_flag_list:
-                                            full_flag = hepfit_flag + fccee_projections_flag + loop_order_flag + exclusive_flag + additional_flag1 + additional_flag2 + additional_flag3 + additional_flag4 + priors_flag + MC_flag
+                                            full_flag = hepfit_flag + \
+                                                        fccee_projections_flag + \
+                                                        loop_order_flag + \
+                                                        exclusive_flag + \
+                                                        additional_flag1 + \
+                                                        additional_flag2 + \
+                                                        additional_flag3 + \
+                                                        additional_flag4 + \
+                                                        toy_fit_flag + \
+                                                        priors_flag + \
+                                                        MC_flag
                                             if model_spec == f"fits_realistic_HL_LHC_{full_flag}":
                                                 print(f"Full fit flag: {full_flag}")
                                                 found_flag = True
@@ -1006,7 +1025,13 @@ def find_configuration_files(
                 conf_files = determine_flags_in_model_spec(conf_files)
 
             for i, file in enumerate(conf_files[scenario][model_spec]):
-                conf_files[scenario][model_spec][i] = file + ".conf"
+                if toy_fits: 
+                    if not (file.startswith("EffVHcouplings_QFU12") or file.startswith("HiggsEW_Par_Corr")):
+                        file += f"_toyfit{fit_idx}"
+                    file = "toy_fits/" + file
+
+                file += ".conf"
+                conf_files[scenario][model_spec][i] = file
 
             print(f"Files considered:")
             for file in conf_files[scenario][model_spec]:
@@ -1085,6 +1110,45 @@ def read_configuration_files(
 
     scenarios = model_specs.keys()
 
+
+    def read_observable_in_conf_file(
+        columns,
+        observables,
+        observables_tex,
+        central_values_obs,
+        input_uncertainties,
+        cov_matrix_factor = 1.0,
+    ):
+        observable = columns[1]
+
+        if read_model_parameters==False and \
+            not (columns[6]=="MCMC" and columns[7]=="weight") and \
+            not (observable == "deltalHHH_HLLHC" and BP_lambdas is not None):
+            return
+
+        if  (only_obs is not None and observable not in only_obs) or \
+            (skip_obs is not None and observable in skip_obs) or \
+            (only_higgs_fccee_obs and not observable.startswith("eeZH") and not observable.startswith("eeHvv")):
+            return
+
+        if read_model_parameters==True:
+            observable_tex_label = find_tex_label_par(columns[3], observable[0:-5])
+            central_value = 0.0
+            uncertainty = 0.0
+        else:
+            observable_tex_label = find_tex_label_obs(columns[3], observable)
+            if observable == "deltalHHH_HLLHC" and BP_lambdas is not None:
+                central_value = float(BP_lambdas[BP_idx])
+                uncertainty = 1.0 # Placeholder; no uncertainty info
+            else:
+                central_value = float(columns[8])
+                uncertainty = float(columns[9])
+
+        observables[BP][scenario][model_spec].append(observable)
+        central_values_obs[BP][scenario][model_spec].append(central_value)
+        observables_tex[BP][scenario][model_spec].append(observable_tex_label)
+        input_uncertainties[BP][scenario][model_spec].append(uncertainty * cov_matrix_factor) 
+
     observables = {}
     observables_tex = {}
     central_values_obs = {}
@@ -1118,38 +1182,39 @@ def read_configuration_files(
                         for line in infile:
                             columns = line.split()
 
-                            if (line.startswith("Observable ") \
+                            if line.startswith("ObservablesWithCovarianceInverse "):
+                                n_corr_obs = int(columns[2])
+
+                                obs_lines = [next(infile) for _ in range(n_corr_obs)]
+
+                                inv_cov_matrix_lines = [next(infile) for _j in range(n_corr_obs)]
+                                inv_cov_matrix = [line.split() for line in inv_cov_matrix_lines]
+                                inv_cov_matrix = np.array(inv_cov_matrix, dtype=float)
+
+                                cov_matrix = np.linalg.inv(inv_cov_matrix)
+                                std_devs = np.sqrt(np.diag(cov_matrix))
+
+                                for obs_line, cov_matrix_factor in zip(obs_lines, std_devs):
+                                    read_observable_in_conf_file(
+                                        obs_line.split(),
+                                        observables,
+                                        observables_tex,
+                                        central_values_obs,
+                                        input_uncertainties,
+                                        cov_matrix_factor,
+                                    )
+
+                            elif (line.startswith("Observable ") \
                                 or line.startswith("AsyGausObservable ")):
 
-                                observable = columns[1]
-
-                                if read_model_parameters==False and \
-                                    not (columns[6]=="MCMC" and columns[7]=="weight") and \
-                                    not (observable == "deltalHHH_HLLHC" and BP_lambdas is not None):
-                                    continue
-
-                                if  (only_obs is not None and observable not in only_obs) or \
-                                    (skip_obs is not None and observable in skip_obs) or \
-                                    (only_higgs_fccee_obs and not observable.startswith("eeZH") and not observable.startswith("eeHvv")):
-                                    continue
-
-                                if read_model_parameters==True:
-                                    observable_tex_label = find_tex_label_par(columns[3], observable[0:-5])
-                                    central_value = 0.0
-                                    uncertainty = 0.0
-                                else:
-                                    observable_tex_label = find_tex_label_obs(columns[3], observable)
-                                    if observable == "deltalHHH_HLLHC" and BP_lambdas is not None:
-                                        central_value = float(BP_lambdas[BP_idx])
-                                        uncertainty = 1.0 # Placeholder; no uncertainty info
-                                    else:
-                                        central_value = float(columns[8])
-                                        uncertainty = float(columns[9])
-
-                                observables[BP][scenario][model_spec].append(observable)
-                                central_values_obs[BP][scenario][model_spec].append(central_value)
-                                observables_tex[BP][scenario][model_spec].append(observable_tex_label)
-                                input_uncertainties[BP][scenario][model_spec].append(uncertainty)
+                                read_observable_in_conf_file(
+                                    columns,
+                                    observables,
+                                    observables_tex,
+                                    central_values_obs,
+                                    input_uncertainties,
+                                    cov_matrix_factor = 1.0,
+                                )
                                 
 
                 n_obs = len(observables[BP][scenario][model_spec])
@@ -1316,7 +1381,10 @@ def read_fit_results_pars(
         for scenario in scenarios:
             files[BP][scenario] = {}
             for model_spec in model_specs[scenario]:
-                files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/results_{model_spec}/Observables/Statistics.txt"
+                if "toyfit" in model_spec:
+                    files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/toy_fits/results_{model_spec}/Observables/Statistics.txt"
+                else:
+                    files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/results_{model_spec}/Observables/Statistics.txt"
 
     print("\nFinding configuration files for the observables")
     conf_files = find_configuration_files(model_specs, model, read_WCs=True)
@@ -1402,7 +1470,10 @@ def read_fit_results_dim6Ops_correlations(
             for scenario in scenarios:
                 files[BP][scenario] = {}
                 for model_spec in model_specs[scenario]:
-                    files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/results_{model_spec}/Observables/Statistics.txt"
+                    if "toyfit" in model_spec:
+                        files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/toy_fits/results_{model_spec}/Observables/Statistics.txt"
+                    else:
+                        files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/results_{model_spec}/Observables/Statistics.txt"
 
     
     observables = {BP: {scenario: {model_spec: [] for model_spec in model_specs[scenario]} for scenario in scenarios} for BP in BPs}
