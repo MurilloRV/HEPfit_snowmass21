@@ -80,7 +80,10 @@ def group_plots(
             for BP in BPs:
                 for obs in copy_obs:
                     try:
-                        input_path  = f"{working_dir}/{BP}/{scenario}/results_{spec}/Observables/{obs}.pdf"
+                        if "toyfit" in spec:
+                            input_path  = f"{working_dir}/{BP}/{scenario}/toy_fits/results_{spec}/Observables/{obs}.pdf"
+                        else:
+                            input_path  = f"{working_dir}/{BP}/{scenario}/results_{spec}/Observables/{obs}.pdf"
                         output_path = f"{working_dir}/comparison_plots/results_{results_dir}/{obs}_{BP}_{scenario}.pdf"
                         subprocess.run(["cp", input_path, output_path])
                         print(F"Succesfully copied plot to {output_path}")
@@ -130,7 +133,10 @@ def print_klam_results(
         for scenario in scenarios:
             files[BP][scenario] = {}
             for model_spec in model_specs[scenario]:
-                files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/results_{model_spec}/Observables/Statistics.txt"
+                if "toyfit" in model_spec:
+                    files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/toy_fits/results_{model_spec}/Observables/Statistics.txt"
+                else:
+                    files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/results_{model_spec}/Observables/Statistics.txt"
 
     # Create the output directories, if they do not yet exist
     for results_dir in results_dirs:
@@ -189,8 +195,10 @@ def generate_klam_comparison_plot(
     spec_distance=0.1,
     upper_right_text=None,
     no_bottom_axis=False,
+    only_bottom_axis=False,
     asym_errors=False,
     file_suffix='',
+    bottom_axes_BP_labels=False,
 ):
     r"""
     Compare the fit results for kappa_lambda between the benchmark points
@@ -258,6 +266,8 @@ def generate_klam_comparison_plot(
     no_bottom_axis : bool, optional
         Whether to only show the top part of the plot, and not plot the difference in
         a bottom subplot. Default is False.
+    only_bottom_axis : bool, optional
+            Whether to only show the bottom part of the plot. Default is False.
     asym_errors : bool, optional
         If set to False (default), the error bars for kappa_lambda will be plotted symmetrically, 
         using the standard deviation from the fit results. If set to True, asymmetric errors will
@@ -265,6 +275,9 @@ def generate_klam_comparison_plot(
         histogram of the posterior distribution for kappa_lambda.
     file_suffix : str, optional
         Suffix to be added to the name of the generated plot files. Default is ''.
+    bottom_axes_BP_labels : bool, optional
+        Whether to show the BP labels on the bottom axis, instead of kappa_lambda values. 
+        Default is False.
 
     Returns
     -------
@@ -297,7 +310,10 @@ def generate_klam_comparison_plot(
         for scenario in scenarios:
             files[BP][scenario] = {}
             for model_spec in model_specs[scenario]:
-                files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/results_{model_spec}/Observables/Statistics.txt"
+                if "toyfit" in model_spec:
+                    files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/toy_fits/results_{model_spec}/Observables/Statistics.txt"
+                else:
+                    files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/results_{model_spec}/Observables/Statistics.txt"
 
     print(f"\nReading klam fit results")
     if not asym_errors:
@@ -313,7 +329,7 @@ def generate_klam_comparison_plot(
     for scenario in scenarios:
         n_specs = len(model_specs[scenario])
         if group_model_specs:
-            if not no_bottom_axis:
+            if not (no_bottom_axis or only_bottom_axis):
                 fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, figsize=figsize, height_ratios=[0.7, 0.3], gridspec_kw=dict(hspace=0.), **fig_kwargs)
             else:
                 fig, ax1 = plt.subplots(1, 1, figsize=figsize, **fig_kwargs)
@@ -321,7 +337,7 @@ def generate_klam_comparison_plot(
         for spec_idx, (model_spec, results_dir) in enumerate(zip(model_specs[scenario], results_dirs)):
             x = BP_lambdas
             if not group_model_specs:
-                if not no_bottom_axis:
+                if not (no_bottom_axis or only_bottom_axis):
                     fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, figsize=figsize, height_ratios=[0.7, 0.3], gridspec_kw=dict(hspace=0.), **fig_kwargs)
                 else:
                     fig, ax1 = plt.subplots(1, 1, figsize=figsize, **fig_kwargs)
@@ -342,12 +358,21 @@ def generate_klam_comparison_plot(
                 means = {}
                 errors = {}
                 for BP in BPs:
-                    hist_lmbd_x, hist_lmbd_y = read_klam_hist_uproot(
+                    histograms = read_klam_hist_uproot(
                         working_dir=working_dir,
                         BP=BP,
                         scenario=scenario,
                         spec=model_spec,
                     )
+
+                    if histograms is None:
+                        print(f"Skipping {BP}, {scenario}, {model_spec} as histogram data is missing.")
+                        errors[BP] = [[np.nan], [np.nan]]
+                        means[BP] = np.nan
+                        continue
+                    else:
+                        hist_lmbd_x, hist_lmbd_y = histograms
+                
 
                     bin_centers = 0.5 * (hist_lmbd_x[1:] + hist_lmbd_x[:-1])
                     mean = np.sum(bin_centers * hist_lmbd_y) / np.sum(hist_lmbd_y)
@@ -385,17 +410,29 @@ def generate_klam_comparison_plot(
                     idx = i
                     label = plot_labels[idx]
 
-                ax1.errorbar(x=x[i],
-                            y=means[BP],
-                            yerr=errors[BP], 
-                            fmt='o', 
-                            linewidth=1.5, 
-                            capsize=3.5, 
-                            markersize=4, 
-                            label=label,
-                            color=colors[idx])
+                if not only_bottom_axis:
+                    ax1.errorbar(x=x[i],
+                                y=means[BP],
+                                yerr=errors[BP], 
+                                fmt='o', 
+                                linewidth=1.5, 
+                                capsize=3.5, 
+                                markersize=4, 
+                                label=label,
+                                color=colors[idx])
+                else:
+                    ax1.errorbar(x=x[i],
+                                y=means[BP] - BP_lambdas[i],
+                                yerr=errors[BP], 
+                                fmt='o', 
+                                linewidth=1.5, 
+                                capsize=3.5, 
+                                markersize=4, 
+                                label=label,
+                                color=colors[idx])
+                    ax1.axhline(y=0, c='0.6', linewidth=1)
 
-                if not no_bottom_axis:
+                if not (no_bottom_axis or only_bottom_axis):
                     ax2.errorbar(x=x[i],
                                 y=means[BP] - BP_lambdas[i],
                                 yerr=errors[BP], 
@@ -429,14 +466,27 @@ def generate_klam_comparison_plot(
             ax1.grid(which='both', linestyle='--', linewidth=0.5)
             ax1.legend(loc=leg_loc, fontsize=leg_fontsize)
 
-            if not no_bottom_axis:
+            x_label = rf'$\kappa_{{\lambda}}^\mathrm{{true}}$ ({model} predictions)'
+            if bottom_axes_BP_labels:
+                x_label = ""
+                ax1.set_xticks(BP_lambdas)
+                ax1.set_xticklabels(BP_names, fontsize=13)
+                # ax1.xaxis.set_tick_params(labelsize=13)
+
+
+
+            y_label_bottom = r'$\kappa_{\lambda}^\mathrm{fit} - \kappa_{\lambda}^\mathrm{true}$'
+
+            if not (no_bottom_axis or only_bottom_axis):
                 if y_lim_ax2 is not None:
                     ax2.set_ylim(y_lim_ax2)
-                ax2.set_ylabel(r'$\kappa_{\lambda}^\mathrm{fit} - \kappa_{\lambda}^\mathrm{true}$', fontsize=15)
-                ax2.set_xlabel(rf'$\kappa_{{\lambda}}^\mathrm{{true}}$ ({model} predictions)', fontsize=13)
+                ax2.set_ylabel(y_label_bottom, fontsize=15)
+                ax2.set_xlabel(x_label, fontsize=13)
                 ax2.grid(which='both', linestyle='--', linewidth=0.5)
+            elif only_bottom_axis:
+                ax1.set_ylabel(y_label_bottom, fontsize=15)
             else:
-                ax1.set_xlabel(rf'$\kappa_{{\lambda}}^\mathrm{{true}}$ ({model} predictions)', fontsize=13)
+                ax1.set_xlabel(x_label, fontsize=13)
 
                 
 
@@ -455,10 +505,12 @@ def generate_klam_comparison_plot(
                 ax1.set_title(plot_titles[scenario][model_spec], fontsize=10)
             fig.tight_layout()   # Makes sure labels are not cut off
 
-            if not no_bottom_axis:
-                fig.savefig(working_dir + f'/comparison_plots/results_{results_dir}/kappa_lambda_results_{scenario}{file_suffix}.pdf')
-            else:
+            if no_bottom_axis:
                 fig.savefig(working_dir + f'/comparison_plots/results_{results_dir}/kappa_lambda_results_{scenario}_no_bottom_axis{file_suffix}.pdf')
+            elif only_bottom_axis:
+                fig.savefig(working_dir + f'/comparison_plots/results_{results_dir}/kappa_lambda_results_{scenario}_only_bottom_axis{file_suffix}.pdf')
+            else:
+                fig.savefig(working_dir + f'/comparison_plots/results_{results_dir}/kappa_lambda_results_{scenario}{file_suffix}.pdf')
 
     if show_plots:
         plt.show()
@@ -595,7 +647,10 @@ def generate_obs_comparison_plot(
         for scenario in scenarios:
             files[BP][scenario] = {}
             for model_spec in model_specs[scenario]:
-                files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/results_{model_spec}/Observables/Statistics.txt"
+                if "toyfit" in model_spec:
+                    files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/toy_fits/results_{model_spec}/Observables/Statistics.txt"
+                else:
+                    files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/results_{model_spec}/Observables/Statistics.txt"
 
     print(f"\nReading fit results")
     obs_results = read_fit_results(
@@ -892,7 +947,10 @@ def generate_klam_latex_table(
         for scenario in scenarios:
             files[BP][scenario] = {}
             for model_spec in model_specs[scenario]:
-                files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/results_{model_spec}/Observables/Statistics.txt"
+                if "toyfit" in model_spec:
+                    files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/toy_fits/results_{model_spec}/Observables/Statistics.txt"
+                else:
+                    files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/results_{model_spec}/Observables/Statistics.txt"
 
     print(f"\nReading klam fit results")
     kappa_lambda_results = read_fit_results(
@@ -936,26 +994,30 @@ def read_klam_hist_uproot(
     spec,
 ):
 
+    file_path = f"{working_dir}/{BP}/{scenario}"
+    if "toyfit" in spec:
+        file_path += f"/toy_fits"
+
     # Open the ROOT file
     if BP == "BP_lambda1" and spec == "fits_realistic_HL_LHC_WFR_kala2_input_all_all_EW_mods_small_priors_long":
-        file_path = f"{working_dir}/{BP}/{scenario}/results_{spec[:-5]}_strict/"
+        file_path += f"/results_{spec[:-5]}_strict/"
     else:
-        file_path = f"{working_dir}/{BP}/{scenario}/results_{spec}/"
+        file_path += f"/results_{spec}/"
 
-    os.chdir(file_path)
     try:
-        if os.path.exists("./lmbd_hist.npz"):
-            hist = np.load("./lmbd_hist.npz")
+        if os.path.exists(file_path+"hist_lmbd.npz"):
+            hist = np.load(file_path+"hist_lmbd.npz")
             hist_lmbd_x = hist["hist_lmbd_x"]
             hist_lmbd_y = hist["hist_lmbd_y"]
             return hist_lmbd_x, hist_lmbd_y
-        
-        with uproot.open("./MCout.root") as file:
+
+        with uproot.open(file_path+"MCout.root") as file:
 
             hist_lmbd_y, hist_lmbd_x = file["deltalHHH_HLLHC"].to_numpy()
             hist_lmbd_x = hist_lmbd_x + 1 
 
             return hist_lmbd_x, hist_lmbd_y
-    finally:
-        os.chdir("../../..")
-
+        
+    except Exception as e:
+        print(f"Error reading ROOT file or npz file for {BP}, {scenario}, {spec}: \n{e}")
+        # raise FileNotFoundError(f"Error reading ROOT file or npz file for {BP}, {scenario}, {spec}: \n{e}")
