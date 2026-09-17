@@ -1435,6 +1435,8 @@ if not_asimov:
     fit_random_seed = int(1e7*random_seed + 1e5*BP_index + fit_idx)
     rng = np.random.default_rng(seed=fit_random_seed)
     final_text += f"# Random seed for the pseudo-measurements: {fit_random_seed}\n"
+else:
+    rng = None
 
 gaussian_noise_scale = 1.0  # Scale factor for the Gaussian noise. Useful for tests, e.g. setting to zero
 

@@ -31,17 +31,44 @@ CHL1_11_high=$(echo "$json" | jq '.CHL1_11_high')
 CHL3_11_low=$(echo "$json" | jq '.CHL3_11_low')
 CHL3_11_high=$(echo "$json" | jq '.CHL3_11_high')
 
-CH_values=($CH_low $CH_high)
-CHbox_values=($CHbox_low $CHbox_high)
-CHD_values=($CHD_low $CHD_high)
-CHW_values=($CHW_low $CHW_high)
-CHG_values=($CHG_low $CHG_high)
-CHB_values=($CHB_low $CHB_high)
-CHWB_values=($CHWB_low $CHWB_high)
-CuH_33r_values=($CuH_33r_low $CuH_33r_high)
-CHe_11_values=($CHe_11_low $CHe_11_high)
-CHL1_11_values=($CHL1_11_low $CHL1_11_high)
-CHL3_11_values=($CHL3_11_low $CHL3_11_high)
+CH_intervals=($CH_low $CH_high)
+CHbox_intervals=($CHbox_low $CHbox_high)
+CHD_intervals=($CHD_low $CHD_high)
+CHW_intervals=($CHW_low $CHW_high)
+CHG_intervals=($CHG_low $CHG_high)
+CHB_intervals=($CHB_low $CHB_high)
+CHWB_intervals=($CHWB_low $CHWB_high)
+CuH_33r_intervals=($CuH_33r_low $CuH_33r_high)
+CHe_11_intervals=($CHe_11_low $CHe_11_high)
+CHL1_11_intervals=($CHL1_11_low $CHL1_11_high)
+CHL3_11_intervals=($CHL3_11_low $CHL3_11_high)
+
+# Instead of just evaluating the predictions at the 1-sigma values, we now evaluate these also at multiples of the 1-sigma values, both in the negative and positive direction.
+n_sigmas=5
+get_WC_values() {
+    local intervals=("$@")
+    local wc_values=()
+    for ((i=n_sigmas; i>0; i--)); do
+        wc_values+=($(printf "%.20f" "$(echo "${intervals[0]} * $i" | bc -l)"))
+    done
+    for ((i=1; i<=n_sigmas; i++)); do
+        wc_values+=($(printf "%.20f" "$(echo "${intervals[1]} * $i" | bc -l)"))
+    done
+    echo "${wc_values[@]}"
+}
+
+CH_values=($(get_WC_values "${CH_intervals[@]}"))
+CHbox_values=($(get_WC_values "${CHbox_intervals[@]}"))
+CHD_values=($(get_WC_values "${CHD_intervals[@]}"))
+CHW_values=($(get_WC_values "${CHW_intervals[@]}"))
+CHG_values=($(get_WC_values "${CHG_intervals[@]}"))
+CHB_values=($(get_WC_values "${CHB_intervals[@]}"))
+CHWB_values=($(get_WC_values "${CHWB_intervals[@]}"))
+CuH_33r_values=($(get_WC_values "${CuH_33r_intervals[@]}"))
+CHe_11_values=($(get_WC_values "${CHe_11_intervals[@]}"))
+CHL1_11_values=($(get_WC_values "${CHL1_11_intervals[@]}"))
+CHL3_11_values=($(get_WC_values "${CHL3_11_intervals[@]}"))
+
 
 # CH_values=("0.01")
 # CHbox_values=("0.01")
@@ -77,12 +104,18 @@ cp $COPY_PATH/*.conf .
 cp $COPY_PATH/Globalfits/AllOps/d6Ops_corr.conf Globalfits/AllOps/
 cp $COPY_PATH/Globalfits/AllOps/model_all_uncertainties.conf Globalfits/AllOps/model_fits.conf
 
+EWPO_CURRENT_CONF="ObservablesEW_Current_SM_noLFU.conf"
+echo "#" >> $EWPO_CURRENT_CONF
+echo "######################################################################" >> $EWPO_CURRENT_CONF
+echo "Observable  sin2thetaEff_C sin2thetaEff sin^{2}#theta_{eff}^{lept} 1. -1. noMCMC noweight" >> $EWPO_CURRENT_CONF
+
 
 
 for ((i=0; i<${#CH_values[@]}; i++)); do
 
     # Setting up the wilson coefficients
-    WC_ARRAY=("CH" "CHbox" "CHD" "CHW" "CHG" "CHB" "CHWB" "CuH_33r" "CHe_11" "CHL1_11" "CHL3_11")
+    # WC_ARRAY=("CH" "CHbox" "CHD" "CHW" "CHG" "CHB" "CHWB" "CuH_33r" "CHe_11" "CHL1_11" "CHL3_11")
+    WC_ARRAY=("CH")
     echo "WC number : $i"
 
     for WC in "${WC_ARRAY[@]}"; do

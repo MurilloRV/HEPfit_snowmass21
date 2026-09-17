@@ -1,13 +1,13 @@
 #!/bin/bash
 
-TEST_FIT="false"  # If set to "true", the script will run the fit with HEPfit for the first scenario/BP, in order to test the setup.
+TEST_FIT="true"  # If set to "true", the script will run the fit with HEPfit for the first scenario/BP, in order to test the setup.
 
 ORIGINAL_PATH="/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/IDM_fits/Fits_HLLHC_FCCee/different_scenario_fits"
 TARGET_PATH="/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/IDM_fits/Fits_HLLHC_FCCee/different_BPs"
 cd $TARGET_PATH
 
-ASIMOV="false"  # Asimov fits set the central value of pseudo-measurements to corresponding BSM predictions. If set to "false", pseudo-measurements will deviate from predictions according to the projected uncertainty, as a more realistic experiment
-N_EXPS=1  # Number of fits to be performed, each with different sets of pseudo-measurements, which in turn are generated from Gaussian distributions centred at their corresponding BSM predictions, and covariance matrices obtained from projections for future experiments
+ASIMOV="true"  # Asimov fits set the central value of pseudo-measurements to corresponding BSM predictions. If set to "false", pseudo-measurements will deviate from predictions according to the projected uncertainty, as a more realistic experiment
+N_EXPS=10  # Number of fits to be performed, each with different sets of pseudo-measurements, which in turn are generated from Gaussian distributions centred at their corresponding BSM predictions, and covariance matrices obtained from projections for future experiments
 RANDOM_SEED=137  # Random seed for generation of pseudo-measurements
 
 # BP_Names=("BP_"{0..7})
@@ -54,7 +54,8 @@ no_HLLHC_Higgs="false" # Exclude the HL-LHC Higgs observables from the fit
 LoopH3d6Full="false" # Use the full expansion of the ZH cross-section in terms of C1 and dZH
 
 use_new_NPs="true" # Use newly implementent theory nuisance parameters
-UseKlamDependentUncertainties="true" # A boolean flag that is true if using klam-dependent theoretical uncertainties in the ee->Zh cross-section predictions.
+UseKlamDependentUncertainties="false" # A boolean flag that is true if using klam-dependent theoretical uncertainties in the ee->Zh cross-section predictions.
+UseBPDependentUncertainties="true" # A boolean flag that is true if using BP-dependent theoretical uncertainties in the ee->Zh cross-section predictions. Different estimates are used for different BPs; however, these are interpreted as constant (klam-independent) in HEPfit 
 
 # Changed default values to 1.0!
 # theoerr_FCCee240_input="1.0"
@@ -73,6 +74,8 @@ NPmismatch_FCCee240_input="DEFAULT"
 # NPmismatch_FCCee365_input="0.0"
 NPmismatch_FCCee365_input="DEFAULT"
 
+# Suffix for the model configuration file name, to distinguish between different setups of nuisance parameters. If empty, the default name will be used.
+# model_conf_NP_suffix=""  
 
 # Estimates EXCLUDING the O(1/Lambda_NP^2) curve
 # theoerr_FCCee240_function_x2_coef_input="0.00000841930087633563"
@@ -81,16 +84,25 @@ NPmismatch_FCCee365_input="DEFAULT"
 # theoerr_FCCee365_function_x2_coef_input="0.00001992550937285446"
 # theoerr_FCCee365_function_x1_coef_input="-0.00002663878133908424"
 # theoerr_FCCee365_function_x0_coef_input="0.00031254668713761978"
-# model_conf_suffix="_est1"
+# model_conf_NP_suffix="_est1"
 
-# # Estimates INCLUDING the O(1/Lambda_NP^2) curve
+# Estimates INCLUDING the O(1/Lambda_NP^2) curve
 theoerr_FCCee240_function_x2_coef_input="0.00076325757128542970"
 theoerr_FCCee240_function_x1_coef_input="-0.00151726083157403824"
 theoerr_FCCee240_function_x0_coef_input="0.00076121051962415318"
 theoerr_FCCee365_function_x2_coef_input="0.00079217047454317366"
 theoerr_FCCee365_function_x1_coef_input="-0.00161839280277012226"
 theoerr_FCCee365_function_x0_coef_input="0.00083463246355167890"
-model_conf_suffix="_est2"
+model_conf_NP_suffix="_est2"
+
+
+quadratic_func() {
+    local x="$1"
+    local a="$2"
+    local b="$3"
+    local c="$4"
+    printf "%.20f" "$(echo "$a * $x * $x + $b * $x + $c" | bc)"
+}
 
 
 set_nuisance_parameter() {
@@ -101,6 +113,23 @@ set_nuisance_parameter() {
         printf "%.20f" "$(echo "$scale * $input" | bc)"
     else
         printf "%.20f" "$(echo "$scale * $default" | bc)"
+    fi
+}
+
+
+get_klam_prediction() {
+    local bp_name="$1"
+    if [ "$bp_name" == "BP_lambda1" ]; then
+        echo "1.1000242642433875"
+    elif [ "$bp_name" == "BPB_2" ]; then
+        echo "2.3867362274064843"
+    elif [ "$bp_name" == "BPB_4" ]; then
+        echo "3.3446699219962595"
+    elif [ "$bp_name" == "BPB_6" ]; then
+        echo "4.332584967850238"
+    else
+        echo "Error: Unknown BP name '$bp_name'. Cannot determine kappa_lambda prediction."
+        return 1
     fi
 }
 
@@ -170,6 +199,9 @@ setup_fits() {
         scale_NPs_formatted=$(printf "%.3g" "$scale_NPs")
         if [ "$scale_NPs_formatted" != "1" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_scale${scale_NPs_formatted}"; fi
 
+        # if [[ "$model_conf_NP_suffix" != "" ]]; then
+        #     MODEL_CONF_FILE="${MODEL_CONF_FILE}_${model_conf_NP_suffix}"
+        # else
         if [[ "$theoerr_FCCee240_input" != "DEFAULT" ]]; then
             theoerr_FCCee240_path=$(printf "%.3g" "$(echo "$theoerr_FCCee240_input" | bc)" )
             MODEL_CONF_FILE="${MODEL_CONF_FILE}_theoerr240_${theoerr_FCCee240_path}"
@@ -179,24 +211,45 @@ setup_fits() {
             theoerr_FCCee365_path=$(printf "%.3g" "$(echo "$theoerr_FCCee365_input" | bc)" )
             MODEL_CONF_FILE="${MODEL_CONF_FILE}_theoerr365_${theoerr_FCCee365_path}"
         fi
+        # fi
+        
 
         if [[ "$UseKlamDependentUncertainties" == "true" ]]; then
             if [[ "$theoerr_FCCee240_input" != "DEFAULT" || "$theoerr_FCCee365_input" != "DEFAULT" ]]; then
                 echo "Warning: using kappa_lambda dependent uncertainties, but theoerr_FCCee240_input and theoerr_FCCee365_input are not set to DEFAULT (1.0)."
             fi
-            MODEL_CONF_FILE="${MODEL_CONF_FILE}_klam_dependent${model_conf_suffix}"
-            theoerr_FCCee240_function_x2_coef_path=$(printf "%.3g" "$(echo "$theoerr_FCCee240_function_x2_coef_input" | bc)" )
-            theoerr_FCCee240_function_x1_coef_path=$(printf "%.3g" "$(echo "$theoerr_FCCee240_function_x1_coef_input" | bc)" )
-            theoerr_FCCee240_function_x0_coef_path=$(printf "%.3g" "$(echo "$theoerr_FCCee240_function_x0_coef_input" | bc)" )
-            theoerr_FCCee365_function_x2_coef_path=$(printf "%.3g" "$(echo "$theoerr_FCCee365_function_x2_coef_input" | bc)" )
-            theoerr_FCCee365_function_x1_coef_path=$(printf "%.3g" "$(echo "$theoerr_FCCee365_function_x1_coef_input" | bc)" )
-            theoerr_FCCee365_function_x0_coef_path=$(printf "%.3g" "$(echo "$theoerr_FCCee365_function_x0_coef_input" | bc)" )
+            MODEL_CONF_FILE="${MODEL_CONF_FILE}_klam_dependent${model_conf_NP_suffix}" # Commented out the following lines, file suffix was too long
             # MODEL_CONF_FILE="${MODEL_CONF_FILE}_a240_${theoerr_FCCee240_function_x2_coef_path}"
             # MODEL_CONF_FILE="${MODEL_CONF_FILE}_b240_${theoerr_FCCee240_function_x1_coef_path}"
             # MODEL_CONF_FILE="${MODEL_CONF_FILE}_c240_${theoerr_FCCee240_function_x0_coef_path}"
             # MODEL_CONF_FILE="${MODEL_CONF_FILE}_a365_${theoerr_FCCee365_function_x2_coef_path}"
             # MODEL_CONF_FILE="${MODEL_CONF_FILE}_b365_${theoerr_FCCee365_function_x1_coef_path}"
             # MODEL_CONF_FILE="${MODEL_CONF_FILE}_c365_${theoerr_FCCee365_function_x0_coef_path}"
+            theoerr_FCCee240_function_x2_coef_path=$(printf "%.3g" "$(echo "$theoerr_FCCee240_function_x2_coef_input" | bc)" )
+            theoerr_FCCee240_function_x1_coef_path=$(printf "%.3g" "$(echo "$theoerr_FCCee240_function_x1_coef_input" | bc)" )
+            theoerr_FCCee240_function_x0_coef_path=$(printf "%.3g" "$(echo "$theoerr_FCCee240_function_x0_coef_input" | bc)" )
+            theoerr_FCCee365_function_x2_coef_path=$(printf "%.3g" "$(echo "$theoerr_FCCee365_function_x2_coef_input" | bc)" )
+            theoerr_FCCee365_function_x1_coef_path=$(printf "%.3g" "$(echo "$theoerr_FCCee365_function_x1_coef_input" | bc)" )
+            theoerr_FCCee365_function_x0_coef_path=$(printf "%.3g" "$(echo "$theoerr_FCCee365_function_x0_coef_input" | bc)" )
+            
+
+        elif [[ "$UseBPDependentUncertainties" == "true" ]]; then
+            if [[ "$theoerr_FCCee240_input" != "DEFAULT" || "$theoerr_FCCee365_input" != "DEFAULT" ]]; then
+                echo "Warning: using BP-dependent uncertainties, but theoerr_FCCee240_input and theoerr_FCCee365_input are not set to DEFAULT (1.0)."
+            fi
+            MODEL_CONF_FILE="${MODEL_CONF_FILE}_BP_dependent${model_conf_NP_suffix}"
+            # MODEL_CONF_FILE="${MODEL_CONF_FILE}_a240_${theoerr_FCCee240_function_x2_coef_path}"
+            # MODEL_CONF_FILE="${MODEL_CONF_FILE}_b240_${theoerr_FCCee240_function_x1_coef_path}"
+            # MODEL_CONF_FILE="${MODEL_CONF_FILE}_c240_${theoerr_FCCee240_function_x0_coef_path}"
+            # MODEL_CONF_FILE="${MODEL_CONF_FILE}_a365_${theoerr_FCCee365_function_x2_coef_path}"
+            # MODEL_CONF_FILE="${MODEL_CONF_FILE}_b365_${theoerr_FCCee365_function_x1_coef_path}"
+            # MODEL_CONF_FILE="${MODEL_CONF_FILE}_c365_${theoerr_FCCee365_function_x0_coef_path}"
+            theoerr_FCCee240_function_x2_coef_path=$(printf "%.3g" "$(echo "$theoerr_FCCee240_function_x2_coef_input" | bc)" )
+            theoerr_FCCee240_function_x1_coef_path=$(printf "%.3g" "$(echo "$theoerr_FCCee240_function_x1_coef_input" | bc)" )
+            theoerr_FCCee240_function_x0_coef_path=$(printf "%.3g" "$(echo "$theoerr_FCCee240_function_x0_coef_input" | bc)" )
+            theoerr_FCCee365_function_x2_coef_path=$(printf "%.3g" "$(echo "$theoerr_FCCee365_function_x2_coef_input" | bc)" )
+            theoerr_FCCee365_function_x1_coef_path=$(printf "%.3g" "$(echo "$theoerr_FCCee365_function_x1_coef_input" | bc)" )
+            theoerr_FCCee365_function_x0_coef_path=$(printf "%.3g" "$(echo "$theoerr_FCCee365_function_x0_coef_input" | bc)" )
         fi
 
         if [[ "$NPmismatch_FCCee240_input" != "DEFAULT" ]]; then
@@ -363,7 +416,16 @@ setup_fits() {
             theoerr_FCCee365_function_x1_coef="0.0"
             theoerr_FCCee365_function_x0_coef="0.0"
 
-            if [[ "$theoerr_FCCee240_function_x2_coef_path" != "0.0" || 
+            if [[ "$UseBPDependentUncertainties" == "true" ]]; then
+                NEW_NP_CONF="${NEW_NP_CONF}_BP_dependent"
+                NEW_NP_CONF="${NEW_NP_CONF}_a240_${theoerr_FCCee240_function_x2_coef_path}"
+                NEW_NP_CONF="${NEW_NP_CONF}_b240_${theoerr_FCCee240_function_x1_coef_path}"
+                NEW_NP_CONF="${NEW_NP_CONF}_c240_${theoerr_FCCee240_function_x0_coef_path}"
+                NEW_NP_CONF="${NEW_NP_CONF}_a365_${theoerr_FCCee365_function_x2_coef_path}"
+                NEW_NP_CONF="${NEW_NP_CONF}_b365_${theoerr_FCCee365_function_x1_coef_path}"
+                NEW_NP_CONF="${NEW_NP_CONF}_c365_${theoerr_FCCee365_function_x0_coef_path}"
+
+            elif [[ "$theoerr_FCCee240_function_x2_coef_path" != "0.0" || 
                     "$theoerr_FCCee240_function_x1_coef_path" != "0.0" || 
                     "$theoerr_FCCee240_function_x0_coef_path" != "0.0" || 
                     "$theoerr_FCCee365_function_x2_coef_path" != "0.0" || 
@@ -397,8 +459,18 @@ setup_fits() {
 
         theoerr_FCCee240=$(set_nuisance_parameter "$theoerr_FCCee240_input" "1.0" "$scale_NPs")
         theoerr_FCCee365=$(set_nuisance_parameter "$theoerr_FCCee365_input" "1.0" "$scale_NPs")
+
+        if [[ "$UseBPDependentUncertainties" == "true" ]]; then
+            klam_value=$(get_klam_prediction "$BP_Name")
+            theoerr_FCCee240_BP=$(quadratic_func "$klam_value" "$theoerr_FCCee240_function_x2_coef_input" "$theoerr_FCCee240_function_x1_coef_input" "$theoerr_FCCee240_function_x0_coef_input")
+            theoerr_FCCee365_BP=$(quadratic_func "$klam_value" "$theoerr_FCCee365_function_x2_coef_input" "$theoerr_FCCee365_function_x1_coef_input" "$theoerr_FCCee365_function_x0_coef_input")
+
+            theoerr_FCCee240=$(printf "%.20f" "$(echo "$theoerr_FCCee240_BP * $theoerr_FCCee240" | bc)")
+            theoerr_FCCee365=$(printf "%.20f" "$(echo "$theoerr_FCCee365_BP * $theoerr_FCCee365" | bc)")
+        fi
         NPmismatch_FCCee240=$(set_nuisance_parameter "$NPmismatch_FCCee240_input" "0.0" "$scale_NPs")
         NPmismatch_FCCee365=$(set_nuisance_parameter "$NPmismatch_FCCee365_input" "0.0" "$scale_NPs")
+        
 
         echo "######################################################################" > $NEW_NP_CONF
         echo "# New theory nuisance parameters for FCCee Higgs production" >> $NEW_NP_CONF

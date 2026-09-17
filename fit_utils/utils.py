@@ -199,6 +199,7 @@ def generate_klam_comparison_plot(
     asym_errors=False,
     file_suffix='',
     bottom_axes_BP_labels=False,
+    save_fig=True,
 ):
     r"""
     Compare the fit results for kappa_lambda between the benchmark points
@@ -278,6 +279,8 @@ def generate_klam_comparison_plot(
     bottom_axes_BP_labels : bool, optional
         Whether to show the BP labels on the bottom axis, instead of kappa_lambda values. 
         Default is False.
+    save_fig : bool, optional
+        Whether to save the figures. Default is True.
 
     Returns
     -------
@@ -505,12 +508,13 @@ def generate_klam_comparison_plot(
                 ax1.set_title(plot_titles[scenario][model_spec], fontsize=10)
             fig.tight_layout()   # Makes sure labels are not cut off
 
-            if no_bottom_axis:
-                fig.savefig(working_dir + f'/comparison_plots/results_{results_dir}/kappa_lambda_results_{scenario}_no_bottom_axis{file_suffix}.pdf')
-            elif only_bottom_axis:
-                fig.savefig(working_dir + f'/comparison_plots/results_{results_dir}/kappa_lambda_results_{scenario}_only_bottom_axis{file_suffix}.pdf')
-            else:
-                fig.savefig(working_dir + f'/comparison_plots/results_{results_dir}/kappa_lambda_results_{scenario}{file_suffix}.pdf')
+            if save_fig:
+                if no_bottom_axis:
+                    fig.savefig(working_dir + f'/comparison_plots/results_{results_dir}/kappa_lambda_results_{scenario}_no_bottom_axis{file_suffix}.pdf')
+                elif only_bottom_axis:
+                    fig.savefig(working_dir + f'/comparison_plots/results_{results_dir}/kappa_lambda_results_{scenario}_only_bottom_axis{file_suffix}.pdf')
+                else:
+                    fig.savefig(working_dir + f'/comparison_plots/results_{results_dir}/kappa_lambda_results_{scenario}{file_suffix}.pdf')
 
     if show_plots:
         plt.show()
@@ -791,6 +795,7 @@ def compare_BP_results_uproot(
     colors=None,
     show_plots=False,
     legend_fontsize=8.,
+    save_fig=True,
 ):
     """
     Compare the posterior kappa_lambda distribution between different model specifications.
@@ -831,6 +836,8 @@ def compare_BP_results_uproot(
         Whether to show the plots or not. Default is False.
     legend_fontsize : float, optional
         Font size for the legend. Default is 8.
+    save_fig : bool, optional
+        Whether to save the figures. Default is True.
 
     Returns
     -------
@@ -885,6 +892,9 @@ def compare_BP_results_uproot(
                     scenario,
                     spec,
                 )
+                if hist_lmbd_x is None or hist_lmbd_y is None:
+                    print(f"Skipping {BP}, {scenario}, {spec} as histogram data is missing.")
+                    continue
                 plt.hist(hist_lmbd_x[:-1], hist_lmbd_x, weights=hist_lmbd_y, label=label, density=True, histtype="step", edgecolor=(*color_rgb, 1.0), facecolor=(*color_rgb, 0.5), linewidth=1.5, fill=True)
 
             scale = 1.2
@@ -895,7 +905,7 @@ def compare_BP_results_uproot(
             plt.axvline(BP_lambda, color="black", linestyle="--", label=rf"{model} {BP_name} value ($\kappa_{{\lambda}}$ = {BP_lambda:.2f})")
             plt.legend(fontsize=legend_fontsize, loc="best")
             plt.tight_layout()
-            plt.savefig(f"{working_dir}/comparison_plots/results_{results_dir}/{model}_{BP}_{scenario}_final.pdf")
+            if save_fig: plt.savefig(f"{working_dir}/comparison_plots/results_{results_dir}/{model}_{BP}_{scenario}_final.pdf")
 
     if show_plots:
         plt.show()
@@ -1020,4 +1030,5 @@ def read_klam_hist_uproot(
         
     except Exception as e:
         print(f"Error reading ROOT file or npz file for {BP}, {scenario}, {spec}: \n{e}")
+        return None, None
         # raise FileNotFoundError(f"Error reading ROOT file or npz file for {BP}, {scenario}, {spec}: \n{e}")

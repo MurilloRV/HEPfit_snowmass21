@@ -681,8 +681,10 @@ def find_configuration_files(
         # IDM
         "use_new_NPs_klam_dependent_a240_8.42e-06_b240_6.93e-05_c240_0.000124_a365_1.99e-05_b365_-2.66e-05_c365_0.000313_",  # IDM: Estimates EXCLUDING the O(1/Lambda_NP^2) curve
         "use_new_NPs_klam_dependent_est1_",
+        "use_new_NPs_BP_dependent_est1_",
         "use_new_NPs_klam_dependent_a240_0.000763_b240_-0.00152_c240_0.000761_a365_0.000792_b365_-0.00162_c365_0.000835_",   # IDM: Estimates INCLUDING the O(1/Lambda_NP^2) curve
         "use_new_NPs_klam_dependent_est2_",
+        "use_new_NPs_BP_dependent_est2_",
 
         "use_new_NPs_scale1.52_theoerr240_0.00107_theoerr365_0.00105_NPmismatch240_0_NPmismatch365_0_",
         "use_new_NPs_scale1.52_",
