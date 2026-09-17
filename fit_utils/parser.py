@@ -477,6 +477,7 @@ def read_WC_predictions(
     n_WC_values,
     observables=None,
     matched_predictions=False,
+    filename_suffix="",
 ):
     """
     Read the predictions for the observables given a set of Wilson coefficients (WCs) and their values.
@@ -497,6 +498,9 @@ def read_WC_predictions(
         If True, the function will read the HEPfit predictions obtained by matching BSM benchmark points onto 
         SMEFT. In this case, the predictions are stored in a different directory and the WCs parameter should 
         refer to the different BSM benchmark points (BP) instead of the Wilson coefficients.
+    filename_suffix : str, optional
+        A suffix to be added to the filenames of the files with the predictions (e.g., "_updated_lumi"). 
+        Default is empty string
 
     Returns
     -------
@@ -533,9 +537,9 @@ def read_WC_predictions(
                 observables_list[wc][point] = []
 
             if matched_predictions:
-                filename = f"{working_dir}/../smeft_matching_inputs/observables_results/observables_BP{idx}.txt"
+                filename = f"{working_dir}/../smeft_matching_inputs/observables_results/observables_BP{idx}{filename_suffix}.txt"
             else:
-                filename = f"{working_dir}/observables_results/observables_{wc}_{point}.txt"
+                filename = f"{working_dir}/observables_results/observables_{wc}_{point}{filename_suffix}.txt"
             with open(filename, "r") as input_file:
                 print("Reading Observables:")
 

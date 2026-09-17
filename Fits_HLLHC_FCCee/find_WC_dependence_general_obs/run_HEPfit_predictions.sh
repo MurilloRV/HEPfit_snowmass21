@@ -3,7 +3,8 @@
 ORIGINAL_PATH="/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/Fits_HLLHC_FCCee/find_WC_dependence_general_obs/"
 COPY_PATH="/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/Fits_HLLHC_FCCee/different_scenario_fits/SM_FCCee240_FCCee365"
 
-
+updated_lumi="true"
+COPY_PATH_UPDATED_LUMI="/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/IDM_fits/Fits_HLLHC_FCCee/different_scenario_fits/IDM_FCCee240_FCCee365"
 
 json=$(python3 find_1sigma_WCs.py --wilson_coefficients CH CHbox CHD CHW CHG CHB CHWB CuH_33r CHe_11 CHL1_11 CHL3_11 | tail -n 1)
 
@@ -104,6 +105,11 @@ cp $COPY_PATH/*.conf .
 cp $COPY_PATH/Globalfits/AllOps/d6Ops_corr.conf Globalfits/AllOps/
 cp $COPY_PATH/Globalfits/AllOps/model_all_uncertainties.conf Globalfits/AllOps/model_fits.conf
 
+
+if [[ $updated_lumi == "true" ]]; then
+    cp $COPY_PATH_UPDATED_LUMI/*_updated_lumi*.conf .
+fi
+
 EWPO_CURRENT_CONF="ObservablesEW_Current_SM_noLFU.conf"
 echo "#" >> $EWPO_CURRENT_CONF
 echo "######################################################################" >> $EWPO_CURRENT_CONF
@@ -114,28 +120,55 @@ echo "Observable  sin2thetaEff_C sin2thetaEff sin^{2}#theta_{eff}^{lept} 1. -1. 
 for ((i=0; i<${#CH_values[@]}; i++)); do
 
     # Setting up the wilson coefficients
-    # WC_ARRAY=("CH" "CHbox" "CHD" "CHW" "CHG" "CHB" "CHWB" "CuH_33r" "CHe_11" "CHL1_11" "CHL3_11")
-    WC_ARRAY=("CH")
+    WC_ARRAY=("CH" "CHbox" "CHD" "CHW" "CHG" "CHB" "CHWB" "CuH_33r" "CHe_11" "CHL1_11" "CHL3_11")
+    # WC_ARRAY=("CH" "CHbox")
+    # WC_ARRAY=("CH")
     echo "WC number : $i"
 
     for WC in "${WC_ARRAY[@]}"; do
-        MODEL_CONF="Globalfits/AllOps/model_fits_${WC}_${i}.conf"
-        cp Globalfits/AllOps/model_fits.conf $MODEL_CONF
+        MODEL_CONF="Globalfits/AllOps/model_fits_${WC}_${i}"
+        cp Globalfits/AllOps/model_fits.conf ${MODEL_CONF}.conf
 
         WC_value="${WC}_values[i]"
         NEW_WC="ModelParameter  $WC   ${!WC_value}  0.  50.0 "
-        sed -i "/ModelParameter  $WC  .*/c\\$NEW_WC" $MODEL_CONF
+        sed -i "/ModelParameter  $WC  .*/c\\$NEW_WC" ${MODEL_CONF}.conf
 
         # Modifying the configuration file to rotate the CHW and CHB operators
         NEW_CHWHB_gaga="ModelParameter  CHWHB_gaga   0.  0.  0. "
-        sed -i "/ModelParameter  CHWHB_gaga  .*/c\\$NEW_CHWHB_gaga" $MODEL_CONF
+        sed -i "/ModelParameter  CHWHB_gaga  .*/c\\$NEW_CHWHB_gaga" ${MODEL_CONF}.conf
         NEW_CHWHB_gagaorth="ModelParameter  CHWHB_gagaorth   0.  0.  0. "
-        sed -i "/ModelParameter  CHWHB_gagaorth  .*/c\\$NEW_CHWHB_gagaorth" $MODEL_CONF
+        sed -i "/ModelParameter  CHWHB_gagaorth  .*/c\\$NEW_CHWHB_gagaorth" ${MODEL_CONF}.conf
         NEW_RotateCHWCHB_FLAG="ModelFlag       RotateCHWCHB    false"
-        sed -i "/ModelFlag       RotateCHWCHB  .*/c\\$NEW_RotateCHWCHB_FLAG" $MODEL_CONF
+        sed -i "/ModelFlag       RotateCHWCHB  .*/c\\$NEW_RotateCHWCHB_FLAG" ${MODEL_CONF}.conf
+
+        HIGGS_CONF="ObservablesHiggs"
+        HIGGS_240_CONF="ObservablesHiggs_FCCee_240_SM"
+        HIGGS_365_CONF="ObservablesHiggs_FCCee_365"
+        if [[ $updated_lumi == "true" ]]; then
+            NEW_MODEL_CONF="${MODEL_CONF}_updated_lumi"
+            cp ${MODEL_CONF}.conf ${NEW_MODEL_CONF}.conf
+            MODEL_CONF="${NEW_MODEL_CONF}"
+
+            NEW_HIGGS_CONF="${HIGGS_CONF}_updated_lumi"
+            cp ${HIGGS_CONF}.conf ${NEW_HIGGS_CONF}.conf 
+            HIGGS_CONF="${NEW_HIGGS_CONF}"
+            sed -i "\/IncludeFile ..\/..\/ObservablesHiggs.*/c\\IncludeFile ..\/..\/${HIGGS_CONF}.conf" ${MODEL_CONF}.conf
+
+            NEW_HIGGS_240_CONF="${HIGGS_240_CONF}_updated_lumi"
+            sed -i "\/IncludeFile ObservablesHiggs_FCCee_240*/c\\IncludeFile ${NEW_HIGGS_240_CONF}.conf" ${HIGGS_CONF}.conf
+            HIGGS_240_CONF="${NEW_HIGGS_240_CONF}"
+
+            NEW_HIGGS_365_CONF="${HIGGS_365_CONF}_updated_lumi"
+            sed -i "\/IncludeFile ObservablesHiggs_FCCee_365*/c\\IncludeFile ${NEW_HIGGS_365_CONF}.conf" ${HIGGS_CONF}.conf
+            HIGGS_365_CONF="${NEW_HIGGS_365_CONF}"
+        fi
 
         cd ../observables_results
-        analysis "../Config_Files/${MODEL_CONF}" --noMC |& tee "observables_${WC}_${i}.txt"
+        results_filename="observables_${WC}_${i}"
+        if [[ $updated_lumi == "true" ]]; then
+            results_filename="${results_filename}_updated_lumi"
+        fi
+        analysis "../Config_Files/${MODEL_CONF}.conf" --noMC |& tee "${results_filename}.txt"
         cd $ORIGINAL_PATH/Config_Files/
     done
 done

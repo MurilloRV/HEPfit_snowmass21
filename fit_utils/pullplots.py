@@ -1009,11 +1009,14 @@ def generate_pull_plots_obs(
     dimw = w / 2
 
     if WC_list_for_prediction_pulls:
+
+        filename_suffix = WC_list_for_prediction_pulls["filename_suffix"] if "filename_suffix" in WC_list_for_prediction_pulls else ""
         obs_predictions = read_WC_predictions(
             working_dir=working_dir,
             WCs=WC_list_for_prediction_pulls["WC_list"],
             n_WC_values=WC_list_for_prediction_pulls["n_WC_values"],
             observables=aligned_observables,
+            filename_suffix=filename_suffix,
         )
 
         n_WCs = len(WC_list_for_prediction_pulls["WC_list"])
@@ -1063,8 +1066,6 @@ def generate_pull_plots_obs(
                         fig_num = fig_num + 1
                         ax = plt.gca()
 
-                        # plt.axvline(x=0, c='0.6', linewidth=2)
-
                         for i, wc in enumerate(WC_list_for_prediction_pulls["WC_list"]):
                             wc_values = WC_list_for_prediction_pulls["WC_values"][i]
                             wc_values = wc_values / wc_values[-1]  # Normalize to the last value for plotting
@@ -1076,7 +1077,7 @@ def generate_pull_plots_obs(
                             )
                             wc_label = WC_labels[i]
 
-                            print(f"WC: {wc}, WC Values: {wc_values}, Plotted Results: {plotted_results}")
+                            # print(f"WC: {wc}, WC Values: {wc_values}, Plotted Results: {plotted_results}")
                             marker="."
                             ax.plot(
                                 wc_values, 
@@ -1088,14 +1089,19 @@ def generate_pull_plots_obs(
                                 label=wc_label,
                             )
 
+                        ax.grid(True, which='both', axis='both', linestyle='--', linewidth=0.5)
                         ax.set_xlabel(r'Wilson Coefficient (a.u.)', fontsize=10)
                         ax.set_ylabel(r'Pulls (w.r.t. SM prediction)', fontsize=10)
-                        ax.legend(loc=legend_loc, fontsize=8)
+                        if n_WCs > 3:
+                            ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left", fontsize=8)
+                            # fig.legend(loc="outside right upper", fontsize=8)
+                        else:
+                            ax.legend(loc=legend_loc, fontsize=8)
                         ax.set_title(labels[obs_index], fontsize=13)
                         plt.tight_layout()   # Makes sure labels are not cut off
                         plot_filename = f"{working_dir}/comparison_plots/results_{results_dir}/pull_plot_obs_WC_dependence_compare{file_suffix}"
                         plot_filename = plot_filename + ""
-                        if save_fig: plt.savefig(f"{plot_filename}_{obs_index}.pdf")
+                        if save_fig: plt.savefig(f"{plot_filename}_{obs}.pdf")
 
 
             else:
