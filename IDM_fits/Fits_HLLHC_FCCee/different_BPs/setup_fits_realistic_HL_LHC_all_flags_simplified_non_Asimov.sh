@@ -54,8 +54,8 @@ no_HLLHC_Higgs="false" # Exclude the HL-LHC Higgs observables from the fit
 LoopH3d6Full="false" # Use the full expansion of the ZH cross-section in terms of C1 and dZH
 
 use_new_NPs="true" # Use newly implementent theory nuisance parameters
-UseKlamDependentUncertainties="false" # A boolean flag that is true if using klam-dependent theoretical uncertainties in the ee->Zh cross-section predictions.
-UseBPDependentUncertainties="true" # A boolean flag that is true if using BP-dependent theoretical uncertainties in the ee->Zh cross-section predictions. Different estimates are used for different BPs; however, these are interpreted as constant (klam-independent) in HEPfit 
+UseKlamDependentUncertainties="true" # A boolean flag that is true if using klam-dependent theoretical uncertainties in the ee->Zh cross-section predictions.
+UseBPDependentUncertainties="false" # A boolean flag that is true if using BP-dependent theoretical uncertainties in the ee->Zh cross-section predictions. Different estimates are used for different BPs; however, these are interpreted as constant (klam-independent) in HEPfit 
 
 # Changed default values to 1.0!
 # theoerr_FCCee240_input="1.0"
@@ -494,6 +494,33 @@ setup_fits() {
     fi
 
 
+    ################################################################################################
+    ################### SETUP CONFIG FILES FOR NEW NUISANCE PARAMETERS OBSERVABLES #################
+    ################################################################################################
+    HIGGSEW_PAR_CORR_CONF="HiggsEW_Par_Corr"
+    NEW_HIGGSEW_PAR_CORR_CONF="${HIGGSEW_PAR_CORR_CONF}_NPs"
+    cp ${HIGGSEW_PAR_CORR_CONF}.conf ${NEW_HIGGSEW_PAR_CORR_CONF}.conf
+
+    echo "#" >> ${NEW_HIGGSEW_PAR_CORR_CONF}.conf
+    echo "#" >> ${NEW_HIGGSEW_PAR_CORR_CONF}.conf
+    echo "######################################################################" >> ${NEW_HIGGSEW_PAR_CORR_CONF}.conf
+    echo "# New theory nuisance parameters for FCCee Higgs production" >> ${NEW_HIGGSEW_PAR_CORR_CONF}.conf
+    echo "# cross-sections" >> ${NEW_HIGGSEW_PAR_CORR_CONF}.conf
+    echo "######################################################################" >> ${NEW_HIGGSEW_PAR_CORR_CONF}.conf
+    echo "#" >> ${NEW_HIGGSEW_PAR_CORR_CONF}.conf
+    echo "Observable NP_FCCee240_theo_unc   NP_FCCee240_theo_unc   #epsilon_{\text{NPtotal240}}     1. -1. noMCMC noweight" >> ${NEW_HIGGSEW_PAR_CORR_CONF}.conf
+    echo "Observable NP_FCCee365_theo_unc   NP_FCCee365_theo_unc   #epsilon_{\text{NPtotal365}}     1. -1. noMCMC noweight" >> ${NEW_HIGGSEW_PAR_CORR_CONF}.conf
+    echo "#" >> ${NEW_HIGGSEW_PAR_CORR_CONF}.conf
+
+    sed -i "\/IncludeFile ..\/..\/HiggsEW_Par_Corr.*/c\\IncludeFile ..\/..\/${NEW_HIGGSEW_PAR_CORR_CONF}.conf" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
+    sed -i "\/IncludeFile ..\/..\/HiggsEW_Par_Corr.*/c\\IncludeFile ..\/..\/${NEW_HIGGSEW_PAR_CORR_CONF}.conf" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
+    
+    HIGGSEW_PAR_CORR_CONF="$NEW_HIGGSEW_PAR_CORR_CONF"
+
+
+    ########################################################
+    ################### IMPLEMENTING FLAGS #################
+    ########################################################
     if [[ "${scenario}" == "IDM_FCCee240_FCCee365_HLLHClambda" ]]; then
         MODEL_HIGGS="IncludeFile ../../ObservablesHiggs_scaled_realistic_HL_LHC.conf"
         sed -i "\/IncludeFile ..\/..\/ObservablesHiggs.conf/c\\$MODEL_HIGGS" Globalfits/AllOps/${MODEL_CONF_FILE}.conf

@@ -748,6 +748,7 @@ def find_configuration_files(
         "_long",
         "_full",
         "_strict",
+        "_strict_test_new_NP",
     ]
 
     conf_files = {}

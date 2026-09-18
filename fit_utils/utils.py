@@ -796,6 +796,7 @@ def compare_BP_results_uproot(
     show_plots=False,
     legend_fontsize=8.,
     save_fig=True,
+    file_suffix="",
 ):
     """
     Compare the posterior kappa_lambda distribution between different model specifications.
@@ -838,6 +839,8 @@ def compare_BP_results_uproot(
         Font size for the legend. Default is 8.
     save_fig : bool, optional
         Whether to save the figures. Default is True.
+    file_suffix : str, optional
+        Suffix to be added to the name of the generated plot files. Default is ''.
 
     Returns
     -------
@@ -905,7 +908,7 @@ def compare_BP_results_uproot(
             plt.axvline(BP_lambda, color="black", linestyle="--", label=rf"{model} {BP_name} value ($\kappa_{{\lambda}}$ = {BP_lambda:.2f})")
             plt.legend(fontsize=legend_fontsize, loc="best")
             plt.tight_layout()
-            if save_fig: plt.savefig(f"{working_dir}/comparison_plots/results_{results_dir}/{model}_{BP}_{scenario}_final.pdf")
+            if save_fig: plt.savefig(f"{working_dir}/comparison_plots/results_{results_dir}/{model}_{BP}_{scenario}_final{file_suffix}.pdf")
 
     if show_plots:
         plt.show()
