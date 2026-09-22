@@ -354,6 +354,10 @@ def find_tex_label_obs(obs_tex, obs):
     elif obs == "muttHtautauHL":   tex_label = r"$\mu_{ttH}^{\tau\tau}$(HL-LHC)"
     elif obs == "muttHbbHL":       tex_label = r"$\mu_{ttH}^{bb}$(HL-LHC)"
 
+
+    elif obs == "NP_FCCee240_theo_unc": tex_label = r"$\epsilon_{240}^{\mathrm{NP}}$"
+    elif obs == "NP_FCCee365_theo_unc": tex_label = r"$\epsilon_{365}^{\mathrm{NP}}$"
+
     else: tex_label = fix_obs_tex(obs_tex, obs)
 
     return tex_label

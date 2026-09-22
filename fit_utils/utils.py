@@ -8,7 +8,7 @@ import numpy as np
 import os.path
 from math import floor, log10
 
-from .parser import read_fit_results
+from .parser import read_fit_results, find_tex_label_obs
 
 plt.rcParams.update({
     #   "text.usetex": True,
@@ -200,6 +200,7 @@ def generate_klam_comparison_plot(
     file_suffix='',
     bottom_axes_BP_labels=False,
     save_fig=True,
+    print_out=False,
 ):
     r"""
     Compare the fit results for kappa_lambda between the benchmark points
@@ -281,10 +282,15 @@ def generate_klam_comparison_plot(
         Default is False.
     save_fig : bool, optional
         Whether to save the figures. Default is True.
+    print_out : bool, optional
+        Whether to print out and return the results for the kappa_lambda central values and 
+        uncertainties. Default is False.
 
     Returns
     -------
-    None
+    None or tuple
+        If print_out is True, returns a tuple containing the kappa_lambda central values and uncertainties.
+        Otherwise, returns None.
 
     """
 
@@ -329,7 +335,10 @@ def generate_klam_comparison_plot(
         
 
     spec_distance = spec_distance
+    return_klam_results = {}
     for scenario in scenarios:
+        return_klam_results[scenario] = {}
+
         n_specs = len(model_specs[scenario])
         if group_model_specs:
             if not (no_bottom_axis or only_bottom_axis):
@@ -338,6 +347,8 @@ def generate_klam_comparison_plot(
                 fig, ax1 = plt.subplots(1, 1, figsize=figsize, **fig_kwargs)
 
         for spec_idx, (model_spec, results_dir) in enumerate(zip(model_specs[scenario], results_dirs)):
+            return_klam_results[scenario][model_spec] = {}
+
             x = BP_lambdas
             if not group_model_specs:
                 if not (no_bottom_axis or only_bottom_axis):
@@ -351,21 +362,22 @@ def generate_klam_comparison_plot(
                 means  = {BP : kappa_lambda_results[BP][scenario][model_spec][0, 0] + 1 for BP in BPs}
 
                 errors = {
-                    BP : [
+                    BP : np.array([
                         [kappa_lambda_results[BP][scenario][model_spec][0, 1]], 
                         [kappa_lambda_results[BP][scenario][model_spec][0, 1]]
-                    ] for BP in BPs
+                    ]) for BP in BPs
                 }
 
             else:
                 means = {}
                 errors = {}
                 for BP in BPs:
-                    histograms = read_klam_hist_uproot(
+                    histograms = read_uproot_hist(
                         working_dir=working_dir,
                         BP=BP,
                         scenario=scenario,
                         spec=model_spec,
+                        observable="deltalHHH_HLLHC",
                     )
 
                     if histograms is None:
@@ -397,9 +409,12 @@ def generate_klam_comparison_plot(
                         y_err_high = 0
 
 
-                    errors[BP] = [[y_err_low], [y_err_high]]
+
+                    errors[BP] = np.array([[y_err_low], [y_err_high]])
                     means[BP] = mode
 
+
+            return_klam_results[scenario][model_spec] = [means, errors]
 
             for i, BP in enumerate(BPs):
 
@@ -518,6 +533,11 @@ def generate_klam_comparison_plot(
 
     if show_plots:
         plt.show()
+
+    if print_out:
+        print("\nKappa_lambda fit results:")
+        print(return_klam_results)
+        return return_klam_results
 
 
 def generate_obs_comparison_plot(
@@ -790,6 +810,7 @@ def compare_BP_results_uproot(
     BP_names,
     BP_lambdas,
     model,
+    observable='deltalHHH_HLLHC',
     scenario_titles=None,
     plot_titles=None,
     colors=None,
@@ -823,6 +844,8 @@ def compare_BP_results_uproot(
         List of the corresponding BSM model prediction for kappa_lambda for each BP.
     model : str
         The BSM model considered. Currently can be either "IDM" or "Z2SSM"
+    observable : str, optional
+        The observable to be plotted. Default is 'deltalHHH_HLLHC'.
     scenario_titles : list, optional
         A list containing the titles for the scenarios. If not provided, default titles 
         will be used.
@@ -876,6 +899,8 @@ def compare_BP_results_uproot(
     # Create the output directory, if it does not yet exist
     subprocess.run(["mkdir", "-p", f"{working_dir}/comparison_plots/results_{results_dir}"])
 
+    obs_label = find_tex_label_obs("", observable)
+
     fig_num = 0
     for scenario in scenarios:
         for BP, BP_name, BP_lambda in zip(BPs, BP_names, BP_lambdas):
@@ -885,15 +910,17 @@ def compare_BP_results_uproot(
             fig_num += 1
             ax = plt.gca()
             ax.set_title(plot_titles[BP][scenario])
-            ax.set_xlabel(r"$\kappa_{\lambda}$", fontsize=14)
+            # ax.set_xlabel(r"$\kappa_{\lambda}$", fontsize=14)
+            ax.set_xlabel(obs_label, fontsize=14)
             ax.set_ylabel("Posterior distribution", fontsize=12)
 
             for spec, label, color_rgb in zip(model_specs[scenario], spec_labels, colors_rgb_list):
-                hist_lmbd_x, hist_lmbd_y = read_klam_hist_uproot(
+                hist_lmbd_x, hist_lmbd_y = read_uproot_hist(
                     working_dir,
                     BP,
                     scenario,
                     spec,
+                    observable=observable,
                 )
                 if hist_lmbd_x is None or hist_lmbd_y is None:
                     print(f"Skipping {BP}, {scenario}, {spec} as histogram data is missing.")
@@ -905,7 +932,7 @@ def compare_BP_results_uproot(
             ax.set_ylim(ylow, yhigh + (scale-1)*(yhigh-ylow))
 
             # plt.axvline(BP_lambda, color="black", linestyle="--", label=rf"{model} {BP_name} value"+"\n"+rf"($\kappa_{{\lambda}}$ = {BP_lambda:.2f})")
-            plt.axvline(BP_lambda, color="black", linestyle="--", label=rf"{model} {BP_name} value ($\kappa_{{\lambda}}$ = {BP_lambda:.2f})")
+            if observable == 'deltalHHH_HLLHC': plt.axvline(BP_lambda, color="black", linestyle="--", label=rf"{model} {BP_name} value ($\kappa_{{\lambda}}$ = {BP_lambda:.2f})")
             plt.legend(fontsize=legend_fontsize, loc="best")
             plt.tight_layout()
             if save_fig: plt.savefig(f"{working_dir}/comparison_plots/results_{results_dir}/{model}_{BP}_{scenario}_final{file_suffix}.pdf")
@@ -1000,11 +1027,27 @@ def generate_klam_latex_table(
         print(f"Saved summary latex table onto file {table_tex_output_file}")
 
 
-def read_klam_hist_uproot(
+
+def _open_npz_file(file_path, observable, old_format=False):
+    if not old_format:
+        hist_file = np.load(file_path)
+        hists = hist_file[f"hist_{observable}"]
+        hist_y = hists[0]
+        hist_x = hists[1]
+    else:
+        hist = np.load(file_path)
+        hist_x = hist[f"hist_{observable}_x"]
+        hist_y = hist[f"hist_{observable}_y"]
+
+    return hist_x, hist_y
+
+
+def read_uproot_hist(
     working_dir,
     BP,
     scenario,
     spec,
+    observable="deltalHHH_HLLHC",
 ):
 
     file_path = f"{working_dir}/{BP}/{scenario}"
@@ -1018,20 +1061,352 @@ def read_klam_hist_uproot(
         file_path += f"/results_{spec}/"
 
     try:
-        if os.path.exists(file_path+"hist_lmbd.npz"):
-            hist = np.load(file_path+"hist_lmbd.npz")
-            hist_lmbd_x = hist["hist_lmbd_x"]
-            hist_lmbd_y = hist["hist_lmbd_y"]
-            return hist_lmbd_x, hist_lmbd_y
+        if os.path.exists(file_path+f"hist.npz"):
+            return _open_npz_file(file_path+f"hist.npz", observable)
+
+        elif os.path.exists(file_path+f"hist_{observable}.npz"):
+            return _open_npz_file(file_path+f"hist_{observable}.npz", "lmbd", old_format=True)
+            
+        elif observable == "deltalHHH_HLLHC" and os.path.exists(file_path+f"hist_lmbd.npz"):
+            return _open_npz_file(file_path+f"hist_lmbd.npz", "lmbd", old_format=True)
 
         with uproot.open(file_path+"MCout.root") as file:
 
-            hist_lmbd_y, hist_lmbd_x = file["deltalHHH_HLLHC"].to_numpy()
-            hist_lmbd_x = hist_lmbd_x + 1 
+            hist_y, hist_x = file[f"{observable}"].to_numpy()
+            if observable == "deltalHHH_HLLHC":
+                hist_x = hist_x + 1 
 
-            return hist_lmbd_x, hist_lmbd_y
+            return hist_x, hist_y
         
     except Exception as e:
         print(f"Error reading ROOT file or npz file for {BP}, {scenario}, {spec}: \n{e}")
         return None, None
+        # raise FileNotFoundError(f"Error reading ROOT file or npz file for {BP}, {scenario}, {spec}: \n{e}")
+
+
+def _corr_from_hist2d(hist, xedges, yedges):
+    hist = np.asarray(hist, dtype=float)
+    xcenters = 0.5 * (xedges[:-1] + xedges[1:])  # (nx,)
+    ycenters = 0.5 * (yedges[:-1] + yedges[1:])  # (ny,)
+
+    X = xcenters[:, None]  # (nx,1)
+    Y = ycenters[None, :]  # (1,ny)
+
+    norm = hist.sum()
+    if norm == 0:
+        return np.nan
+
+    w = hist / norm
+
+    mx = (w * X).sum()
+    my = (w * Y).sum()
+
+    cov_xy = (w * (X - mx) * (Y - my)).sum()
+    var_x = (w * (X - mx)**2).sum()
+    var_y = (w * (Y - my)**2).sum()
+
+    if var_x == 0 or var_y == 0:
+        return np.nan
+
+    return cov_xy / np.sqrt(var_x * var_y)
+
+
+def _get_results_dir_path(
+    working_dir,
+    BP,
+    scenario,
+    spec,
+):
+    
+    file_path = f"{working_dir}/{BP}/{scenario}"
+    if "toyfit" in spec:
+        file_path += f"/toy_fits"
+
+    # Open the ROOT file
+    if BP == "BP_lambda1" and spec == "fits_realistic_HL_LHC_WFR_kala2_input_all_all_EW_mods_small_priors_long":
+        file_path += f"/results_{spec[:-5]}_strict/"
+    else:
+        file_path += f"/results_{spec}/"
+
+    return file_path
+
+
+def read_uproot_chain(
+    results_dir_path=None,
+    working_dir=None,
+    BP=None,
+    scenario=None,
+    spec=None,
+    observable="deltalHHH_HLLHC",
+):
+    """
+    Read the observable array from the ROOT file using uproot.
+
+    Parameters
+    ----------
+    results_dir_path : str, optional
+        Path to the results directory. If None, it will be generated from the other parameters. 
+        In this case, the working_dir, BP, scenario, and spec parameters must be provided. Otherwise,
+        these parameters will be ignored.
+    working_dir : str, optional
+        Working directory path, containing subdirectories for each benchmark point.
+    BP : str, optional
+        Benchmark point name.
+    scenario : str, optional
+        Collider configuration scenario name.
+    spec : str, optional
+        Model specification.
+    observable : str, optional
+        Name of the observable to read.
+
+    Returns
+    -------
+    obs_array : numpy.ndarray
+        Array containing the observable values.
+    """
+
+    if results_dir_path is None:
+        if working_dir is None or BP is None or scenario is None or spec is None:
+            raise ValueError("Error when determining the results directory path. If results_dir_path is not provided, working_dir, BP, scenario, and spec must all be provided.")
+        
+        results_dir_path = _get_results_dir_path(working_dir, BP, scenario, spec)
+
+    try:
+        with uproot.open(results_dir_path+"MCout.root") as file:
+            chain = file["NPSMEFTd6_Observables"]
+            obs_array = chain[observable].array(library="np")
+            if observable == "deltalHHH_HLLHC":
+                obs_array = obs_array + 1
+            return obs_array
+        
+    except Exception as e:
+        print(f"Error reading ROOT file for {BP}, {scenario}, {spec}: \n{e}")
+        return None
+        # raise FileNotFoundError(f"Error reading ROOT file or npz file for {BP}, {scenario}, {spec}: \n{e}")
+
+
+def plot_BP_results_uproot_2d_hist(
+    BPs,
+    model_specs,
+    working_dir,
+    results_dirs,
+    spec_labels,
+    BP_names,
+    BP_lambdas,
+    model,
+    observable1,
+    observable2,
+    nbins=50,
+    cmap="viridis",
+    figsize=(4.0, 3.5),
+    scenario_titles=None,
+    plot_titles=None,
+    colors=None,
+    show_plots=False,
+    legend_fontsize=8.,
+    save_fig=True,
+    file_suffix="",
+):
+    """
+    Compare the posterior kappa_lambda distribution between different model specifications.
+    The distributions are read from the MCout.root files with the uproot package. The function 
+    generates comparison plots between the model_specs, as well as a summary latex table.
+
+    Parameters
+    ----------
+    BPs : list of str
+        List of benchmark point names. Must correspond to the directory name for the BP
+    model_specs : dict
+        Dictionary mapping collider scenarios to a list of model specifications.
+    working_dir : str
+        Working directory path, containing subdirectories for each benchmark point.
+    results_dirs : list or list of str
+        List of suffixes for the result directories. For each {results_dir} in this list,
+        the corresponding results will be stored in the directory
+        '{working_dir}/comparison_plots/results_{results_dir}/'. Can also be a single string,
+        in which case all plots are stored in the same directory.
+    spec_labels : list of str
+        List with the labels for each model specification. Must have the same length as the
+        model_specs[scenario] lists, for each collider scenario.
+    BP_names : list of str
+        List with the names for the benchmark point, used in plots.
+    BP_lambda : list of float
+        List of the corresponding BSM model prediction for kappa_lambda for each BP.
+    model : str
+        The BSM model considered. Currently can be either "IDM" or "Z2SSM"
+    observable1 : str, optional
+        The first observable to be plotted.
+    observable2 : str, optional
+        The second observable to be plotted.
+    nbins : int, optional
+        Number of bins for the 2D histogram. Default is 50.
+    scenario_titles : list, optional
+        A list containing the titles for the scenarios. If not provided, default titles 
+        will be used.
+    plot_titles : dict, optional
+        A dictionary in the form plot_titles[BP][scenario][model_spec] containing the titles for 
+        the plots.
+    colors : list, optional
+        List of colors assign to each model specification. If not set, the default 
+        matplotlib color cycle will be used.
+    show_plots : bool, optional
+        Whether to show the plots or not. Default is False.
+    legend_fontsize : float, optional
+        Font size for the legend. Default is 8.
+    save_fig : bool, optional
+        Whether to save the figures. Default is True.
+    file_suffix : str, optional
+        Suffix to be added to the name of the generated plot files. Default is ''.
+
+    Returns
+    -------
+    None
+
+    """
+
+    scenarios = model_specs.keys()
+
+    # Deal with optional arguments
+    if colors is None:
+        # Default matplotlib color cycle
+        colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+
+    colors_rgb_list = [ matplotlib.colors.to_rgb(c) for c in colors ]
+
+    if model not in ["IDM", "Z2SSM"]:
+        raise ValueError(f"Invalid model specified ({model}). Please choose either 'IDM' or 'Z2SSM'.")
+    
+    if scenario_titles is None:
+        for scenario in scenarios:
+            if scenario == f"{model}_FCCee240":
+                scenario_titles = [rf"FCC-ee$_{{240}}$"]
+            elif scenario == f"{model}_FCCee240_FCCee365":
+                scenario_titles = [rf"FCC-ee$_{{240}}$ + FCC-ee$_{{365}}$"]
+            elif scenario == f"{model}_FCCee240_FCCee365_HLLHClambda":
+                scenario_titles = [rf"FCC-ee$_{{240}}$ + FCC-ee$_{{365}}$ + $\kappa_{{\lambda}}$ at HL-LHC"]
+
+    if isinstance(results_dirs, str):
+        results_dirs = [results_dirs for model_spec in model_specs[scenarios[0]]]
+
+    # Create the output directories, if they do not yet exist
+    for results_dir in results_dirs:
+        subprocess.run(["mkdir", "-p", f"{working_dir}/comparison_plots/results_{results_dir}"])
+
+
+    obs_label1 = find_tex_label_obs("", observable1)
+    obs_label2 = find_tex_label_obs("", observable2)
+
+    fig_num = 0
+    for scenario in scenarios:
+        for BP, BP_name, BP_lambda in zip(BPs, BP_names, BP_lambdas):
+            for spec, label, color_rgb, results_dir in zip(model_specs[scenario], spec_labels, colors_rgb_list, results_dirs):
+                fig = plt.figure(fig_num, figsize=figsize)
+                fig_num += 1
+                ax = plt.gca()
+                if plot_titles is not None:
+                    ax.set_title(plot_titles[BP][scenario][spec])
+                # ax.set_xlabel(r"$\kappa_{\lambda}$", fontsize=14)
+                ax.set_xlabel(obs_label1, fontsize=14)
+                ax.set_ylabel(obs_label2, fontsize=14)
+
+                results_dir_path = _get_results_dir_path(working_dir, BP, scenario, spec)
+
+                if os.path.exists(results_dir_path+"MCout.root"):
+                    chain1 = read_uproot_chain(results_dir_path, observable=observable1)
+                    chain2 = read_uproot_chain(results_dir_path, observable=observable2)
+                    hist, xedges, yedges = np.histogram2d(chain1, chain2, bins=nbins)
+                    correlation = np.corrcoef(chain1, chain2)[0, 1]
+                    # correlation = _corr_from_hist2d(hist, xedges, yedges)
+
+                elif os.path.exists(results_dir_path+"hist.npz"):
+                    hist_file = np.load(results_dir_path+"hist.npz", allow_pickle=True)
+                    hist, xedges, yedges = hist_file[f"hist_{observable1}_{observable2}"]
+                    correlation = _corr_from_hist2d(hist, xedges, yedges)
+
+                else:
+                    print(f"Skipping {BP}, {scenario}, {spec} as histogram data is missing.")
+                    continue
+                
+                if (chain1 is None or chain2 is None) and (hist is None or xedges is None or yedges is None):
+                    print(f"Skipping {BP}, {scenario}, {spec} as histogram data is missing.")
+                    continue
+
+
+                X, Y = np.meshgrid(xedges, yedges)
+                hist[hist < 1e-6] = np.nan  # Mask zero counts for better visualization
+                plt.pcolormesh(X, Y, hist.T, cmap=cmap)
+
+                plt.colorbar(label='Counts')
+
+                plt.text(0.97, 0.965, rf"Correlation: {correlation:.3g}", ha='right', va='top', transform=ax.transAxes, fontsize=10, bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+                plt.plot(0.95, 0.95, transform=plt.gca().transAxes, color='none') # Dummy plot to ensure the text is not obscured by plot legend
+                plt.plot(0.05, 0.95, transform=plt.gca().transAxes, color='none') # Dummy plot to ensure the text is not obscured by plot legend
+
+                if observable1 == 'deltalHHH_HLLHC': plt.axvline(BP_lambda, color="black", linestyle="--", label=rf"{model} {BP_name} value ($\kappa_{{\lambda}}$ = {BP_lambda:.2f})")
+                if observable2 == 'deltalHHH_HLLHC': plt.axhline(BP_lambda, color="black", linestyle="--", label=rf"{model} {BP_name} value ($\kappa_{{\lambda}}$ = {BP_lambda:.2f})")
+                plt.legend(fontsize=legend_fontsize, loc="best")
+                plt.tight_layout()
+                if save_fig: plt.savefig(f"{working_dir}/comparison_plots/results_{results_dir}/{model}_{BP}_{scenario}_hist2d_{observable1}_{observable2}{file_suffix}.pdf")
+
+    if show_plots:
+        plt.show()
+
+
+def get_correlation_between_obs(
+    working_dir,
+    BP,
+    scenario,
+    spec,
+    observable1,
+    observable2,
+):
+
+    results_dir_path = _get_results_dir_path(working_dir, BP, scenario, spec)
+
+    try:
+        with uproot.open(results_dir_path+"MCout.root") as file:
+
+            chain = file["NPSMEFTd6_Observables"]
+            obs1_array = chain[observable1].array(library="np")
+            obs2_array = chain[observable2].array(library="np")
+            correlation = np.corrcoef(obs1_array, obs2_array)[0, 1]
+            return correlation
+            
+    except Exception as e:
+        print(f"Error reading ROOT file or npz file for {BP}, {scenario}, {spec}: \n{e}")
+        return np.nan
+        # raise FileNotFoundError(f"Error reading ROOT file or npz file for {BP}, {scenario}, {spec}: \n{e}")
+
+
+def chi_square_formula(
+    data,
+    model,
+    inverse_covariance_matrix,
+):
+    
+    chi_square = (data - model).T @ inverse_covariance_matrix @ (data - model)
+    return chi_square
+
+
+# TODO: finish implementation
+def calculate_chi_square(
+    working_dir,
+    BP,
+    scenario,
+    spec,
+):
+    
+    results_dir_path = _get_results_dir_path(working_dir, BP, scenario, spec)
+
+    try:
+        with uproot.open(results_dir_path+"MCout.root") as file:
+
+            chain = file["NPSMEFTd6_Observables"]
+
+            # chi_square = chi_square_formula(data, model, inverse_covariance_matrix)
+            # return chi_square
+            
+    except Exception as e:
+        print(f"Error reading ROOT file or npz file for {BP}, {scenario}, {spec}: \n{e}")
+        return np.nan
         # raise FileNotFoundError(f"Error reading ROOT file or npz file for {BP}, {scenario}, {spec}: \n{e}")

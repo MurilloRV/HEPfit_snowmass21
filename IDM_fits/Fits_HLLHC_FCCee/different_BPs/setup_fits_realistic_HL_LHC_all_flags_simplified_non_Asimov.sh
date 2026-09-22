@@ -351,24 +351,34 @@ setup_fits() {
     #####################################################################
     sed -i "/SignificantDigits 5 /c SignificantDigits 15 " MonteCarlo.conf
 
+    cp MonteCarlo.conf MonteCarlo_test.conf
     cp MonteCarlo.conf MonteCarlo_short.conf
     cp MonteCarlo.conf MonteCarlo_long.conf
     cp MonteCarlo.conf MonteCarlo_full.conf
     cp MonteCarlo.conf MonteCarlo_strict.conf
 
-    sed -i "/PrerunMaxIter              10000000 /c PrerunMaxIter              100000 " MonteCarlo_short.conf
-    sed -i "/Iterations                 1000000 /c Iterations                 50000 " MonteCarlo_short.conf
+    sed -i "/WriteChain .*/c WriteChain                 true  " MonteCarlo_test.conf
+    sed -i "/PrerunMaxIter .*/c PrerunMaxIter              10000 " MonteCarlo_test.conf
+    sed -i "/Iterations .*/c Iterations                 10000 " MonteCarlo_test.conf
+    sed -i "/RValueForConvergence  .*/c RValueForConvergence    1.1 " MonteCarlo_test.conf
+
+    sed -i "/PrerunMaxIter .*/c PrerunMaxIter              100000 " MonteCarlo_short.conf
+    sed -i "/Iterations .*/c Iterations                 50000 " MonteCarlo_short.conf
     sed -i "/RValueForConvergence  .*/c RValueForConvergence    1.1 " MonteCarlo_short.conf
 
-    sed -i "/PrerunMaxIter              10000000 /c PrerunMaxIter              1000000 " MonteCarlo_long.conf
-    sed -i "/Iterations                 1000000 /c Iterations                 100000 " MonteCarlo_long.conf
-    sed -i "/RValueForConvergence  .*/c RValueForConvergence    1.1 " MonteCarlo_long.conf
+    sed -i "/PrerunMaxIter .*/c PrerunMaxIter              1000000 " MonteCarlo_long.conf
+    sed -i "/Iterations .*/c Iterations                 100000 " MonteCarlo_long.conf
+    sed -i "/RValueForConvergence .*/c RValueForConvergence    1.1 " MonteCarlo_long.conf
 
-    sed -i "/PrerunMaxIter              10000000 /c PrerunMaxIter              5000000 " MonteCarlo_full.conf
-    sed -i "/RValueForConvergence  .*/c RValueForConvergence    1.1 " MonteCarlo_full.conf
+    sed -i "/PrerunMaxIter .*/c PrerunMaxIter              5000000 " MonteCarlo_full.conf
+    sed -i "/RValueForConvergence .*/c RValueForConvergence    1.1 " MonteCarlo_full.conf
 
-    sed -i "/PrerunMaxIter              10000000 /c PrerunMaxIter              2000000 " MonteCarlo_strict.conf
-    sed -i "/RValueForConvergence  .*/c RValueForConvergence    1.01 " MonteCarlo_strict.conf
+    sed -i "/PrerunMaxIter .*/c PrerunMaxIter              2000000 " MonteCarlo_strict.conf
+    sed -i "/RValueForConvergence .*/c RValueForConvergence    1.01 " MonteCarlo_strict.conf
+
+    cp MonteCarlo_strict.conf MonteCarlo_strict_writechain.conf
+    sed -i "/WriteChain .*/c WriteChain                 true  " MonteCarlo_strict_writechain.conf
+
 
 
     ####################################################################################
