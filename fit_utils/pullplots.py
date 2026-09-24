@@ -5,16 +5,13 @@ from matplotlib import pyplot as plt
 import subprocess
 from copy import deepcopy
 from .parser import (
-    observable_order, 
     parameter_order, 
-    find_configuration_files, 
-    read_configuration_files, 
-    read_fit_results, 
     read_fit_results_pars, 
     align_observables,
     read_fit_results_dim6Ops_correlations,
     find_tex_label_par,
     read_WC_predictions,
+    read_data_for_pulls,
 )
 
 
@@ -107,7 +104,7 @@ def generate_bar_plots_pars(
     )
 
     print(f"\nSorting observables")
-    aligned_parameters, aligned_parameters_tex, central_values_obs, results = align_observables(
+    aligned_parameters, aligned_parameters_tex, central_values_obs, _, results = align_observables(
         observable_order_func=parameter_order,
         BPs=BPs,
         model_specs=model_specs,
@@ -298,7 +295,7 @@ def generate_WCs_vs_klam_plot(
     # Order function for the WCs, which will be used to sort the observables. WCs not in WC_names will be sorted at the end, in their original order.
 
     print(f"\nSorting observables")
-    aligned_parameters, aligned_parameters_tex, central_values_obs, results = align_observables(
+    aligned_parameters, aligned_parameters_tex, central_values_obs, _, results = align_observables(
         observable_order_func=WC_order_func,
         BPs=BPs,
         model_specs=model_specs,
@@ -687,7 +684,7 @@ def generate_pull_plots_pars(
     )
 
     print(f"\nSorting observables")
-    aligned_parameters, aligned_parameters_tex, central_values_obs, results = align_observables(
+    aligned_parameters, aligned_parameters_tex, central_values_obs, _, results = align_observables(
         observable_order_func=parameter_order,
         BPs=BPs,
         model_specs=model_specs,
@@ -696,6 +693,7 @@ def generate_pull_plots_pars(
         central_values_obs=central_values_obs,
         results=results,
     )
+
 
     n_model_specs = len(list(model_specs.values())[0])
     w = 1.0
@@ -812,14 +810,16 @@ def generate_pull_plots_obs(
     model,
     only_obs=None,
     skip_obs=None,
+    only_higgs_fccee_obs=False,
+    noMCMC_obs=None,
     colors=None,
     show_plots=False,
     nvar_per_plot=50,
-    only_higgs_fccee_obs=False,
     compare_with_SM=False,
     WC_list_for_prediction_pulls=None,
     matched_predictions_vs_BSM=False,
     compare_model_spec_predictions=False,
+    use_input_uncertainties=False,
     BP_lambdas=None,
     figsize=(5, 7),
     legend_loc="best",
@@ -852,6 +852,12 @@ def generate_pull_plots_obs(
     skip_obs : list of str, optional
         A list of observables to skip (i.e., not show in the plots). 
         Default is an empty list.
+    only_higgs_fccee_obs : bool, optional
+        If set to True, only FCC-ee Higgs observables are considered for 
+        the plot. Default is False.
+    noMCMC_obs : list of str, optional
+        List of observables to include, but which are not included in the MCMC fit. 
+        Their corresponding central values and uncertainties will be set to zero. Default is None.
     colors : list, optional
         List of colors assign to each model specification. If not set, the 
         default matplotlib color cycle will be used.
@@ -859,9 +865,6 @@ def generate_pull_plots_obs(
         Whether to show the plots. Default is False.
     nvar_per_plot : int, optional
         The number of variables to plot per figure. Default is 15.
-    only_higgs_fccee_obs : bool, optional
-        If set to True, only FCC-ee Higgs observables are considered for 
-        the plot. Default is False.
     compare_with_SM : bool, optional
         If set to true, use SM predictions as the central values for the 
         pulls. Default is False
@@ -886,6 +889,9 @@ def generate_pull_plots_obs(
     compare_model_spec_predictions : bool, optional
         If True, this function will evaluate the pulls of the BSM model predictions between
         the two model specifications given as input, for comparison purposes
+    use_input_uncertainties : bool, optional
+        If True, the input uncertainties will be used for the pulls instead of the fit uncertainties.
+        Default is False.
     BP_lambdas : list of floats, optional
         List of predictions for kappa_lambda for each BP. If set, kappa_lambda will be added as an 
         observable with the corresponding central value for each BP. 
@@ -916,99 +922,122 @@ def generate_pull_plots_obs(
     if model not in ["IDM", "Z2SSM", "SM", "SM_updated_lumi"]:
         raise ValueError(f"Invalid model specified ({model}). Please choose either 'IDM', 'Z2SSM', 'SM', or 'SM_updated_lumi'.")
 
-    files = {}
-    for BP in BPs:
-        files[BP] = {}
-        for scenario in scenarios:
-            files[BP][scenario] = {}
-            for model_spec in model_specs[scenario]:
-                if "toyfit" in model_spec:
-                    files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/toy_fits/results_{model_spec}/Observables/Statistics.txt"
-                else:
-                    files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/results_{model_spec}/Observables/Statistics.txt"
-
     # Create the output directory, if it does not yet exist
     subprocess.run(["mkdir", "-p", f"{working_dir}/comparison_plots/results_{results_dir}"])
 
+    # files = {}
+    # for BP in BPs:
+    #     files[BP] = {}
+    #     for scenario in scenarios:
+    #         files[BP][scenario] = {}
+    #         for model_spec in model_specs[scenario]:
+    #             if "toyfit" in model_spec:
+    #                 files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/toy_fits/results_{model_spec}/Observables/Statistics.txt"
+    #             else:
+    #                 files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/results_{model_spec}/Observables/Statistics.txt"
 
-    print("\nFinding configuration files for the observables")
-    conf_files = find_configuration_files(model_specs, model)
+    # 
+
+
+    # print("\nFinding configuration files for the observables")
+    # conf_files = find_configuration_files(model_specs, model)
         
-    print(f"\nReading configuration files for observables")
-    observables, observables_tex, central_values_obs, input_uncertainties = read_configuration_files(
-        working_dir=working_dir,
-        BPs=BPs,
-        model_specs=model_specs,
-        conf_files=conf_files,
+    # print(f"\nReading configuration files for observables")
+    # observables, observables_tex, central_values_obs, input_uncertainties = read_configuration_files(
+    #     working_dir=working_dir,
+    #     BPs=BPs,
+    #     model_specs=model_specs,
+    #     conf_files=conf_files,
+    #     only_obs=only_obs,
+    #     skip_obs=skip_obs,
+    #     only_higgs_fccee_obs=only_higgs_fccee_obs,
+    #     read_model_parameters=False,
+    #     compare_with_SM=compare_with_SM,
+    #     BP_lambdas=BP_lambdas,
+    # )
+
+    # print(f"\nReading fit results")
+    # if WC_list_for_prediction_pulls is not None:
+    #     results = {}
+    #     for BP in BPs:
+    #         results[BP] = {}
+    #         for scenario in scenarios:
+    #             results[BP][scenario] = {}
+    #             for model_spec in model_specs[scenario]:
+    #                 results[BP][scenario][model_spec] = np.zeros((len(list(observables["Config_Files"]["."].values())[0]), 2))
+    #                 results[BP][scenario][model_spec] = np.array( 
+    #                     [
+    #                         list(central_values_obs["Config_Files"]["."].values())[0],
+    #                         list(input_uncertainties["Config_Files"]["."].values())[0],
+    #                     ] 
+    #                 ).T
+    #     WC_labels = [ find_tex_label_par(None, wc) for wc in WC_list_for_prediction_pulls["WC_list"] ]
+    
+    # elif matched_predictions_vs_BSM or compare_model_spec_predictions:
+    #     results = {}
+    #     for BP in BPs:
+    #         results[BP] = {}
+    #         for scenario in scenarios:
+    #             results[BP][scenario] = {}
+    #             for model_spec in model_specs[scenario]:
+    #                 results[BP][scenario][model_spec] = np.array( 
+    #                     [
+    #                         central_values_obs[BP][scenario][model_spec],
+    #                         input_uncertainties[BP][scenario][model_spec],
+    #                     ] 
+    #                 ).T
+
+    # else:
+    #     results = read_fit_results(
+    #         BPs=BPs,
+    #         model_specs=model_specs,
+    #         observables=observables,
+    #         files=files,
+    #     )
+
+
+    # print(f"\nSorting observables")
+    # aligned_observables, aligned_observables_tex, central_values_obs, input_uncertainties_obs, results = align_observables(
+    #     observable_order_func=observable_order,
+    #     BPs=BPs,
+    #     model_specs=model_specs,
+    #     observables=observables,
+    #     observables_tex=observables_tex,
+    #     central_values_obs=central_values_obs,
+    #     results=results,
+    # )
+
+    aligned_observables, aligned_observables_tex, central_values_obs, input_uncertainties_obs, input_correlated_observables, results = read_data_for_pulls(
+        BPs,
+        model_specs,
+        scenarios,
+        working_dir,
+        model,
         only_obs=only_obs,
         skip_obs=skip_obs,
         only_higgs_fccee_obs=only_higgs_fccee_obs,
-        read_model_parameters=False,
         compare_with_SM=compare_with_SM,
+        WC_list_for_prediction_pulls=WC_list_for_prediction_pulls,
+        matched_predictions_vs_BSM=matched_predictions_vs_BSM,
+        compare_model_spec_predictions=compare_model_spec_predictions,
         BP_lambdas=BP_lambdas,
+        noMCMC_obs=noMCMC_obs,
     )
 
-    print(f"\nReading fit results")
-    if WC_list_for_prediction_pulls is not None:
-        results = {}
+    # Overwrite the uncertainties in the results with the input uncertainties
+    if use_input_uncertainties:
         for BP in BPs:
-            results[BP] = {}
             for scenario in scenarios:
-                results[BP][scenario] = {}
                 for model_spec in model_specs[scenario]:
-                    results[BP][scenario][model_spec] = np.zeros((len(list(observables["Config_Files"]["."].values())[0]), 2))
-                    results[BP][scenario][model_spec] = np.array( 
-                        [
-                            list(central_values_obs["Config_Files"]["."].values())[0],
-                            list(input_uncertainties["Config_Files"]["."].values())[0],
-                        ] 
-                    ).T
-        WC_labels = [ find_tex_label_par(None, wc) for wc in WC_list_for_prediction_pulls["WC_list"] ]
-    
-    elif matched_predictions_vs_BSM or compare_model_spec_predictions:
-        results = {}
-        for BP in BPs:
-            results[BP] = {}
-            for scenario in scenarios:
-                results[BP][scenario] = {}
-                for model_spec in model_specs[scenario]:
-                    results[BP][scenario][model_spec] = np.array( 
-                        [
-                            central_values_obs[BP][scenario][model_spec],
-                            input_uncertainties[BP][scenario][model_spec],
-                        ] 
-                    ).T
-
-    else:
-        results = read_fit_results(
-            BPs=BPs,
-            model_specs=model_specs,
-            observables=observables,
-            files=files,
-        )
-
-        
-
-
-
-
-
-    print(f"\nSorting observables")
-    aligned_observables, aligned_observables_tex, central_values_obs, results = align_observables(
-        observable_order_func=observable_order,
-        BPs=BPs,
-        model_specs=model_specs,
-        observables=observables,
-        observables_tex=observables_tex,
-        central_values_obs=central_values_obs,
-        results=results,
-    )
+                    results[BP][scenario][model_spec][:,1] = np.copy(input_uncertainties_obs[BP][scenario][model_spec])
 
     n_model_specs = len(list(model_specs.values())[0])
     w = 1.0
     dimw = w / 2
 
     if WC_list_for_prediction_pulls:
+
+        WC_labels = [ find_tex_label_par(None, wc) for wc in WC_list_for_prediction_pulls["WC_list"] ]
 
         filename_suffix = WC_list_for_prediction_pulls["filename_suffix"] if "filename_suffix" in WC_list_for_prediction_pulls else ""
         obs_predictions = read_WC_predictions(
@@ -1224,6 +1253,8 @@ def generate_pull_plots_obs(
                         plot_filename = plot_filename + "_with_SM"
                     if only_higgs_fccee_obs:
                         plot_filename = plot_filename + "_only_higgs_fccee_obs"
+                    if use_input_uncertainties:
+                        plot_filename = plot_filename + "_with_input_unc"
                     if save_fig: plt.savefig(f"{plot_filename}_{k}.pdf")
 
     if show_plots:

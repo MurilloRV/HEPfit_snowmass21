@@ -603,7 +603,7 @@ def read_WC_predictions(
 def find_configuration_files(
     model_specs,
     model,
-    read_WCs=False,
+    read_model_parameters=False,
 ):
     """
     Find the names of the configuration files given a model specification. 
@@ -615,9 +615,9 @@ def find_configuration_files(
     model : str
         The BSM model considered. Currently can be either "IDM" or "Z2SSM". Can
         also be set to "SM" or "SM_updated_lumi".
-    read_WCs : bool, optional
+    read_model_parameters : bool, optional
         If set to True, the function will find the configuration files with the 
-        Wilson coefficients, instead of the observables
+        model parameters, instead of the observables
 
     Returns
     -------
@@ -628,7 +628,7 @@ def find_configuration_files(
 
     scenarios = model_specs.keys()
 
-    if model == "SM" and not read_WCs: 
+    if model == "SM" and not read_model_parameters: 
         conf_file_list = [
             "ObservablesEW.conf",
             "ObservablesEW_Current_SM_noLFU.conf",
@@ -652,7 +652,7 @@ def find_configuration_files(
 
         return conf_files
 
-    elif model == "SM_updated_lumi" and not read_WCs:
+    elif model == "SM_updated_lumi" and not read_model_parameters:
         conf_file_list = [
             "ObservablesEW_updated_lumi.conf",
             "ObservablesEW_Current_SM_noLFU.conf",
@@ -753,6 +753,7 @@ def find_configuration_files(
         "_full",
         "_strict",
         "_strict_test_new_NP",
+        "_strict_writechain",
     ]
 
     conf_files = {}
@@ -766,7 +767,7 @@ def find_configuration_files(
             toy_fits = False
             fit_idx = None
 
-            if read_WCs:
+            if read_model_parameters:
                 conf_files[scenario][model_spec] = [
                     "Globalfits/AllOps/d6Ops_corr",
                 ]
@@ -822,6 +823,42 @@ def find_configuration_files(
                     model_spec_copy = model_spec.lstrip("fits_realistic_HL_LHC_")
                     for hepfit_flag in HEPfit_flags:
                         if model_spec_copy.startswith(hepfit_flag):
+                            if "use_new_NPs_" in hepfit_flag:
+                                conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("HiggsEW_Par_Corr")] = f"HiggsEW_Par_Corr_NPs"
+
+                            if hepfit_flag in [
+                                "use_new_NPs_theoerr240_1_theoerr365_1_klam_dependent_a240_1.18e-05_b240_2.3e-05_c240_0.000161_a365_2.12e-05_b365_-6.32e-05_c365_0.000304_",  # Z2SSM: Estimates EXCLUDING the O(1/Lambda_NP^2) curve
+                                "use_new_NPs_theoerr240_1_theoerr365_1_klam_dependent_a240_0.000754_b240_-0.00149_c240_0.000743_a365_0.000788_b365_-0.00162_c365_0.000845_",  # Z2SSM: Estimates INCLUDING the O(1/Lambda_NP^2) curve
+                                ##### RECTANGULAR ESTIMATES, with 2D scaling #####
+                                "use_new_NPs_scale1.52_theoerr240_1_theoerr365_1_klam_dependent_a240_2.06e-05_b240_7.03e-05_c240_-8.83e-05_a365_5.8e-05_b365_-0.000296_c365_0.00031_",   # Z2SSM: Estimates EXCLUDING the O(1/Lambda_NP^2) curve
+                                "use_new_NPs_scale1.52_theoerr240_1_theoerr365_1_klam_dependent_a240_0.000397_b240_-0.000673_c240_0.000277_a365_0.000403_b365_-0.000848_c365_0.000466_", # Z2SSM: Estimates INCLUDING the O(1/Lambda_NP^2) curve
+
+                                # IDM
+                                "use_new_NPs_klam_dependent_a240_8.42e-06_b240_6.93e-05_c240_0.000124_a365_1.99e-05_b365_-2.66e-05_c365_0.000313_",  # IDM: Estimates EXCLUDING the O(1/Lambda_NP^2) curve
+                                # "use_new_NPs_klam_dependent_est1_",
+                                # "use_new_NPs_BP_dependent_est1_",
+                                "use_new_NPs_klam_dependent_a240_0.000763_b240_-0.00152_c240_0.000761_a365_0.000792_b365_-0.00162_c365_0.000835_",   # IDM: Estimates INCLUDING the O(1/Lambda_NP^2) curve
+                                # "use_new_NPs_klam_dependent_est2_",
+                                # "use_new_NPs_BP_dependent_est2_",
+
+                                "use_new_NPs_scale1.52_theoerr240_0.00107_theoerr365_0.00105_NPmismatch240_0_NPmismatch365_0_",
+                                "use_new_NPs_scale1.52_",
+                                "use_new_NPs_",
+                            ]:
+                                conf_files[scenario][model_spec].append( "FCCee" + hepfit_flag[3:-1] )
+
+                            NP_estimates = [
+                                "_a240_8.42e-06_b240_6.93e-05_c240_0.000124_a365_1.99e-05_b365_-2.66e-05_c365_0.000313",
+                                "_a240_0.000763_b240_-0.00152_c240_0.000761_a365_0.000792_b365_-0.00162_c365_0.000835",
+                            ]
+
+                            for idx, est in enumerate(NP_estimates):
+                                if hepfit_flag == f"use_new_NPs_klam_dependent{est}_" or hepfit_flag == f"use_new_NPs_klam_dependent_est{idx+1}_":
+                                    conf_files[scenario][model_spec].append(f"FCCee_new_NPs_klam_dependent{est}")
+
+                                elif hepfit_flag == f"use_new_NPs_BP_dependent{est}_" or hepfit_flag == f"use_new_NPs_BP_dependent_est{idx+1}_":
+                                    conf_files[scenario][model_spec].append(f"FCCee_new_NPs_BP_dependent{est}")
+
                             model_spec_copy = model_spec_copy.replace(hepfit_flag, "", 1)
                             print(model_spec_copy)
                             break
@@ -867,7 +904,7 @@ def find_configuration_files(
 
                                                 additional_flag_all = [additional_flag1, additional_flag2, additional_flag3, additional_flag4]
 
-                                                if read_WCs:
+                                                if read_model_parameters:
                                                     if "_no_C_HG" in additional_flag_all:
                                                         conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("d6Ops_corr")] = "d6Ops_corr_no_C_HG"
 
@@ -1037,7 +1074,10 @@ def find_configuration_files(
 
             for i, file in enumerate(conf_files[scenario][model_spec]):
                 if toy_fits: 
-                    if not (file.startswith("EffVHcouplings_QFU12") or file.startswith("HiggsEW_Par_Corr")):
+                    if not (file.startswith("EffVHcouplings_QFU12") or 
+                            file.startswith("HiggsEW_Par_Corr") or 
+                            file.startswith("FCCee_new_NPs")
+                        ):
                         file += f"_toyfit{fit_idx}"
                     file = "toy_fits/" + file
 
@@ -1062,6 +1102,7 @@ def read_configuration_files(
     read_model_parameters=False,
     compare_with_SM=False,
     BP_lambdas=None,
+    noMCMC_obs=None,
 ):
     """
     Function to read the configuration files for a given fit setup, in order to obtain 
@@ -1099,6 +1140,9 @@ def read_configuration_files(
     BP_lambdas : list of floats, optional
         List of predictions for kappa_lambda for each BP. If set, kappa_lambda will be added as an 
         observable with the corresponding central value for each BP. 
+    noMCMC_obs : list of str, optional
+        List of observables to include, but which are not included in the MCMC fit. 
+        Their corresponding central values and uncertainties will be set to zero. Default is None.
 
     Returns
     -------
@@ -1114,6 +1158,15 @@ def read_configuration_files(
     input_uncertainties_obs : dict
         Dictionary mapping benchmark points, scenarios, and model specifications, 
         to a list of input uncertainties for observables which were found in the configuration files.
+    correlated_observables : dict
+        Dictionary mapping benchmark points, scenarios, and model specifications, 
+        to a list of correlated observables. Each emtry in the list is a dictionary with the following keys:
+            - "name": str, name of the set of correlated observables
+            - "observables_list": list of str, list of observables in the set
+        and at least one of the following keys:
+            - "inv_cov_matrix": np.ndarray, inverse covariance matrix for the set of correlated observables
+            - "corr_matrix": np.ndarray, correlation matrix for the set of correlated observables
+            - "cov_matrix": np.ndarray, covariance matrix for the set of correlated observables
     """
 
     if only_obs is not None and skip_obs is not None:
@@ -1134,13 +1187,14 @@ def read_configuration_files(
 
         if read_model_parameters==False and \
             not (columns[6]=="MCMC" and columns[7]=="weight") and \
-            not (observable == "deltalHHH_HLLHC" and BP_lambdas is not None):
-            return
+            not (observable == "deltalHHH_HLLHC" and BP_lambdas is not None) and \
+            not (noMCMC_obs is not None and observable in noMCMC_obs):
+            return None, None, None
 
         if  (only_obs is not None and observable not in only_obs) or \
             (skip_obs is not None and observable in skip_obs) or \
             (only_higgs_fccee_obs and not observable.startswith("eeZH") and not observable.startswith("eeHvv")):
-            return
+            return None, None, None
 
         if read_model_parameters==True:
             observable_tex_label = find_tex_label_par(columns[3], observable[0:-5])
@@ -1151,6 +1205,9 @@ def read_configuration_files(
             if observable == "deltalHHH_HLLHC" and BP_lambdas is not None:
                 central_value = float(BP_lambdas[BP_idx])
                 uncertainty = 1.0 # Placeholder; no uncertainty info
+            elif noMCMC_obs is not None and observable in noMCMC_obs:
+                central_value = 0.0
+                uncertainty = 0.0
             else:
                 central_value = float(columns[8])
                 uncertainty = float(columns[9])
@@ -1160,28 +1217,34 @@ def read_configuration_files(
         observables_tex[BP][scenario][model_spec].append(observable_tex_label)
         input_uncertainties[BP][scenario][model_spec].append(uncertainty * cov_matrix_factor) 
 
+        return observable, central_value, uncertainty
+
     observables = {}
     observables_tex = {}
     central_values_obs = {}
     input_uncertainties = {}
+    correlated_observables = {}
 
     for BP_idx, BP in enumerate(BPs):
         observables[BP] = {}
         observables_tex[BP] = {}
         central_values_obs[BP] = {}
         input_uncertainties[BP] = {}
+        correlated_observables[BP] = {}
 
         for scenario in scenarios:
             observables[BP][scenario] = {}
             observables_tex[BP][scenario] = {} 
             central_values_obs[BP][scenario] = {}
             input_uncertainties[BP][scenario] = {}
+            correlated_observables[BP][scenario] = {}
 
             for model_spec in model_specs[scenario]:
                 observables[BP][scenario][model_spec] = []
                 observables_tex[BP][scenario][model_spec] = []
                 central_values_obs[BP][scenario][model_spec] = []
                 input_uncertainties[BP][scenario][model_spec] = []
+                correlated_observables[BP][scenario][model_spec] = []
 
                 for conf_file in conf_files[scenario][model_spec]:
 
@@ -1195,18 +1258,24 @@ def read_configuration_files(
 
                             if line.startswith("ObservablesWithCovarianceInverse "):
                                 n_corr_obs = int(columns[2])
+                                correlated_obs = {}
+                                correlated_obs["name"] = columns[1]
 
                                 obs_lines = [next(infile) for _ in range(n_corr_obs)]
 
                                 inv_cov_matrix_lines = [next(infile) for _j in range(n_corr_obs)]
                                 inv_cov_matrix = [line.split() for line in inv_cov_matrix_lines]
                                 inv_cov_matrix = np.array(inv_cov_matrix, dtype=float)
+                                correlated_obs["inv_cov_matrix"] = inv_cov_matrix
 
                                 cov_matrix = np.linalg.inv(inv_cov_matrix)
                                 std_devs = np.sqrt(np.diag(cov_matrix))
 
+                                # print(f"{correlated_obs['name']}")
+
+                                correlated_obs["observables_list"] = []
                                 for obs_line, cov_matrix_factor in zip(obs_lines, std_devs):
-                                    read_observable_in_conf_file(
+                                    observable, _, uncertainty = read_observable_in_conf_file(
                                         obs_line.split(),
                                         observables,
                                         observables_tex,
@@ -1214,6 +1283,49 @@ def read_configuration_files(
                                         input_uncertainties,
                                         cov_matrix_factor,
                                     )
+                                    correlated_obs["observables_list"].append(observable)
+
+                                if None not in correlated_obs["observables_list"]:
+                                    correlated_observables[BP][scenario][model_spec].append(correlated_obs)
+                                else:
+                                    print(f"Warning: skipping correlated observables {correlated_obs['name']} because at least one observable is not in the list of observables to be considered.")
+
+                            elif line.startswith("CorrelatedGaussianObservables "):
+                                n_corr_obs = int(columns[2])
+                                correlated_obs = {}
+                                correlated_obs["name"] = columns[1]
+
+                                obs_lines = [next(infile) for _ in range(n_corr_obs)]
+
+                                corr_matrix_lines = [next(infile) for _j in range(n_corr_obs)]
+                                corr_matrix = [line.split() for line in corr_matrix_lines]
+                                corr_matrix = np.array(corr_matrix, dtype=float)
+                                correlated_obs["corr_matrix"] = corr_matrix
+
+                                correlated_obs["observables_list"] = []
+
+                                std_devs = []
+                                for obs_line in obs_lines:
+                                    observable, _, uncertainty = read_observable_in_conf_file(
+                                        obs_line.split(),
+                                        observables,
+                                        observables_tex,
+                                        central_values_obs,
+                                        input_uncertainties,
+                                        cov_matrix_factor = 1.0,
+                                    )
+                                    correlated_obs["observables_list"].append(observable)
+                                    std_devs.append(uncertainty)
+
+                                if None not in correlated_obs["observables_list"]:
+                                    # print("corr_matrix: " + str(corr_matrix))
+                                    # print("std_devs: " + str(std_devs))
+                                    print(correlated_obs["name"])
+                                    cov_matrix = corr_matrix * np.outer(std_devs, std_devs)
+                                    correlated_obs["cov_matrix"] = cov_matrix
+                                    correlated_observables[BP][scenario][model_spec].append(correlated_obs)
+                                else:
+                                    print(f"Warning: skipping correlated observables {correlated_obs['name']} because at least one observable is not in the list of observables to be considered.")
 
                             elif (line.startswith("Observable ") \
                                 or line.startswith("AsyGausObservable ")):
@@ -1247,7 +1359,7 @@ def read_configuration_files(
                         else:
                             raise ValueError(f"Observable {obs} not found in SM predictions!")
 
-    return observables, observables_tex, central_values_obs, input_uncertainties
+    return observables, observables_tex, central_values_obs, input_uncertainties, correlated_observables
 
 
 def read_fit_results(
@@ -1398,10 +1510,10 @@ def read_fit_results_pars(
                     files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/results_{model_spec}/Observables/Statistics.txt"
 
     print("\nFinding configuration files for the observables")
-    conf_files = find_configuration_files(model_specs, model, read_WCs=True)
+    conf_files = find_configuration_files(model_specs, model, read_model_parameters=True)
         
     print(f"\nReading configuration files for observables")
-    parameters, parameters_tex, central_values_obs, _ = read_configuration_files(
+    parameters, parameters_tex, central_values_obs, _, _ = read_configuration_files(
         working_dir,
         BPs,
         model_specs,
@@ -1555,6 +1667,7 @@ def align_observables(
     observables_tex,
     central_values_obs,
     results,
+    input_uncertainties_obs=None,
 ):
     """
     Function to sort observables following a given scheme, defined by the {observable_order_func} 
@@ -1581,6 +1694,9 @@ def align_observables(
     results : dict
         Dictionary mapping benchmark points, scenarios, and model specifications, 
         to a list of central values for observables which were found in the configuration files.
+    input_uncertainties_obs : dict
+        Dictionary mapping benchmark points, scenarios, and model specifications, 
+        to a list of input uncertainties for observables which were found in the configuration files.
 
     Returns
     -------
@@ -1590,6 +1706,9 @@ def align_observables(
         The {aligned_observables_tex} dictionary, after sorting observables
     central_values_obs : dict
         The {central_values_obs} dictionary, after sorting observables
+    input_uncertainties_obs : dict
+        The {input_uncertainties_obs} dictionary, after sorting observables. If the {input_uncertainties_obs} 
+         function argument is None, it will be returned as None.
     results : dict
         The {results} dictionary, after sorting observables
 
@@ -1617,19 +1736,24 @@ def align_observables(
             for model_spec in model_specs[scenario]:
                 aligned_central_values = []
                 aligned_results = []
+                if input_uncertainties_obs is not None: aligned_input_uncertainties = []
+
                 for aligned_idx, obs in enumerate(aligned_observables[BP][scenario]):
                     if obs in observables[BP][scenario][model_spec]:
                         idx = observables[BP][scenario][model_spec].index(obs)
+                        aligned_observables_tex[BP][scenario][aligned_idx] = observables_tex[BP][scenario][model_spec][idx]
                         aligned_central_values.append(central_values_obs[BP][scenario][model_spec][idx])
                         aligned_results.append(results[BP][scenario][model_spec][idx])
-                        aligned_observables_tex[BP][scenario][aligned_idx] = observables_tex[BP][scenario][model_spec][idx]
+                        if input_uncertainties_obs is not None: aligned_input_uncertainties.append(input_uncertainties_obs[BP][scenario][model_spec][idx])
                     else:
                         # Handle missing observables (e.g., assign NaN)
                         aligned_central_values.append(np.nan)
                         aligned_results.append([np.nan, np.nan])
-
+                        if input_uncertainties_obs is not None: aligned_input_uncertainties.append(np.nan)
+                        
                 central_values_obs[BP][scenario][model_spec] = np.array(aligned_central_values)
                 results[BP][scenario][model_spec] = np.array(aligned_results)
+                if input_uncertainties_obs is not None: input_uncertainties_obs[BP][scenario][model_spec] = np.array(aligned_input_uncertainties)
 
             if np.nan in aligned_observables_tex[BP][scenario]:
                 print(f"Missing observable LaTeX: {aligned_observables[BP][scenario][aligned_observables_tex[BP][scenario].index(np.nan)]}")
@@ -1640,5 +1764,185 @@ def align_observables(
     print(f"Aligned observables (LaTeX): {aligned_observables_tex[BP][scenario]}")
     print(f"Central values shape: {central_values_obs[BP][scenario][model_spec].shape}")
     print(f"results shape: {results[BP][scenario][model_spec].shape}")
+    if input_uncertainties_obs is not None: print(f"Input uncertainties shape: {input_uncertainties_obs[BP][scenario][model_spec].shape}")
 
-    return aligned_observables, aligned_observables_tex, central_values_obs, results
+    return aligned_observables, aligned_observables_tex, central_values_obs, input_uncertainties_obs, results
+
+
+def read_data_for_pulls(
+    BPs,
+    model_specs,
+    scenarios,
+    working_dir,
+    model,
+    only_obs=None,
+    skip_obs=None,
+    only_higgs_fccee_obs=False,
+    compare_with_SM=False,
+    WC_list_for_prediction_pulls=None,
+    matched_predictions_vs_BSM=False,
+    compare_model_spec_predictions=False,
+    BP_lambdas=None,
+    noMCMC_obs=None,
+):
+    """
+    Generate pull plots for the fit observables.
+    
+    Parameters
+    ----------
+    BPs : list
+        List of benchmark point names. Must correspond to the directory name for the BP
+    model_specs : dict
+        Dictionary mapping scenarios to model specifications.
+    scenarios : list
+        List of scenarios to consider. Must correspond to the keys in the {model_specs} dictionary
+    working_dir : str
+        Working directory path, containing subdirectories for each benchmark point.
+    results_dir : str
+        Suffix of the name of the directory to store the results. Results are stored in
+        '{working_dir}/comparison_plots/results_{results_dir}/'
+    model : str
+        The BSM model considered. Currently can be either "IDM", "Z2SSM", "SM", or "SM_updated_lumi".
+    only_obs : list of str, optional
+        List of observables to include. If set, only these observables will be
+        processed.
+    skip_obs : list of str, optional
+        A list of observables to skip (i.e., not show in the plots). 
+        Default is an empty list.
+    only_higgs_fccee_obs : bool, optional
+        If set to True, only FCC-ee Higgs observables are considered for 
+        the plot. Default is False.
+    compare_with_SM : bool, optional
+        If set to true, use SM predictions as the central values for the 
+        pulls. Default is False
+    WC_list_for_prediction_pulls: dict, optional
+        If set, the pulls in the plots will illustrate the deviation between
+        the predictions for the given WC values and the SM predictions. This
+        should be a dictionary with the following structure:
+        {
+            "WC_list": ["C_1", "C_2", ...],
+            "n_WC_values": n,
+            "WC_values": [[C_1_val1, C_1_val2, ...], [C_2_val1, C_2_val2, ...], ...] or None
+        },
+        where "WC_list" is a list of Wilson coefficient names, and "n_WC_values" 
+        is the number of values for each WC to consider. The "WC_values" key can be set
+        in order to provide the specific values for each WC, in which case the pulls will
+        be plotted as functions of the WC values. In that case, on plot per observable will
+        be generated, and "nvar_per_plot" will be ignored. If "WC_values" is set to None, 
+        the pulls will be plotted normally
+    matched_predictions_vs_BSM : bool, optional
+        If True, this function will evaluate the pulls of the BSM model 
+        predictions w.r.t. to the SMEFT predictions using matched Wilson coef.
+    compare_model_spec_predictions : bool, optional
+        If True, this function will evaluate the pulls of the BSM model predictions between
+        the two model specifications given as input, for comparison purposes
+    BP_lambdas : list of floats, optional
+        List of predictions for kappa_lambda for each BP. If set, kappa_lambda will be added as an 
+        observable with the corresponding central value for each BP. 
+    noMCMC_obs : list of str, optional
+        List of observables to include, but which are not included in the MCMC fit. 
+        Their corresponding central values and uncertainties will be set to zero. Default is None.
+    
+    Returns
+    -------
+    observables : dict
+        Dictionary mapping benchmark points, scenarios, and model specifications, 
+        to a list of observables which were found in the configuration files.
+    observables_tex : dict
+        Dictionary mapping benchmark points, scenarios, and model specifications, 
+        to a list LaTeX labels for observables which were found in the configuration files.
+    central_values_obs : dict
+        Dictionary mapping benchmark points, scenarios, and model specifications, 
+        to a list of central values for observables which were found in the configuration files.
+    input_uncertainties_obs : dict
+        Dictionary mapping benchmark points, scenarios, and model specifications, 
+        to a list of input uncertainties for observables which were found in the configuration files.
+    results : dict
+        Dictionary mapping benchmark points, scenarios, and model specifications, 
+        to a list of means and standard deviations for the observables which were 
+        found in the fit results files.
+
+    """
+    
+    if model not in ["IDM", "Z2SSM", "SM", "SM_updated_lumi"]:
+        raise ValueError(f"Invalid model specified ({model}). Please choose either 'IDM', 'Z2SSM', 'SM', or 'SM_updated_lumi'.")
+
+    files = {}
+    for BP in BPs:
+        files[BP] = {}
+        for scenario in scenarios:
+            files[BP][scenario] = {}
+            for model_spec in model_specs[scenario]:
+                if "toyfit" in model_spec:
+                    files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/toy_fits/results_{model_spec}/Observables/Statistics.txt"
+                else:
+                    files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/results_{model_spec}/Observables/Statistics.txt"
+
+    print("\nFinding configuration files for the observables")
+    conf_files = find_configuration_files(model_specs, model)
+        
+    print(f"\nReading configuration files for observables")
+    observables, observables_tex, central_values_obs, input_uncertainties_obs, input_correlated_observables = read_configuration_files(
+        working_dir=working_dir,
+        BPs=BPs,
+        model_specs=model_specs,
+        conf_files=conf_files,
+        only_obs=only_obs,
+        skip_obs=skip_obs,
+        only_higgs_fccee_obs=only_higgs_fccee_obs,
+        read_model_parameters=False,
+        compare_with_SM=compare_with_SM,
+        BP_lambdas=BP_lambdas,
+        noMCMC_obs=noMCMC_obs,
+    )
+
+    print(f"\nReading fit results")
+    results = {}
+    if WC_list_for_prediction_pulls is not None:
+        for BP in BPs:
+            results[BP] = {}
+            for scenario in scenarios:
+                results[BP][scenario] = {}
+                for model_spec in model_specs[scenario]:
+                    results[BP][scenario][model_spec] = np.zeros((len(list(observables["Config_Files"]["."].values())[0]), 2))
+                    results[BP][scenario][model_spec] = np.array( 
+                        [
+                            list(central_values_obs["Config_Files"]["."].values())[0],
+                            list(input_uncertainties_obs["Config_Files"]["."].values())[0],
+                        ] 
+                    ).T
+    
+    elif matched_predictions_vs_BSM or compare_model_spec_predictions:
+        for BP in BPs:
+            results[BP] = {}
+            for scenario in scenarios:
+                results[BP][scenario] = {}
+                for model_spec in model_specs[scenario]:
+                    results[BP][scenario][model_spec] = np.array( 
+                        [
+                            central_values_obs[BP][scenario][model_spec],
+                            input_uncertainties_obs[BP][scenario][model_spec],
+                        ] 
+                    ).T
+
+    else:
+        results = read_fit_results(
+            BPs=BPs,
+            model_specs=model_specs,
+            observables=observables,
+            files=files,
+        )
+
+    print(f"\nSorting observables")
+    aligned_observables, aligned_observables_tex, central_values_obs, input_uncertainties_obs, results = align_observables(
+        observable_order_func=observable_order,
+        BPs=BPs,
+        model_specs=model_specs,
+        observables=observables,
+        observables_tex=observables_tex,
+        central_values_obs=central_values_obs,
+        input_uncertainties_obs=input_uncertainties_obs,
+        results=results,
+    )
+
+    return aligned_observables, aligned_observables_tex, central_values_obs, input_uncertainties_obs, input_correlated_observables, results

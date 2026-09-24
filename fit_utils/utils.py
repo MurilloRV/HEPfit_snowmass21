@@ -8,7 +8,7 @@ import numpy as np
 import os.path
 from math import floor, log10
 
-from .parser import read_fit_results, find_tex_label_obs
+from .parser import read_fit_results, find_tex_label_obs, read_data_for_pulls
 
 plt.rcParams.update({
     #   "text.usetex": True,
@@ -390,7 +390,7 @@ def generate_klam_comparison_plot(
                 
 
                     bin_centers = 0.5 * (hist_lmbd_x[1:] + hist_lmbd_x[:-1])
-                    mean = np.sum(bin_centers * hist_lmbd_y) / np.sum(hist_lmbd_y)
+                    # mean = np.sum(bin_centers * hist_lmbd_y) / np.sum(hist_lmbd_y)
                     mode = bin_centers[np.argmax(hist_lmbd_y)]
 
                     hist_lmbd_y_norm = hist_lmbd_y[:] / np.sum(hist_lmbd_y)
@@ -408,11 +408,8 @@ def generate_klam_comparison_plot(
                         print(f"Warning: upper error bar for {BP}, {scenario}, {model_spec} is negative. Setting it to 0.")
                         y_err_high = 0
 
-
-
                     errors[BP] = np.array([[y_err_low], [y_err_high]])
                     means[BP] = mode
-
 
             return_klam_results[scenario][model_spec] = [means, errors]
 
@@ -816,6 +813,8 @@ def compare_BP_results_uproot(
     colors=None,
     show_plots=False,
     legend_fontsize=8.,
+    plot_mode_histogram=None,
+    only_specs=None,
     save_fig=True,
     file_suffix="",
 ):
@@ -860,6 +859,15 @@ def compare_BP_results_uproot(
         Whether to show the plots or not. Default is False.
     legend_fontsize : float, optional
         Font size for the legend. Default is 8.
+    plot_mode_histogram : dict, optional
+        If provided, a histogram of the modes of the posterior distributions will be plotted.
+        The dictionary can contain the following keys:
+        - "color": color for the histogram. Default is "tab:blue".
+        - "toy_specs": boolean list indicating which toy fits to include in the histogram.
+        - "n_bins": number of bins for the histogram. Default is 6.
+        - "range": range for the histogram. Default is the x-axis limits of the plot.
+    only_specs : list, optional
+        Boolean list indicating which model specifications to include when plotting. Default is all specs.
     save_fig : bool, optional
         Whether to save the figures. Default is True.
     file_suffix : str, optional
@@ -914,7 +922,11 @@ def compare_BP_results_uproot(
             ax.set_xlabel(obs_label, fontsize=14)
             ax.set_ylabel("Posterior distribution", fontsize=12)
 
-            for spec, label, color_rgb in zip(model_specs[scenario], spec_labels, colors_rgb_list):
+            modes = []
+            std_devs = []
+            x_err_lows = []
+            x_err_highs = []
+            for spec_idx, (spec, label, color_rgb) in enumerate(zip(model_specs[scenario], spec_labels, colors_rgb_list)):
                 hist_lmbd_x, hist_lmbd_y = read_uproot_hist(
                     working_dir,
                     BP,
@@ -925,17 +937,115 @@ def compare_BP_results_uproot(
                 if hist_lmbd_x is None or hist_lmbd_y is None:
                     print(f"Skipping {BP}, {scenario}, {spec} as histogram data is missing.")
                     continue
-                plt.hist(hist_lmbd_x[:-1], hist_lmbd_x, weights=hist_lmbd_y, label=label, density=True, histtype="step", edgecolor=(*color_rgb, 1.0), facecolor=(*color_rgb, 0.5), linewidth=1.5, fill=True)
+
+                bin_centers = 0.5 * (hist_lmbd_x[1:] + hist_lmbd_x[:-1])
+                mode = bin_centers[np.argmax(hist_lmbd_y)]
+                modes.append(mode)
+
+                std_dev = _std_dev_from_hist(hist=hist_lmbd_y, bin_centers=bin_centers, ndof=1)
+                std_devs.append(std_dev)
+
+                hist_lmbd_y_norm = hist_lmbd_y[:] / np.sum(hist_lmbd_y)
+                bin_indices_sort_by_prob = np.argsort(hist_lmbd_y_norm)[::-1]
+                bins_within_CI = bin_centers[bin_indices_sort_by_prob][np.cumsum(hist_lmbd_y_norm[bin_indices_sort_by_prob]) <= 0.68]
+                
+                x_err_low = mode - np.min(bins_within_CI)
+                x_err_high = np.max(bins_within_CI) - mode 
+
+                x_err_lows.append(x_err_low)
+                x_err_highs.append(x_err_high)
+
+                if (only_specs is not None) and (only_specs[spec_idx] != True):
+                    continue
+
+                plt.hist(
+                    hist_lmbd_x[:-1], 
+                    hist_lmbd_x, 
+                    weights=hist_lmbd_y, 
+                    label=label, 
+                    density=True, 
+                    histtype="step", 
+                    edgecolor=(*color_rgb, 1.0), 
+                    facecolor=(*color_rgb, 0.5), 
+                    linewidth=1.5, 
+                    fill=True
+                )
+
+            plot_range = plt.xlim()
+
+            if plot_mode_histogram is not None: 
+                modes = np.array(modes)
+                mode_color = plot_mode_histogram.get("color", "tab:blue")
+                mode_color_rgb = matplotlib.colors.to_rgb(mode_color)
+                plot_mode_specs = np.array( plot_mode_histogram.get("toy_specss", [False] + [True] * (len(modes)-1)) , dtype=bool)
+                mode_nbins = plot_mode_histogram.get("n_bins", 6)
+                plot_range = plot_mode_histogram.get("range", plot_range)
+                ax.hist(
+                    modes[plot_mode_specs], 
+                    range=plot_range,
+                    bins=mode_nbins, 
+                    edgecolor=(*mode_color_rgb, 1.0), 
+                    facecolor=(*mode_color_rgb, 0.5), 
+                    fill=True, 
+                    label=f"{BP_name} modes (toy fits)", 
+                    density=True, 
+                    histtype="step", 
+                    linewidth=1.5,
+                )
+
+                std_devs = np.array(std_devs)
+                modes_std_dev = np.std(modes[plot_mode_specs])
+
+                x_err_lows = np.array(x_err_lows)
+                x_err_highs = np.array(x_err_highs)
+
+                x_err_low_mean = np.mean(x_err_lows[plot_mode_specs])
+                x_err_high_mean = np.mean(x_err_highs[plot_mode_specs])
+
+                dist_std_dev = std_devs[only_specs][0]
+                dist_x_err_low = x_err_lows[only_specs][0]
+                dist_x_err_high = x_err_highs[only_specs][0]
+
+                if len(std_devs[only_specs]) != 1:
+                    print(f"Warning: more than one non-toy fit found. For evaluation of the standard deviation of the distritribution, only the first entry is considered")
+
+                std_dev_text = f"$\sigma_{{\mathrm{{dist}}}} = {dist_std_dev:.3g}$" + "\n" + \
+                               f"$\sigma_{{\mathrm{{toys}}}} = {modes_std_dev:.3g}$"# + "\n"
+
+                x_err_high_text = f"$\sigma_{{\mathrm{{dist}}}}^{{+}} = {dist_x_err_high:.3g}$" + "\n" + \
+                                  f"$\sigma_{{\mathrm{{toys}}}}^{{+}} = {x_err_high_mean:.3g}$"# + "\n"
+                
+                x_err_low_text = f"$\sigma_{{\mathrm{{dist}}}}^{{-}} = {dist_x_err_low:.3g}$" + "\n" + \
+                                 f"$\sigma_{{\mathrm{{toys}}}}^{{-}} = {x_err_low_mean:.3g}$"# + "\n"
+
+                # plot_text = std_dev_text + x_err_low_text + x_err_high_text
+                # plot_text = std_dev_text
+                    
+                plt.text(0.97, 0.965, std_dev_text, ha='right', va='top', transform=ax.transAxes, fontsize=10, bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+                plt.text(0.97, 0.78, x_err_high_text, ha='right', va='top', transform=ax.transAxes, fontsize=10, bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+                plt.text(0.97, 0.565, x_err_low_text, ha='right', va='top', transform=ax.transAxes, fontsize=10, bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+                # plt.plot([0.8, 0.8], [0.9, 0.5], transform=plt.gca().transAxes, color='none') # Dummy plot to ensure the text is not obscured by plot legend
+
+                legend_loc = "upper left"
+
+            else:
+                legend_loc = "best"
 
             scale = 1.2
             ylow, yhigh = ax.get_ylim()
             ax.set_ylim(ylow, yhigh + (scale-1)*(yhigh-ylow))
 
-            # plt.axvline(BP_lambda, color="black", linestyle="--", label=rf"{model} {BP_name} value"+"\n"+rf"($\kappa_{{\lambda}}$ = {BP_lambda:.2f})")
-            if observable == 'deltalHHH_HLLHC': plt.axvline(BP_lambda, color="black", linestyle="--", label=rf"{model} {BP_name} value ($\kappa_{{\lambda}}$ = {BP_lambda:.2f})")
-            plt.legend(fontsize=legend_fontsize, loc="best")
+            if observable == 'deltalHHH_HLLHC': plt.axvline(BP_lambda, color="black", linestyle="--", label=rf"{model} {BP_name} ($\kappa_{{\lambda}}$ = {BP_lambda:.2f})")
+            plt.legend(fontsize=legend_fontsize, loc=legend_loc)
             plt.tight_layout()
-            if save_fig: plt.savefig(f"{working_dir}/comparison_plots/results_{results_dir}/{model}_{BP}_{scenario}_final{file_suffix}.pdf")
+
+            fig_output_path = f"{working_dir}/comparison_plots/results_{results_dir}/{model}_{BP}_{scenario}"
+            if observable != 'deltalHHH_HLLHC': 
+                fig_output_path += f"_{observable}"
+            fig_output_path += "_final"
+            if plot_mode_histogram is not None:
+                fig_output_path += "_with_modes"
+            if save_fig: plt.savefig(f"{fig_output_path}{file_suffix}.pdf")
 
     if show_plots:
         plt.show()
@@ -1030,7 +1140,7 @@ def generate_klam_latex_table(
 
 def _open_npz_file(file_path, observable, old_format=False):
     if not old_format:
-        hist_file = np.load(file_path)
+        hist_file = np.load(file_path, allow_pickle=True)
         hists = hist_file[f"hist_{observable}"]
         hist_y = hists[0]
         hist_x = hists[1]
@@ -1050,27 +1160,19 @@ def read_uproot_hist(
     observable="deltalHHH_HLLHC",
 ):
 
-    file_path = f"{working_dir}/{BP}/{scenario}"
-    if "toyfit" in spec:
-        file_path += f"/toy_fits"
-
-    # Open the ROOT file
-    if BP == "BP_lambda1" and spec == "fits_realistic_HL_LHC_WFR_kala2_input_all_all_EW_mods_small_priors_long":
-        file_path += f"/results_{spec[:-5]}_strict/"
-    else:
-        file_path += f"/results_{spec}/"
+    results_dir_path = _get_results_dir_path(working_dir, BP, scenario, spec)
 
     try:
-        if os.path.exists(file_path+f"hist.npz"):
-            return _open_npz_file(file_path+f"hist.npz", observable)
+        if os.path.exists(results_dir_path+f"hist.npz"):
+            return _open_npz_file(results_dir_path+f"hist.npz", observable)
 
-        elif os.path.exists(file_path+f"hist_{observable}.npz"):
-            return _open_npz_file(file_path+f"hist_{observable}.npz", "lmbd", old_format=True)
+        elif os.path.exists(results_dir_path+f"hist_{observable}.npz"):
+            return _open_npz_file(results_dir_path+f"hist_{observable}.npz", "lmbd", old_format=True)
             
-        elif observable == "deltalHHH_HLLHC" and os.path.exists(file_path+f"hist_lmbd.npz"):
-            return _open_npz_file(file_path+f"hist_lmbd.npz", "lmbd", old_format=True)
+        elif observable == "deltalHHH_HLLHC" and os.path.exists(results_dir_path+f"hist_lmbd.npz"):
+            return _open_npz_file(results_dir_path+f"hist_lmbd.npz", "lmbd", old_format=True)
 
-        with uproot.open(file_path+"MCout.root") as file:
+        with uproot.open(results_dir_path+"MCout.root") as file:
 
             hist_y, hist_x = file[f"{observable}"].to_numpy()
             if observable == "deltalHHH_HLLHC":
@@ -1082,6 +1184,32 @@ def read_uproot_hist(
         print(f"Error reading ROOT file or npz file for {BP}, {scenario}, {spec}: \n{e}")
         return None, None
         # raise FileNotFoundError(f"Error reading ROOT file or npz file for {BP}, {scenario}, {spec}: \n{e}")
+
+
+def _std_dev_from_hist(hist, bin_centers=None, xedges=None, ndof=1):
+    hist = np.asarray(hist, dtype=float)
+
+    if bin_centers is None:
+        if xedges is not None:
+            bin_centers = 0.5 * (xedges[:-1] + xedges[1:])
+        else:
+            raise ValueError("Either bin_centers or xedges must be provided for std_dev calculation.")
+
+    norm = hist.sum()
+
+    if norm <= ndof:
+        return np.nan
+
+    w = hist / norm
+
+    mean = (w * bin_centers).sum()
+
+    if ndof == 0:
+        std_dev = np.sqrt((w * (bin_centers - mean)**2).sum())
+    else:
+        std_dev = np.sqrt((w * (bin_centers - mean)**2).sum() * norm / (norm - ndof))
+
+    return std_dev
 
 
 def _corr_from_hist2d(hist, xedges, yedges):
@@ -1196,6 +1324,7 @@ def plot_BP_results_uproot_2d_hist(
     model,
     observable1,
     observable2,
+    only_specs=None,
     nbins=50,
     cmap="viridis",
     figsize=(4.0, 3.5),
@@ -1238,6 +1367,8 @@ def plot_BP_results_uproot_2d_hist(
         The first observable to be plotted.
     observable2 : str, optional
         The second observable to be plotted.
+    only_specs : list, optional
+        Boolean list indicating which model specifications to include when plotting. Default is all specs.
     nbins : int, optional
         Number of bins for the 2D histogram. Default is 50.
     scenario_titles : list, optional
@@ -1299,7 +1430,11 @@ def plot_BP_results_uproot_2d_hist(
     fig_num = 0
     for scenario in scenarios:
         for BP, BP_name, BP_lambda in zip(BPs, BP_names, BP_lambdas):
-            for spec, label, color_rgb, results_dir in zip(model_specs[scenario], spec_labels, colors_rgb_list, results_dirs):
+            for spec_idx, (spec, label, color_rgb, results_dir) in enumerate(zip(model_specs[scenario], spec_labels, colors_rgb_list, results_dirs)):
+
+                if (only_specs is not None) and (only_specs[spec_idx] != True):
+                    continue
+
                 fig = plt.figure(fig_num, figsize=figsize)
                 fig_num += 1
                 ax = plt.gca()
@@ -1383,7 +1518,11 @@ def chi_square_formula(
     model,
     inverse_covariance_matrix,
 ):
-    
+
+    data = np.atleast_1d(data)
+    model = np.atleast_1d(model)
+    inverse_covariance_matrix = np.atleast_2d(inverse_covariance_matrix)
+
     chi_square = (data - model).T @ inverse_covariance_matrix @ (data - model)
     return chi_square
 
@@ -1391,22 +1530,182 @@ def chi_square_formula(
 # TODO: finish implementation
 def calculate_chi_square(
     working_dir,
-    BP,
-    scenario,
-    spec,
+    BPs,
+    model_specs,
+    model,
+    only_obs=None,
+    skip_obs=None,
+    only_higgs_fccee_obs=False,
+    # compare_with_SM=False,
+    # WC_list_for_prediction_pulls=None,
+    # matched_predictions_vs_BSM=False,
+    # compare_model_spec_predictions=False,
+    BP_lambdas=None,
+    verbose=False,
 ):
+    """
+    Generate pull plots for the fit observables.
     
-    results_dir_path = _get_results_dir_path(working_dir, BP, scenario, spec)
+    Parameters
+    ----------
+    BPs : list
+        List of benchmark point names. Must correspond to the directory name for the BP
+    model_specs : dict
+        Dictionary mapping scenarios to model specifications.
+    working_dir : str
+        Working directory path, containing subdirectories for each benchmark point.
+    results_dir : str
+        Suffix of the name of the directory to store the results. Results are stored in
+        '{working_dir}/comparison_plots/results_{results_dir}/'
+    model : str
+        The BSM model considered. Currently can be either "IDM", "Z2SSM", "SM", or "SM_updated_lumi".
+    only_obs : list of str, optional
+        List of observables to include. If set, only these observables will be
+        processed.
+    skip_obs : list of str, optional
+        A list of observables to skip (i.e., not show in the plots). 
+        Default is an empty list.
+    only_higgs_fccee_obs : bool, optional
+        If set to True, only FCC-ee Higgs observables are considered for 
+        the plot. Default is False.
+    # compare_with_SM : bool, optional
+    #     If set to true, use SM predictions as the central values for the 
+    #     pulls. Default is False
+    # WC_list_for_prediction_pulls: dict, optional
+    #     If set, the pulls in the plots will illustrate the deviation between
+    #     the predictions for the given WC values and the SM predictions. This
+    #     should be a dictionary with the following structure:
+    #     {
+    #         "WC_list": ["C_1", "C_2", ...],
+    #         "n_WC_values": n,
+    #         "WC_values": [[C_1_val1, C_1_val2, ...], [C_2_val1, C_2_val2, ...], ...] or None
+    #     },
+    #     where "WC_list" is a list of Wilson coefficient names, and "n_WC_values" 
+    #     is the number of values for each WC to consider. The "WC_values" key can be set
+    #     in order to provide the specific values for each WC, in which case the pulls will
+    #     be plotted as functions of the WC values. In that case, on plot per observable will
+    #     be generated, and "nvar_per_plot" will be ignored. If "WC_values" is set to None, 
+    #     the pulls will be plotted normally
+    # matched_predictions_vs_BSM : bool, optional
+    #     If True, this function will evaluate the pulls of the BSM model 
+    #     predictions w.r.t. to the SMEFT predictions using matched Wilson coef.
+    # compare_model_spec_predictions : bool, optional
+    #     If True, this function will evaluate the pulls of the BSM model predictions between
+    #     the two model specifications given as input, for comparison purposes
+    BP_lambdas : list of floats, optional
+        List of predictions for kappa_lambda for each BP. If set, kappa_lambda will be added as an 
+        observable with the corresponding central value for each BP.
+    verbose : bool, optional
+        If True, print additional information during the calculation. Default is False.
 
-    try:
-        with uproot.open(results_dir_path+"MCout.root") as file:
+    Returns
+    -------
+    chi_square : float
+        The calculated chi-square value for the given BPs, model specifications, and observables.
 
-            chain = file["NPSMEFTd6_Observables"]
+    """
 
-            # chi_square = chi_square_formula(data, model, inverse_covariance_matrix)
-            # return chi_square
-            
-    except Exception as e:
-        print(f"Error reading ROOT file or npz file for {BP}, {scenario}, {spec}: \n{e}")
-        return np.nan
-        # raise FileNotFoundError(f"Error reading ROOT file or npz file for {BP}, {scenario}, {spec}: \n{e}")
+    scenarios = model_specs.keys()
+
+    # NP_depedendent_observables = [
+    #     "eeZH_FCCee240",
+    #     "eeZH_FCCee365",
+    # ]
+
+    aligned_observables, aligned_observables_tex, central_values_obs, input_uncertainties_obs, input_correlated_observables, results = read_data_for_pulls(
+        BPs,
+        model_specs,
+        scenarios,
+        working_dir,
+        model,
+        only_obs=only_obs,
+        skip_obs=skip_obs,
+        only_higgs_fccee_obs=only_higgs_fccee_obs,
+        # compare_with_SM=compare_with_SM,
+        # WC_list_for_prediction_pulls=WC_list_for_prediction_pulls,
+        # matched_predictions_vs_BSM=matched_predictions_vs_BSM,
+        # compare_model_spec_predictions=compare_model_spec_predictions,
+        # BP_lambdas=BP_lambdas,
+    )
+
+    print("Aligned observables:", aligned_observables)
+
+    chi_square_results = {}
+    for BP_idx, BP in enumerate(BPs):
+        chi_square_results[BP] = {}
+        for scenario in scenarios:
+            chi_square_results[BP][scenario] = {}
+            for model_spec in model_specs[scenario]:
+                chi_square = 0
+
+                correlated_observables_full_list = []
+                for corr_obs_set in input_correlated_observables[BP][scenario][model_spec]:
+
+                    obs_list = corr_obs_set["observables_list"]
+                    correlated_observables_full_list += obs_list
+
+                    n_corr_obs = len(obs_list)
+
+                    inv_cov_matrix = np.eye(n_corr_obs)
+
+                    if "cov_matrix" in corr_obs_set:
+                        cov_matrix = np.array(corr_obs_set["cov_matrix"])
+                        inv_cov_matrix = np.linalg.inv(cov_matrix)
+                    elif "inv_cov_matrix" in corr_obs_set:
+                        inv_cov_matrix = np.array(corr_obs_set["inv_cov_matrix"])
+                    else:
+                        raise ValueError(f"Correlated observables set for {BP}, {scenario}, {model_spec} does not contain a covariance matrix or an inverse covariance matrix: {corr_obs_set['name']}.")
+
+                    obs_predictions = []
+                    fit_values = []
+                    for obs in obs_list:
+                        if obs not in aligned_observables[BP][scenario]:
+                            raise ValueError(f"Observable {obs} in correlated observables set {corr_obs_set['name']} for {BP}, {scenario}, {model_spec} is not present in the overall observables list.")
+                        else:
+                            obs_idx = aligned_observables[BP][scenario].index(obs)
+                            obs_prediction = central_values_obs[BP][scenario][model_spec][obs_idx]
+                            obs_fit_results = results[BP][scenario][model_spec][obs_idx]
+
+                            obs_predictions.append(obs_prediction)
+                            fit_values.append(obs_fit_results[0])
+
+                    chi_square_term = chi_square_formula(
+                        data = fit_values,
+                        model = obs_predictions,
+                        inverse_covariance_matrix = inv_cov_matrix,
+                    )
+                    chi_square += chi_square_term
+
+                    if verbose: print(f"Added chi-square contribution for correlated observable set {corr_obs_set['name']}: {chi_square_term}")
+
+
+                for obs, prediction, input_uncertainty, fit_results in zip(
+                    aligned_observables[BP][scenario],
+                    central_values_obs[BP][scenario][model_spec],
+                    input_uncertainties_obs[BP][scenario][model_spec],
+                    results[BP][scenario][model_spec],
+                ):
+
+                    if obs in correlated_observables_full_list:
+                        continue
+
+                    if input_uncertainty == 0:
+                        print(f"Warning: Uncertainty for observable {obs} is zero. Skipping this observable in chi-square calculation.")
+                        continue
+
+                    fit_value = fit_results[0]
+
+                    chi_square_term = chi_square_formula(
+                        data = fit_value,
+                        model = prediction,
+                        inverse_covariance_matrix = 1/input_uncertainty**2,
+                    )
+                    chi_square += chi_square_term
+
+                    if verbose: print(f"Added chi-square contribution for observable {obs}: {chi_square_term} (prediction: {prediction}, fit value: {fit_value}, uncertainty: {input_uncertainty})")
+
+                chi_square_results[BP][scenario][model_spec] = chi_square
+                print(f"Chi-square for BP {BP}, scenario {scenario}, model spec {model_spec}: {chi_square}")
+
+    print(chi_square_results)
+    # TODO: deal with NPs
