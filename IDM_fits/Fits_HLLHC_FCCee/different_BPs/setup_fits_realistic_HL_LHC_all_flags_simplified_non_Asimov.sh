@@ -7,7 +7,7 @@ TARGET_PATH="/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/IDM_fits/Fits_HL
 cd $TARGET_PATH
 
 ASIMOV="true"  # Asimov fits set the central value of pseudo-measurements to corresponding BSM predictions. If set to "false", pseudo-measurements will deviate from predictions according to the projected uncertainty, as a more realistic experiment
-N_EXPS=10  # Number of fits to be performed, each with different sets of pseudo-measurements, which in turn are generated from Gaussian distributions centred at their corresponding BSM predictions, and covariance matrices obtained from projections for future experiments
+N_EXPS=1000  # Number of fits to be performed, each with different sets of pseudo-measurements, which in turn are generated from Gaussian distributions centred at their corresponding BSM predictions, and covariance matrices obtained from projections for future experiments
 RANDOM_SEED=137  # Random seed for generation of pseudo-measurements
 
 # BP_Names=("BP_"{0..7})
@@ -57,6 +57,9 @@ use_new_NPs="true" # Use newly implementent theory nuisance parameters
 UseKlamDependentUncertainties="true" # A boolean flag that is true if using klam-dependent theoretical uncertainties in the ee->Zh cross-section predictions.
 UseBPDependentUncertainties="false" # A boolean flag that is true if using BP-dependent theoretical uncertainties in the ee->Zh cross-section predictions. Different estimates are used for different BPs; however, these are interpreted as constant (klam-independent) in HEPfit 
 
+# scale_NPs=$(echo "scale=20.0; scl=2.295748928898636; scl=sqrt(scl); scl" | bc)
+scale_NPs="1.0"  # default
+
 # Changed default values to 1.0!
 # theoerr_FCCee240_input="1.0"
 # theoerr_FCCee240_input="0.001074700180397359" # smaller ellipses
@@ -86,14 +89,35 @@ NPmismatch_FCCee365_input="DEFAULT"
 # theoerr_FCCee365_function_x0_coef_input="0.00031254668713761978"
 # model_conf_NP_suffix="_est1"
 
+# Estimates EXCLUDING the O(1/Lambda_NP^2) curve --- Rectangular estimates
+# theoerr_FCCee240_function_x2_coef_input="0.00001102207049222145"
+# theoerr_FCCee240_function_x1_coef_input="0.00013946878976348520"
+# theoerr_FCCee240_function_x0_coef_input="-0.00017302383301288777"
+# theoerr_FCCee365_function_x2_coef_input="0.00004775991003145372"
+# theoerr_FCCee365_function_x1_coef_input="-0.00022568420270124457"
+# theoerr_FCCee365_function_x0_coef_input="0.00022748622694841167"
+# model_conf_NP_suffix="_est1_rect"
+# scale_NPs=$(echo "scale=20.0; scl=2.295748928898636; scl=sqrt(scl); scl" | bc)
+
+
 # Estimates INCLUDING the O(1/Lambda_NP^2) curve
-theoerr_FCCee240_function_x2_coef_input="0.00076325757128542970"
-theoerr_FCCee240_function_x1_coef_input="-0.00151726083157403824"
-theoerr_FCCee240_function_x0_coef_input="0.00076121051962415318"
-theoerr_FCCee365_function_x2_coef_input="0.00079217047454317366"
-theoerr_FCCee365_function_x1_coef_input="-0.00161839280277012226"
-theoerr_FCCee365_function_x0_coef_input="0.00083463246355167890"
-model_conf_NP_suffix="_est2"
+# theoerr_FCCee240_function_x2_coef_input="0.00076325757128542970"
+# theoerr_FCCee240_function_x1_coef_input="-0.00151726083157403824"
+# theoerr_FCCee240_function_x0_coef_input="0.00076121051962415318"
+# theoerr_FCCee365_function_x2_coef_input="0.00079217047454317366"
+# theoerr_FCCee365_function_x1_coef_input="-0.00161839280277012226"
+# theoerr_FCCee365_function_x0_coef_input="0.00083463246355167890"
+# model_conf_NP_suffix="_est2"
+
+# Estimates INCLUDING the O(1/Lambda_NP^2) curve --- Rectangular estimates
+theoerr_FCCee240_function_x2_coef_input="0.00038945092441749021"
+theoerr_FCCee240_function_x1_coef_input="-0.00061161832033136579"
+theoerr_FCCee240_function_x0_coef_input="0.00019892071857990912"
+theoerr_FCCee365_function_x2_coef_input="0.00040114688393913240"
+theoerr_FCCee365_function_x1_coef_input="-0.00083494486102974848"
+theoerr_FCCee365_function_x0_coef_input="0.00044885101735659739"
+model_conf_NP_suffix="_est2_rect"
+scale_NPs=$(echo "scale=20.0; scl=2.295748928898636; scl=sqrt(scl); scl" | bc)
 
 
 quadratic_func() {
@@ -134,8 +158,7 @@ get_klam_prediction() {
 }
 
 
-# scale_NPs=$(echo "scale=20.0; scl=2.295748928898636; scl=sqrt(scl); scl" | bc)
-scale_NPs="1.0"  # default
+
 
 # Check if more than one exclusive flag is set to "true"
 EXCLUSIVE_FLAGS=(
