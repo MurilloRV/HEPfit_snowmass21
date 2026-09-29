@@ -18,39 +18,88 @@ def parameter_order(par):
         The order of the model parameter for plotting purposes.
     """
 
-    order_dict = {
-        "CW_corr":             1,
-        "CHG_corr":            2,
-        "CHWB_corr":           3,
-        "CHWHB_gaga_corr":     4,
-        "CHWHB_gagaorth_corr": 5,
-        "CHW_corr":            6,
-        "CHB_corr":            7,
-        "CH_corr":             8,
-        "CHbox_corr":          9,
-        "CHD_corr":            10,
-        "CHL1_11_corr":        11,
-        "CHL1_22_corr":        12,
-        "CHL1_33_corr":        13,
-        "CHL3_11_corr":        14,
-        "CHL3_22_corr":        15,
-        "CHL3_33_corr":        16,
-        "CHe_11_corr":         17,
-        "CHe_22_corr":         18,
-        "CHe_33_corr":         19,
-        "CHQ1_11_corr":        20,
-        "CHQ1_33_corr":        21,
-        "CHQ3_11_corr":        22,
-        "CHu_11_corr":         23,
-        "CHd_11_corr":         24,
-        "CHd_33_corr":         25,
-        "CeH_22r_corr":        26,
-        "CeH_33r_corr":        27,
-        "CuH_22r_corr":        28,
-        "CuH_33r_corr":        29,
-        "CdH_33r_corr":        30,
-        "CLL_1221_corr":       31,
-    }
+    order_dict = {}
+
+    order_dict["AlsMz"] = 1
+    order_dict["dAle5Mz"] = 2
+    order_dict["mtop"] = 3
+    order_dict["mHl"] = 4
+    order_dict["Mz"] = 5
+
+    WC_list = [
+        "CW",
+        "CHG",
+        "CHWB",
+        "CHWHB_gaga",
+        "CHWHB_gagaorth",
+        "CHW",
+        "CHB",
+        "CH",
+        "CHbox",
+        "CHD",
+        "CHL1_11",
+        "CHL1_22",
+        "CHL1_33",
+        "CHL3_11",
+        "CHL3_22",
+        "CHL3_33",
+        "CHe_11",
+        "CHe_22",
+        "CHe_33",
+        "CHQ1_11",
+        "CHQ1_33",
+        "CHQ3_11",
+        "CHu_11",
+        "CHd_11",
+        "CHd_33",
+        "CeH_22r",
+        "CeH_33r",
+        "CuH_22r",
+        "CuH_33r",
+        "CdH_33r",
+        "CLL_1221",
+    ]
+
+    for i, wc in enumerate(WC_list):
+        order_dict[wc] = 10 + i + 1
+        order_dict[wc+"_corr"] = 10 + i + 1
+
+    NP_list_HEPfit = [
+        "eHggint",
+        "eHggpar",
+        "eHWWint",
+        "eHWWpar",
+        "eHZZint",
+        "eHZZpar",
+        "eHZgaint",
+        "eHZgapar",
+        "eHgagaint",
+        "eHgagapar",
+        "eHmumuint",
+        "eHmumupar",
+        "eHtautauint",
+        "eHtautaupar",
+        "eHccint",
+        "eHccpar",
+        "eHbbint",
+        "eHbbpar",
+    ]
+
+    for i, epsilon in enumerate(NP_list_HEPfit):
+        order_dict[epsilon] = 1000 + i
+
+    order_dict["theoerr_FCCee240"] = 2000
+    order_dict["theoerr_FCCee365"] = 2001
+    order_dict["theoerr_FCCee240_function_x2_coef"] = 2002
+    order_dict["theoerr_FCCee240_function_x1_coef"] = 2003
+    order_dict["theoerr_FCCee240_function_x0_coef"] = 2004
+    order_dict["theoerr_FCCee365_function_x2_coef"] = 2005
+    order_dict["theoerr_FCCee365_function_x1_coef"] = 2006
+    order_dict["theoerr_FCCee365_function_x0_coef"] = 2007
+
+    order_dict["NPmismatch_FCCee240"] = 2100
+    order_dict["NPmismatch_FCCee365"] = 2101
+
     return order_dict.get(par, 9999)  # Return a large number for unknown parameters
 
 def observable_order(obs):
@@ -224,12 +273,13 @@ def observable_order(obs):
     return order
 
 
-def find_tex_label_par(par_tex, par):
-    if par =="AlsMz":             tex_label = r"$\alpha_s(M_Z)$"
+def find_tex_label_par(par):
+    if   par == "AlsMz":          tex_label = r"$\alpha_s(M_Z)$"
     elif par == "dAle5Mz":        tex_label = r"$\Delta\alpha_{\mathrm{had}}^{(5)}(M_Z^2)$"
     elif par == "mtop":           tex_label = r"$M_t$"
     elif par == "mHl":            tex_label = r"$M_h$"
     elif par == "Mz":             tex_label = r"$M_Z$"
+
     elif par == "CW":             tex_label = r"$C_W$"
     elif par == "CHG":            tex_label = r"$C_{HG}$"
     elif par == "CHWB":           tex_label = r"$C_{HWB}$"
@@ -238,7 +288,6 @@ def find_tex_label_par(par_tex, par):
     elif par == "CHW":            tex_label = r"$C_{HW}$"  # Rotated!!
     elif par == "CHB":            tex_label = r"$C_{HB}$"  # Rotated!!
     elif par == "CHD":            tex_label = r"$C_{HD}$"
-    # elif par == "CHbox":          tex_label = r"$C_{H\boxdot}$"
     elif par == "CHbox":          tex_label = "$C_{H\u25A1}$"
     elif par == "CH":             tex_label = r"$C_{H}$"
     elif par == "CHL1_11":        tex_label = r"$(C_{HL}^{(1)})_{11}$"
@@ -262,6 +311,7 @@ def find_tex_label_par(par_tex, par):
     elif par == "CuH_33r":        tex_label = r"${Re}\left[(C_{uH})_{33}\right]$"
     elif par == "CdH_33r":        tex_label = r"${Re}\left[(C_{dH})_{33}\right]$"
     elif par == "CLL_1221":       tex_label = r"$(C_{LL})_{1221}$"
+
     elif par == "eHggint":        tex_label = r"$\varepsilon_\text{Int}(H\to gg)$"
     elif par == "eHggpar":        tex_label = r"$\varepsilon_\text{Par}(H\to gg)$"
     elif par == "eHWWint":        tex_label = r"$\varepsilon_\text{Int}(H\to WW^*)$"
@@ -280,6 +330,15 @@ def find_tex_label_par(par_tex, par):
     elif par == "eHccpar":        tex_label = r"$\varepsilon_\text{Par}(H\to cc)$"
     elif par == "eHbbint":        tex_label = r"$\varepsilon_\text{Int}(H\to bb)$"
     elif par == "eHbbpar":        tex_label = r"$\varepsilon_\text{Par}(H\to bb)$"
+
+    elif par == "theoerr_FCCee240":    tex_label = r"$\hat{\epsilon}_{240}^{\mathrm{NP}}$"
+    elif par == "theoerr_FCCee365":    tex_label = r"$\hat{\epsilon}_{365}^{\mathrm{NP}}$"
+    elif par == "theoerr_FCCee240_function_x2_coef":    tex_label = r"$\left[ c_2 \right]_{240}^{\mathrm{NP}}$"
+    elif par == "theoerr_FCCee240_function_x1_coef":    tex_label = r"$\left[ c_1 \right]_{240}^{\mathrm{NP}}$"
+    elif par == "theoerr_FCCee240_function_x0_coef":    tex_label = r"$\left[ c_0 \right]_{240}^{\mathrm{NP}}$"
+    elif par == "theoerr_FCCee365_function_x2_coef":    tex_label = r"$\left[ c_2 \right]_{365}^{\mathrm{NP}}$"
+    elif par == "theoerr_FCCee365_function_x1_coef":    tex_label = r"$\left[ c_1 \right]_{365}^{\mathrm{NP}}$"
+    elif par == "theoerr_FCCee365_function_x0_coef":    tex_label = r"$\left[ c_0 \right]_{365}^{\mathrm{NP}}$"
     else: raise KeyError(f"Latex label for parameter {par} not found!")
     return tex_label
 
@@ -774,6 +833,8 @@ def find_configuration_files(
 
             else:
                 conf_files[scenario][model_spec] = [
+                    "SMparameters",
+                    "FlavourFixed",
                     "ObservablesEW",
                     "ObservablesEW_Current_SM_noLFU",
                     "ObservablesEW_FCCee_Zpole_SM_kappa_scaled",
@@ -1063,7 +1124,18 @@ def find_configuration_files(
                                                             conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(EWPO_conf2)] = EWPO_conf2_new
                                                             EWPO_conf2 = EWPO_conf2_new
 
-
+                                                    model_conf_file = "model_fits_realistic_HL_LHC_" + \
+                                                        hepfit_flag + \
+                                                        fccee_projections_flag + \
+                                                        loop_order_flag + \
+                                                        exclusive_flag + \
+                                                        additional_flag1 + \
+                                                        additional_flag2 + \
+                                                        additional_flag3 + \
+                                                        additional_flag4 + \
+                                                        toy_fit_flag + \
+                                                        priors_flag
+                                                    conf_files[scenario][model_spec].append(f"Globalfits/AllOps/{model_conf_file}")
 
                                                 return conf_files
                                         
@@ -1076,7 +1148,10 @@ def find_configuration_files(
                 if toy_fits: 
                     if not (file.startswith("EffVHcouplings_QFU12") or 
                             file.startswith("HiggsEW_Par_Corr") or 
-                            file.startswith("FCCee_new_NPs")
+                            file.startswith("FCCee_new_NPs") or
+                            file.startswith("SMparameters") or
+                            file.startswith("FlavourFixed") or
+                            file.startswith("Globalfits/AllOps/model_fits")
                         ):
                         file += f"_toyfit{fit_idx}"
                     file = "toy_fits/" + file
@@ -1167,6 +1242,9 @@ def read_configuration_files(
             - "inv_cov_matrix": np.ndarray, inverse covariance matrix for the set of correlated observables
             - "corr_matrix": np.ndarray, correlation matrix for the set of correlated observables
             - "cov_matrix": np.ndarray, covariance matrix for the set of correlated observables
+    n_parameters : dict
+        Dictionary mapping benchmark points, scenarios, and model specifications,
+        to the number of parameters in the fit, as read from the configuration files.
     """
 
     if only_obs is not None and skip_obs is not None:
@@ -1197,7 +1275,7 @@ def read_configuration_files(
             return None, None, None
 
         if read_model_parameters==True:
-            observable_tex_label = find_tex_label_par(columns[3], observable[0:-5])
+            observable_tex_label = find_tex_label_par(observable[0:-5])
             central_value = 0.0
             uncertainty = 0.0
         else:
@@ -1224,6 +1302,7 @@ def read_configuration_files(
     central_values_obs = {}
     input_uncertainties = {}
     correlated_observables = {}
+    n_parameters = {}
 
     for BP_idx, BP in enumerate(BPs):
         observables[BP] = {}
@@ -1231,6 +1310,7 @@ def read_configuration_files(
         central_values_obs[BP] = {}
         input_uncertainties[BP] = {}
         correlated_observables[BP] = {}
+        n_parameters[BP] = {}
 
         for scenario in scenarios:
             observables[BP][scenario] = {}
@@ -1238,6 +1318,7 @@ def read_configuration_files(
             central_values_obs[BP][scenario] = {}
             input_uncertainties[BP][scenario] = {}
             correlated_observables[BP][scenario] = {}
+            n_parameters[BP][scenario] = {}
 
             for model_spec in model_specs[scenario]:
                 observables[BP][scenario][model_spec] = []
@@ -1245,6 +1326,7 @@ def read_configuration_files(
                 central_values_obs[BP][scenario][model_spec] = []
                 input_uncertainties[BP][scenario][model_spec] = []
                 correlated_observables[BP][scenario][model_spec] = []
+                n_pars = 0
 
                 for conf_file in conf_files[scenario][model_spec]:
 
@@ -1338,7 +1420,12 @@ def read_configuration_files(
                                     input_uncertainties,
                                     cov_matrix_factor = 1.0,
                                 )
-                                
+
+                            elif line.startswith("ModelParameter") and (float(columns[3]) != 0.0 or float(columns[4]) != 0.0):
+                                n_pars += 1
+
+                n_parameters[BP][scenario][model_spec] = n_pars
+                print(f"Found {n_pars} model parameters")               
 
                 n_obs = len(observables[BP][scenario][model_spec])
                 print(f"Found {n_obs} observables")
@@ -1348,6 +1435,10 @@ def read_configuration_files(
                     print(f"Warning: Observable list for {BP} in {scenario} is not the same for all model specifications!")
                 if not observables_tex[BP][scenario][model_spec] == observables_tex[BP][scenario][model_specs[scenario][0]]:
                     print(f"Warning: Observable latex label list for {BP} in {scenario} is not the same for all model specifications!")
+                if not central_values_obs[BP][scenario][model_spec] == central_values_obs[BP][scenario][model_specs[scenario][0]]:
+                    print(f"Warning: Central value list for {BP} in {scenario} is not the same for all model specifications!")
+                if not input_uncertainties[BP][scenario][model_spec] == input_uncertainties[BP][scenario][model_specs[scenario][0]]:
+                    print(f"Warning: Input uncertainty list for {BP} in {scenario} is not the same for all model specifications!")
 
                 if compare_with_SM:
                     obs_SM, central_values_SM = read_SM_predictions()
@@ -1359,7 +1450,203 @@ def read_configuration_files(
                         else:
                             raise ValueError(f"Observable {obs} not found in SM predictions!")
 
-    return observables, observables_tex, central_values_obs, input_uncertainties, correlated_observables
+    return observables, observables_tex, central_values_obs, input_uncertainties, correlated_observables, n_parameters
+
+
+def read_configuration_files_parameters(
+    working_dir,
+    BPs,
+    model_specs,
+    conf_files,
+    only_pars=None,
+    skip_pars=None,
+    fixed_pars_to_read=None,
+):
+    """
+    Function to read the configuration files for a given fit setup, in order to obtain 
+    the central values and errors for the model parameters, which were given as input 
+    to such fit.
+
+    Parameters
+    ----------
+    working_dir : str
+        Working directory path, containing subdirectories for each benchmark point.
+    BPs : list
+        List of benchmark point names. Must correspond to the directory name for the BP
+    model_specs : dict
+        Dictionary mapping scenarios to a list of model specifications.
+    conf_files : dict
+        Dictionary mapping scenarios and model specifications to a list of 
+        configuration files, conf_files[scenario][model_spec].
+    only_pars : list of str, optional
+        List of parameters to include. If set, only these parameters will be processed.
+    skip_pars : list of str, optional
+        A list of parameters to skip (i.e., don't store results). Default is an empty list.
+    fixed_pars_to_read : list of str, optional
+        An optional list of parameters to read from the configuration files, even if they are 
+        fixed in the fit (i.e., have zero uncertainty). If not specified, a default list of fixed 
+        parameters will be used, containing the coefficients for the quadratic expression for the 
+        theoretical uncertainties as a function of $\kappa_\lambda$, and nuisance parameters for the
+        Higgs branching ratios.
+
+    Returns
+    -------
+    parameters : dict
+        Dictionary mapping benchmark points, scenarios, and model specifications, 
+        to a list of parameters which were found in the configuration files.
+    parameters_tex : dict
+        Dictionary mapping benchmark points, scenarios, and model specifications, 
+        to a list LaTeX labels for parameters which were found in the configuration files.
+    central_values_pars : dict
+        Dictionary mapping benchmark points, scenarios, and model specifications, 
+        to a list of central values for parameters which were found in the configuration files.
+    gaussian_priors : dict
+        Dictionary mapping benchmark points, scenarios, and model specifications, 
+        to a list of Gaussian prior uncertainties for parameters which were found in the configuration files.
+    flat_priors : dict
+        Dictionary mapping benchmark points, scenarios, and model specifications, 
+        to a list of flat prior uncertainties for parameters which were found in the configuration files.
+    
+    """
+
+    fixed_pars_to_read_default = [
+        "eHggint",
+        "eHggpar",
+        "eHWWint",
+        "eHWWpar",
+        "eHZZint",
+        "eHZZpar",
+        "eHZgaint",
+        "eHZgapar",
+        "eHgagaint",
+        "eHgagapar",
+        "eHmumuint",
+        "eHmumupar",
+        "eHtautauint",
+        "eHtautaupar",
+        "eHccint",
+        "eHccpar",
+        "eHbbint",
+        "eHbbpar",
+        "theoerr_FCCee240_function_x2_coef",
+        "theoerr_FCCee240_function_x1_coef",
+        "theoerr_FCCee240_function_x0_coef",
+        "theoerr_FCCee365_function_x2_coef",
+        "theoerr_FCCee365_function_x1_coef",
+        "theoerr_FCCee365_function_x0_coef",
+    ]
+
+    if only_pars is not None and skip_pars is not None:
+        raise ValueError("only_pars and skip_pars cannot be both set!")
+    if fixed_pars_to_read is not None:
+        if (only_pars is not None or skip_pars is not None):
+            raise ValueError("fixed_pars_to_read cannot be used with only_pars or skip_pars!")
+    else:
+        fixed_pars_to_read = fixed_pars_to_read_default
+
+    scenarios = model_specs.keys()
+
+
+    def read_parameter_in_conf_file(
+        columns,
+        parameters,
+        parameters_tex,
+        central_values_pars,
+        gaussian_priors,
+        flat_priors,
+    ):
+
+        if not line.startswith("ModelParameter "):
+            return None, None, None, None
+        
+        parameter = columns[1]
+
+        if (float(columns[3]) == 0.0 and float(columns[4]) == 0.0) and \
+            (fixed_pars_to_read is not None and parameter not in fixed_pars_to_read):
+            return None, None, None, None
+
+        if  (only_pars is not None and parameter not in only_pars) or \
+            (skip_pars is not None and parameter in skip_pars):
+            return None, None, None, None
+
+        parameter_tex_label = find_tex_label_par(parameter)
+        central_value = float(columns[2])
+        gaussian_prior = float(columns[3])
+        flat_prior = float(columns[4])
+
+        parameters[BP][scenario][model_spec].append(parameter)
+        central_values_pars[BP][scenario][model_spec].append(central_value)
+        parameters_tex[BP][scenario][model_spec].append(parameter_tex_label)
+        gaussian_priors[BP][scenario][model_spec].append(gaussian_prior)
+        flat_priors[BP][scenario][model_spec].append(flat_prior)
+
+        return parameter, central_value, gaussian_prior, flat_prior
+
+    parameters = {}
+    parameters_tex = {}
+    central_values_pars = {}
+    gaussian_priors = {}
+    flat_priors = {}
+
+    for BP_idx, BP in enumerate(BPs):
+        parameters[BP] = {}
+        parameters_tex[BP] = {}
+        central_values_pars[BP] = {}
+        gaussian_priors[BP] = {}
+        flat_priors[BP] = {}
+
+        for scenario in scenarios:
+            parameters[BP][scenario] = {}
+            parameters_tex[BP][scenario] = {} 
+            central_values_pars[BP][scenario] = {}
+            gaussian_priors[BP][scenario] = {}
+            flat_priors[BP][scenario] = {}
+
+            for model_spec in model_specs[scenario]:
+                parameters[BP][scenario][model_spec] = []
+                parameters_tex[BP][scenario][model_spec] = []
+                central_values_pars[BP][scenario][model_spec] = []
+                gaussian_priors[BP][scenario][model_spec] = []
+                flat_priors[BP][scenario][model_spec] = []
+
+                for conf_file in conf_files[scenario][model_spec]:
+
+                    file_name = f"{working_dir}/{BP}/{scenario}/{conf_file}"
+                    print(f"Reading configuration file {file_name}")
+
+                    with open(file_name, "r") as infile:
+                        
+                        for line in infile:
+                            columns = line.split()
+
+                            
+                            read_parameter_in_conf_file(
+                                columns,
+                                parameters,
+                                parameters_tex,
+                                central_values_pars,
+                                gaussian_priors,
+                                flat_priors,
+                            )
+
+
+                n_pars = len(parameters[BP][scenario][model_spec])
+                print(f"Found {n_pars} model parameters")               
+                print("\n\n")
+
+                if not parameters[BP][scenario][model_spec] == parameters[BP][scenario][model_specs[scenario][0]]:
+                    print(f"Warning: Parameter list for {BP} in {scenario} is not the same for all model specifications!")
+                if not parameters_tex[BP][scenario][model_spec] == parameters_tex[BP][scenario][model_specs[scenario][0]]:
+                    print(f"Warning: Parameter latex label list for {BP} in {scenario} is not the same for all model specifications!")
+                if not central_values_pars[BP][scenario][model_spec] == central_values_pars[BP][scenario][model_specs[scenario][0]]:
+                    print(f"Warning: Central value list for {BP} in {scenario} is not the same for all model specifications!")
+                if not gaussian_priors[BP][scenario][model_spec] == gaussian_priors[BP][scenario][model_specs[scenario][0]]:
+                    print(f"Warning: Gaussian prior list for {BP} in {scenario} is not the same for all model specifications!")
+                if not flat_priors[BP][scenario][model_spec] == flat_priors[BP][scenario][model_specs[scenario][0]]:
+                    print(f"Warning: Flat prior list for {BP} in {scenario} is not the same for all model specifications!")
+
+
+    return parameters, parameters_tex, central_values_pars, gaussian_priors, flat_priors
 
 
 def read_fit_results(
@@ -1513,7 +1800,7 @@ def read_fit_results_pars(
     conf_files = find_configuration_files(model_specs, model, read_model_parameters=True)
         
     print(f"\nReading configuration files for observables")
-    parameters, parameters_tex, central_values_obs, _, _ = read_configuration_files(
+    parameters, parameters_tex, central_values_obs, _, _, _ = read_configuration_files(
         working_dir,
         BPs,
         model_specs,
@@ -1769,6 +2056,118 @@ def align_observables(
     return aligned_observables, aligned_observables_tex, central_values_obs, input_uncertainties_obs, results
 
 
+def align_parameters(
+    parameter_order_func,
+    BPs,
+    model_specs,
+    parameters,
+    parameters_tex,
+    central_values_pars,
+    gaussian_priors,
+    flat_priors,
+):
+    """
+    Function to sort parameters following a given scheme, defined by the {parameter_order_func} 
+    argument. 
+
+    Parameters
+    ----------
+    parameter_order_func : callable
+        Function defining the order of the parameters for the alignment. Must take a single 
+        argument (an parameter name) and return a numeric value indicating its order.
+    BPs : list
+        List of benchmark point names. Must correspond to the directory name for the BP
+    model_specs : dict
+        Dictionary mapping scenarios to a list of model specifications.
+    parameters : dict
+        Dictionary mapping benchmark points, scenarios, and model specifications, 
+        to a list of parameters which were found in the configuration files.
+    parameters_tex : dict
+        Dictionary mapping benchmark points, scenarios, and model specifications, 
+        to a list LaTeX labels for parameters which were found in the configuration files.
+    central_values_pars : dict
+        Dictionary mapping benchmark points, scenarios, and model specifications, 
+        to a list of central values for parameters which were found in the configuration files.
+    gaussian_priors : dict
+        Dictionary mapping benchmark points, scenarios, and model specifications, 
+        to a list of Gaussian prior uncertainties for parameters which were found in the configuration files.
+    flat_priors : dict
+        Dictionary mapping benchmark points, scenarios, and model specifications, 
+        to a list of flat prior uncertainties for parameters which were found in the configuration files.
+
+    Returns
+    -------
+    aligned_parameters : dict
+        The {parameters} dictionary, after sorting parameters
+    aligned_parameters_tex : dict
+        The {aligned_parameters_tex} dictionary, after sorting parameters
+    central_values_pars : dict
+        The {central_values_pars} dictionary, after sorting parameters
+    gaussian_priors : dict
+        The {gaussian_priors} dictionary, after sorting parameters.
+    flat_priors : dict
+        The {flat_priors} dictionary, after sorting parameters.
+
+
+    """
+    
+    scenarios = model_specs.keys()
+    
+    aligned_parameters = {}
+    aligned_parameters_tex = {}
+    
+    for BP in BPs:
+        aligned_parameters[BP] = {}
+        aligned_parameters_tex[BP] = {}
+
+        for scenario in scenarios:
+            # Collect all unique parameters across model_specs
+            all_parameters = set()
+            for model_spec in model_specs[scenario]:
+                all_parameters.update(parameters[BP][scenario][model_spec])
+
+            aligned_parameters[BP][scenario] = sorted(all_parameters, key=parameter_order_func)
+            aligned_parameters_tex[BP][scenario] = [np.nan for i in range(len(aligned_parameters[BP][scenario]))]
+
+            # Align central values for parameters for each model_spec
+            for model_spec in model_specs[scenario]:
+                aligned_central_values = []
+                aligned_gaussian_priors = []
+                aligned_flat_priors = []
+
+                for aligned_idx, obs in enumerate(aligned_parameters[BP][scenario]):
+                    if obs in parameters[BP][scenario][model_spec]:
+                        idx = parameters[BP][scenario][model_spec].index(obs)
+                        aligned_parameters_tex[BP][scenario][aligned_idx] = parameters_tex[BP][scenario][model_spec][idx]
+
+                        aligned_central_values.append(central_values_pars[BP][scenario][model_spec][idx])
+                        aligned_gaussian_priors.append(gaussian_priors[BP][scenario][model_spec][idx])
+                        aligned_flat_priors.append(flat_priors[BP][scenario][model_spec][idx])
+                    else:
+                        # Handle missing parameters (e.g., assign NaN)
+                        aligned_central_values.append(np.nan)
+                        aligned_gaussian_priors.append(np.nan)
+                        aligned_flat_priors.append(np.nan)
+                        
+                central_values_pars[BP][scenario][model_spec] = np.array(aligned_central_values)
+                gaussian_priors[BP][scenario][model_spec] = np.array(aligned_gaussian_priors)
+                flat_priors[BP][scenario][model_spec] = np.array(aligned_flat_priors)
+
+            if np.nan in aligned_parameters_tex[BP][scenario]:
+                print(f"Missing parameter LaTeX: {aligned_parameters[BP][scenario][aligned_parameters_tex[BP][scenario].index(np.nan)]}")
+                raise ValueError(f"Not all parameters LaTeX descriptions were found in the file for {BP} in scenario: {scenario}, model spec {model_spec}!")
+
+    print(f"\n\n\n")
+    print(f"Aligned parameters: {aligned_parameters[BP][scenario]}")
+    print(f"Aligned parameters (LaTeX): {aligned_parameters_tex[BP][scenario]}")
+    print(f"Central values shape: {central_values_pars[BP][scenario][model_spec].shape}")
+    print(f"Input uncertainties shape: {gaussian_priors[BP][scenario][model_spec].shape}")
+    print(f"Flat priors shape: {flat_priors[BP][scenario][model_spec].shape}")
+
+    return aligned_parameters, aligned_parameters_tex, central_values_pars, gaussian_priors, flat_priors
+
+
+
 def read_data_for_pulls(
     BPs,
     model_specs,
@@ -1784,6 +2183,7 @@ def read_data_for_pulls(
     compare_model_spec_predictions=False,
     BP_lambdas=None,
     noMCMC_obs=None,
+    read_model_parameters=False,
 ):
     """
     Generate pull plots for the fit observables.
@@ -1842,6 +2242,9 @@ def read_data_for_pulls(
     noMCMC_obs : list of str, optional
         List of observables to include, but which are not included in the MCMC fit. 
         Their corresponding central values and uncertainties will be set to zero. Default is None.
+    read_model_parameters : bool, optional
+        If True, the function will also read the model parameters from the configuration files, 
+        and return the corresponding input central values and priors.
     
     Returns
     -------
@@ -1857,10 +2260,22 @@ def read_data_for_pulls(
     input_uncertainties_obs : dict
         Dictionary mapping benchmark points, scenarios, and model specifications, 
         to a list of input uncertainties for observables which were found in the configuration files.
+    input_correlated_observables : dict
+        Dictionary mapping benchmark points, scenarios, and model specifications, 
+        to a list of correlated observables. Each emtry in the list is a dictionary with the following keys:
+            - "name": str, name of the set of correlated observables
+            - "observables_list": list of str, list of observables in the set
+        and at least one of the following keys with information on the fit inputs:
+            - "inv_cov_matrix": np.ndarray, inverse covariance matrix for the set of correlated observables
+            - "corr_matrix": np.ndarray, correlation matrix for the set of correlated observables
+            - "cov_matrix": np.ndarray, covariance matrix for the set of correlated observables
     results : dict
         Dictionary mapping benchmark points, scenarios, and model specifications, 
         to a list of means and standard deviations for the observables which were 
         found in the fit results files.
+    n_parameters : dict
+        Dictionary mapping benchmark points, scenarios, and model specifications,
+        to the number of parameters in the fit, as read from the configuration files.
 
     """
     
@@ -1882,7 +2297,7 @@ def read_data_for_pulls(
     conf_files = find_configuration_files(model_specs, model)
         
     print(f"\nReading configuration files for observables")
-    observables, observables_tex, central_values_obs, input_uncertainties_obs, input_correlated_observables = read_configuration_files(
+    observables, observables_tex, central_values_obs, input_uncertainties_obs, input_correlated_observables, n_parameters = read_configuration_files(
         working_dir=working_dir,
         BPs=BPs,
         model_specs=model_specs,
@@ -1945,4 +2360,51 @@ def read_data_for_pulls(
         results=results,
     )
 
-    return aligned_observables, aligned_observables_tex, central_values_obs, input_uncertainties_obs, input_correlated_observables, results
+
+    if read_model_parameters:
+
+        print(f"\nReading model parameters")
+        parameters, parameters_tex, central_values_pars, gaussian_priors, flat_priors = read_configuration_files_parameters(
+            working_dir,
+            BPs,
+            model_specs,
+            conf_files,
+        )
+
+        print(f"\nSorting model parameters")
+        aligned_parameters, aligned_parameters_tex, central_values_pars, gaussian_priors, flat_priors = align_parameters(
+            parameter_order_func=parameter_order,
+            BPs=BPs,
+            model_specs=model_specs,
+            parameters=parameters,
+            parameters_tex=parameters_tex,
+            central_values_pars=central_values_pars,
+            gaussian_priors=gaussian_priors,
+            flat_priors=flat_priors,
+        )
+
+        return ( 
+            aligned_observables, 
+            aligned_observables_tex, 
+            central_values_obs, 
+            input_uncertainties_obs, 
+            input_correlated_observables, 
+            results, 
+            n_parameters, 
+            aligned_parameters, 
+            aligned_parameters_tex, 
+            central_values_pars, 
+            gaussian_priors, 
+            flat_priors,
+        )
+    
+    else:
+        return ( 
+            aligned_observables, 
+            aligned_observables_tex, 
+            central_values_obs, 
+            input_uncertainties_obs, 
+            input_correlated_observables, 
+            results, 
+            n_parameters, 
+        )

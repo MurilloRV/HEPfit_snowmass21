@@ -1,5 +1,3 @@
-from turtle import mode
-
 import uproot
 import subprocess
 from matplotlib import pyplot as plt
@@ -8,7 +6,8 @@ import numpy as np
 import os.path
 from math import floor, log10
 
-from .parser import read_fit_results, find_tex_label_obs, read_data_for_pulls
+from .parser import read_fit_results, find_tex_label_obs, read_data_for_pulls, read_configuration_files_parameters
+from . statistics import chi2_prob
 
 plt.rcParams.update({
     #   "text.usetex": True,
@@ -1527,12 +1526,16 @@ def chi_square_formula(
     return chi_square
 
 
-# TODO: finish implementation
+def _quadratic_func(x, a, b, c):
+    return a*x**2 + b*x + c
+
+
 def calculate_chi_square(
     working_dir,
     BPs,
     model_specs,
     model,
+    BP_lambdas,
     only_obs=None,
     skip_obs=None,
     only_higgs_fccee_obs=False,
@@ -1540,11 +1543,13 @@ def calculate_chi_square(
     # WC_list_for_prediction_pulls=None,
     # matched_predictions_vs_BSM=False,
     # compare_model_spec_predictions=False,
-    BP_lambdas=None,
+    ignore_nuisance_paramaters=False,
     verbose=False,
 ):
     """
-    Generate pull plots for the fit observables.
+    Calculate the chi-square values for each benchmark point, scenario, and model specification. 
+    Also calculates the corresponding p-values using the chi-square distribution with the appropriate 
+    number of degrees of freedom.
     
     Parameters
     ----------
@@ -1559,6 +1564,8 @@ def calculate_chi_square(
         '{working_dir}/comparison_plots/results_{results_dir}/'
     model : str
         The BSM model considered. Currently can be either "IDM", "Z2SSM", "SM", or "SM_updated_lumi".
+    BP_lambdas : list of floats
+        List of predictions for kappa_lambda for each BP.
     only_obs : list of str, optional
         List of observables to include. If set, only these observables will be
         processed.
@@ -1592,27 +1599,57 @@ def calculate_chi_square(
     # compare_model_spec_predictions : bool, optional
     #     If True, this function will evaluate the pulls of the BSM model predictions between
     #     the two model specifications given as input, for comparison purposes
-    BP_lambdas : list of floats, optional
-        List of predictions for kappa_lambda for each BP. If set, kappa_lambda will be added as an 
-        observable with the corresponding central value for each BP.
     verbose : bool, optional
         If True, print additional information during the calculation. Default is False.
 
     Returns
     -------
-    chi_square : float
-        The calculated chi-square value for the given BPs, model specifications, and observables.
+    chi_square_results : dict
+        The calculated chi-square values for each BP, scenario, and model specification.
+    p_values : dict
+        The corresponding p-values for each chi-square value, calculated using the
+        chi-square distribution with the appropriate degrees of freedom.
 
     """
 
     scenarios = model_specs.keys()
 
-    # NP_depedendent_observables = [
-    #     "eeZH_FCCee240",
-    #     "eeZH_FCCee365",
-    # ]
+    nuisance_parameters = [
+        "eHggint",
+        "eHggpar",
+        "eHWWint",
+        "eHWWpar",
+        "eHZZint",
+        "eHZZpar",
+        "eHZgaint",
+        "eHZgapar",
+        "eHgagaint",
+        "eHgagapar",
+        "eHmumuint",
+        "eHmumupar",
+        "eHtautauint",
+        "eHtautaupar",
+        "eHccint",
+        "eHccpar",
+        "eHbbint",
+        "eHbbpar",
+    ]
 
-    aligned_observables, aligned_observables_tex, central_values_obs, input_uncertainties_obs, input_correlated_observables, results = read_data_for_pulls(
+    new_nuisance_parameters = [
+        "theoerr_FCCee240",
+        "theoerr_FCCee365",
+    ]
+
+    nuisance_parameter_coefficients = [
+        "theoerr_FCCee240_function_x2_coef",
+        "theoerr_FCCee240_function_x1_coef",
+        "theoerr_FCCee240_function_x0_coef",
+        "theoerr_FCCee365_function_x2_coef",
+        "theoerr_FCCee365_function_x1_coef",
+        "theoerr_FCCee365_function_x0_coef",
+    ]
+
+    data = read_data_for_pulls(
         BPs,
         model_specs,
         scenarios,
@@ -1625,18 +1662,50 @@ def calculate_chi_square(
         # WC_list_for_prediction_pulls=WC_list_for_prediction_pulls,
         # matched_predictions_vs_BSM=matched_predictions_vs_BSM,
         # compare_model_spec_predictions=compare_model_spec_predictions,
-        # BP_lambdas=BP_lambdas,
+        BP_lambdas=BP_lambdas,
+        read_model_parameters=True,
     )
+
+    (
+        aligned_observables, 
+        aligned_observables_tex, 
+        central_values_obs, 
+        input_uncertainties_obs, 
+        input_correlated_observables, 
+        results,
+        n_parameters, 
+        aligned_parameters, 
+        aligned_parameters_tex, 
+        central_values_pars, 
+        gaussian_priors, 
+        flat_priors,
+    ) = data
 
     print("Aligned observables:", aligned_observables)
 
+    higgs_decay_modes = [
+        "bb", 
+        "cc", 
+        "gg", 
+        "WW", 
+        "ZZ", 
+        "tautau", 
+        "gaga",
+        "mumu", 
+        "Zga", 
+    ]
+
     chi_square_results = {}
+    p_values = {}
     for BP_idx, BP in enumerate(BPs):
         chi_square_results[BP] = {}
+        p_values[BP] = {}
         for scenario in scenarios:
             chi_square_results[BP][scenario] = {}
+            p_values[BP][scenario] = {}
             for model_spec in model_specs[scenario]:
                 chi_square = 0
+                n_obs = 0
 
                 correlated_observables_full_list = []
                 for corr_obs_set in input_correlated_observables[BP][scenario][model_spec]:
@@ -1674,10 +1743,71 @@ def calculate_chi_square(
                         model = obs_predictions,
                         inverse_covariance_matrix = inv_cov_matrix,
                     )
+                    n_obs += len(obs_list)
                     chi_square += chi_square_term
 
                     if verbose: print(f"Added chi-square contribution for correlated observable set {corr_obs_set['name']}: {chi_square_term}")
 
+
+
+                additional_observables = {}
+                if not ignore_nuisance_paramaters:
+                    for decay_mode in higgs_decay_modes:
+                        # Calculating Higgs branching ratios from the cross-section times branching ratio observables
+                        XS_idx_240 = aligned_observables[BP][scenario].index("eeZH_FCCee240")
+                        additional_observables[f"eeZH_FCCee240"] = results[BP][scenario][model_spec][XS_idx_240][0]
+
+                        XS_idx_365 = aligned_observables[BP][scenario].index("eeZH_FCCee365")
+                        additional_observables[f"eeZH_FCCee365"] = results[BP][scenario][model_spec][XS_idx_365][0]
+
+                        XS_BR_idx = aligned_observables[BP][scenario].index(f"eeZH{decay_mode}_FCCee240")
+                        additional_observables[f"BR_H_{decay_mode}"] = results[BP][scenario][model_spec][XS_BR_idx][0] / results[BP][scenario][model_spec][XS_idx_240][0]
+
+                    # Calculating the VBF cross-sections 
+                    XS_BR_idx_240 = aligned_observables[BP][scenario].index(f"eeHvvbb_FCCee240")
+                    additional_observables[f"eeHvv_FCCee240"] = results[BP][scenario][model_spec][XS_BR_idx_240][0] / additional_observables[f"BR_H_bb"]
+
+                    XS_BR_idx_365 = aligned_observables[BP][scenario].index(f"eeHvvbb_FCCee365")
+                    additional_observables[f"eeHvv_FCCee365"] = results[BP][scenario][model_spec][XS_BR_idx_365][0] / additional_observables[f"BR_H_bb"]
+
+                    klam_idx = aligned_observables[BP][scenario].index("deltalHHH_HLLHC")
+                    additional_observables[f"klam_fit"] = results[BP][scenario][model_spec][klam_idx][0] + 1
+
+                    for nuispar in nuisance_parameters:
+                        np_idx = aligned_parameters[BP][scenario].index(nuispar)
+                        additional_observables[nuispar+f"_gaus_prior"] = gaussian_priors[BP][scenario][model_spec][np_idx]
+
+                    # Deal with eHWWpar, eHZZpar, and eHZgapar differently
+                    for nuispar in ["eHWWpar", "eHZZpar", "eHZgapar"]:
+                        np_idx = aligned_observables[BP][scenario].index(nuispar)
+                        additional_observables[nuispar+f"_gaus_prior"] = input_uncertainties_obs[BP][scenario][model_spec][np_idx]
+                    
+
+                    if "use_new_NPs" in model_spec:
+                        for nuispar in new_nuisance_parameters:
+                            np_idx = aligned_parameters[BP][scenario].index(nuispar)
+                            additional_observables[nuispar+f"_gaus_prior"] = gaussian_priors[BP][scenario][model_spec][np_idx]
+
+                        for nuispar in nuisance_parameter_coefficients:
+                            np_idx = aligned_parameters[BP][scenario].index(nuispar)
+                            additional_observables[nuispar] = central_values_pars[BP][scenario][model_spec][np_idx]
+
+
+                        np_uncertainty = {}
+                        np_uncertainty["240"] = _quadratic_func(
+                            additional_observables[f"klam_fit"],
+                            additional_observables[f"theoerr_FCCee240_function_x2_coef"],
+                            additional_observables[f"theoerr_FCCee240_function_x1_coef"],
+                            additional_observables[f"theoerr_FCCee240_function_x0_coef"],
+                        ) * additional_observables["theoerr_FCCee240_gaus_prior"]
+                        np_uncertainty["365"] = _quadratic_func(
+                            additional_observables[f"klam_fit"],
+                            additional_observables[f"theoerr_FCCee365_function_x2_coef"],
+                            additional_observables[f"theoerr_FCCee365_function_x1_coef"],
+                            additional_observables[f"theoerr_FCCee365_function_x0_coef"],
+                        ) * additional_observables["theoerr_FCCee365_gaus_prior"]
+
+                    print(f"Additional observables for {BP}, {scenario}, {model_spec}: {additional_observables}")
 
                 for obs, prediction, input_uncertainty, fit_results in zip(
                     aligned_observables[BP][scenario],
@@ -1695,17 +1825,146 @@ def calculate_chi_square(
 
                     fit_value = fit_results[0]
 
+                    uncertainty = input_uncertainty
+                    if not ignore_nuisance_paramaters:
+                        for s in ["240", "365"]:
+                            for XS in ["ZH", "Hvv"]:
+                                if obs == f"ee{XS}_FCCee{s}":
+                                    if "use_new_NPs" in model_spec:
+                                        theory_uncertainty = np_uncertainty[s]
+                                        if not np.isnan(theory_uncertainty):
+                                            uncertainty = np.sqrt(uncertainty**2 + theory_uncertainty**2)
+
+                                for decay_mode in higgs_decay_modes:
+                                    if obs == f"ee{XS}{decay_mode}_FCCee{s}":
+                                        if "use_new_NPs" in model_spec:
+                                            theory_uncertainty = np_uncertainty[s] * additional_observables[f"BR_H_{decay_mode}"]
+                                            if not np.isnan(theory_uncertainty):
+                                                uncertainty = np.sqrt(uncertainty**2 + theory_uncertainty**2)
+
+                                        theory_uncertainty = np.sqrt(
+                                            (additional_observables[f"ee{XS}_FCCee{s}"] * additional_observables[f"eH{decay_mode}int_gaus_prior"])**2 + 
+                                            (additional_observables[f"ee{XS}_FCCee{s}"] * additional_observables[f"eH{decay_mode}par_gaus_prior"])**2
+                                        )
+                                        uncertainty = np.sqrt(uncertainty**2 + theory_uncertainty**2)
+
+
                     chi_square_term = chi_square_formula(
                         data = fit_value,
                         model = prediction,
-                        inverse_covariance_matrix = 1/input_uncertainty**2,
+                        inverse_covariance_matrix = 1/uncertainty**2,
                     )
+                    if np.isnan(chi_square_term):
+                        print(f"Warning: Chi-square term for observable {obs} is NaN. Skipping this observable in chi-square calculation.")
+                        continue
+
+                    n_obs += 1
                     chi_square += chi_square_term
 
                     if verbose: print(f"Added chi-square contribution for observable {obs}: {chi_square_term} (prediction: {prediction}, fit value: {fit_value}, uncertainty: {input_uncertainty})")
 
+                n_pars = n_parameters[BP][scenario][model_spec]
+                if n_obs <= n_pars:
+                    print(f"Warning: Number of observables ({n_obs}) is less than or equal to the number of parameters ({n_pars}) for {BP}, {scenario}, {model_spec}. Chi-square may not be meaningful.")
+                p_value = chi2_prob(chi2 = chi_square, dof = n_obs - n_pars)
+
+                p_values[BP][scenario][model_spec] = p_value
                 chi_square_results[BP][scenario][model_spec] = chi_square
-                print(f"Chi-square for BP {BP}, scenario {scenario}, model spec {model_spec}: {chi_square}")
+
+                print(f"Chi-square for BP {BP}, scenario {scenario}, model spec {model_spec}: {chi_square} (n_obs: {n_obs}, n_pars: {n_pars}, p-value: {p_value})")
 
     print(chi_square_results)
+    print(p_values)
+
+    
+
+    return chi_square_results, p_values
     # TODO: deal with NPs
+
+
+
+
+def plot_p_value_distributions(
+    working_dir,
+    BPs,
+    model_specs,
+    model,
+    results_dir,
+    BP_lambdas,
+    chi_square_kwargs={},
+    only_specs=None,
+    fig_size=(4, 3.5),
+    show_plots=True,
+    save_fig=True,
+    file_suffix="",
+):
+    """
+    Plot the distributions of p-values for each benchmark point, scenario, and model specification.
+    The p-values are calculated using the chi-square distribution with the appropriate number of
+    degrees of freedom.
+    
+    Parameters
+    ----------
+    BPs : list
+        List of benchmark point names. Must correspond to the directory name for the BP
+    model_specs : dict
+        Dictionary mapping scenarios to model specifications.
+    working_dir : str
+        Working directory path, containing subdirectories for each benchmark point.
+    results_dir : str
+        Suffix of the name of the directory to store the results. Results are stored in
+        '{working_dir}/comparison_plots/results_{results_dir}/'
+    model : str
+        The BSM model considered. Currently can be either "IDM", "Z2SSM", "SM", or "SM_updated_lumi".
+    BP_lambdas : list of floats
+        List of predictions for kappa_lambda for each BP.
+    chi_square_kwargs : dict, optional
+        Additional keyword arguments to be passed to the calculate_chi_square function.
+    only_specs : list, optional
+        Boolean list indicating which model specifications to include when plotting. Default is all specs.
+    fig_size : tuple, optional
+        The size of the figures to be generated. Default is (4, 3.5).
+    show_plots : bool, optional
+        Whether to show the plots or not. Default is False.
+    save_fig : bool, optional
+        Whether to save the figures. Default is True.
+    file_suffix : str, optional
+        Suffix to be added to the name of the generated plot files. Default is ''.
+
+    Returns
+    -------
+    None
+
+    """
+
+    chi_square_results, p_values = calculate_chi_square(
+        working_dir=working_dir,
+        BPs=BPs,
+        model_specs=model_specs,
+        model=model,
+        BP_lambdas=BP_lambdas,
+        **chi_square_kwargs,
+    )
+
+    scenarios = model_specs.keys()
+
+    for scenario in scenarios:
+        for BP in BPs:
+            plt.figure(figsize=fig_size)
+            p_values_plot = []
+            for spec_idx, model_spec in enumerate(model_specs[scenario]):
+                if (only_specs is not None) and (only_specs[spec_idx] != True):
+                    continue
+                p_value = p_values[BP][scenario][model_spec]
+                p_values_plot.append(p_value)
+
+            plt.hist(p_values_plot, bins=20, alpha=0.5)
+            plt.xlabel("p-value")
+            plt.ylabel("Number of toys")
+            plt.xlim(0, 1)
+            plt.axvline(x=0.05, color='r', linestyle='--', label='Significance level (0.05)')
+            plt.legend()
+            plt.tight_layout()
+            if save_fig: plt.savefig(f"{working_dir}/comparison_plots/results_{results_dir}/{model}_{BP}_{scenario}_p_values{file_suffix}.pdf")
+            
+    if show_plots: plt.show()

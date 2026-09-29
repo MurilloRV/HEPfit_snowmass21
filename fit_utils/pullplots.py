@@ -431,7 +431,7 @@ def generate_WC_correlations_vs_klam_plot(
     # between BPs, scenarios and model specs, so we can safely take the list of observables for 
     # the first ones
     observables = observables[BPs[0]][scenarios[0]][model_specs[scenarios[0]][0]]
-    observables_tex = [find_tex_label_par(None, obs[:-5]) for obs in observables]
+    observables_tex = [find_tex_label_par(obs[:-5]) for obs in observables]
 
     if colors is None:
         # Default matplotlib color cycle
@@ -555,7 +555,7 @@ def generate_WC_corr_matrix_plot(
     observables = observables[BPs[0]][scenarios[0]][model_specs[scenarios[0]][0]]
 
     observables_indices = [observables.index(WC + "_corr") for WC in WC_names] if not WC_names is None else range(len(observables))
-    observables_tex = [find_tex_label_par(None, observables[i][:-5]) for i in observables_indices]
+    observables_tex = [find_tex_label_par(observables[i][:-5]) for i in observables_indices]
 
     if WC_names is None:
         WC_names = [observables[i][:-5] for i in observables_indices]
@@ -971,7 +971,7 @@ def generate_pull_plots_obs(
     #                         list(input_uncertainties["Config_Files"]["."].values())[0],
     #                     ] 
     #                 ).T
-    #     WC_labels = [ find_tex_label_par(None, wc) for wc in WC_list_for_prediction_pulls["WC_list"] ]
+    #     WC_labels = [ find_tex_label_par(wc) for wc in WC_list_for_prediction_pulls["WC_list"] ]
     
     # elif matched_predictions_vs_BSM or compare_model_spec_predictions:
     #     results = {}
@@ -1007,7 +1007,7 @@ def generate_pull_plots_obs(
     #     results=results,
     # )
 
-    aligned_observables, aligned_observables_tex, central_values_obs, input_uncertainties_obs, input_correlated_observables, results = read_data_for_pulls(
+    aligned_observables, aligned_observables_tex, central_values_obs, input_uncertainties_obs, input_correlated_observables, results, n_parameters = read_data_for_pulls(
         BPs,
         model_specs,
         scenarios,
@@ -1037,7 +1037,7 @@ def generate_pull_plots_obs(
 
     if WC_list_for_prediction_pulls:
 
-        WC_labels = [ find_tex_label_par(None, wc) for wc in WC_list_for_prediction_pulls["WC_list"] ]
+        WC_labels = [ find_tex_label_par(wc) for wc in WC_list_for_prediction_pulls["WC_list"] ]
 
         filename_suffix = WC_list_for_prediction_pulls["filename_suffix"] if "filename_suffix" in WC_list_for_prediction_pulls else ""
         obs_predictions = read_WC_predictions(
