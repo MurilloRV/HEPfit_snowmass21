@@ -270,6 +270,17 @@ def observable_order(obs):
     elif obs.startswith("BrWtau"):
         order += 20009
 
+    if obs.startswith("NP_FCCee240_theo_unc"):
+        order = 100001
+    elif obs.startswith("NP_FCCee365_theo_unc"):
+        order = 100002
+    elif obs.startswith("eHWWpar"):
+        order = 100003
+    elif obs.startswith("eHZZpar"):
+        order = 100004
+    elif obs.startswith("eHZgapar"):
+        order = 100005
+
     return order
 
 
@@ -753,6 +764,8 @@ def find_configuration_files(
         "use_new_NPs_klam_dependent_est2_",
         "use_new_NPs_BP_dependent_est2_",
 
+        "use_new_NPs_scale1.52_klam_dependent_est2_rect_",
+
         "use_new_NPs_scale1.52_theoerr240_0.00107_theoerr365_0.00105_NPmismatch240_0_NPmismatch365_0_",
         "use_new_NPs_scale1.52_",
         "use_new_NPs_",
@@ -909,16 +922,33 @@ def find_configuration_files(
                                 conf_files[scenario][model_spec].append( "FCCee" + hepfit_flag[3:-1] )
 
                             NP_estimates = [
-                                "_a240_8.42e-06_b240_6.93e-05_c240_0.000124_a365_1.99e-05_b365_-2.66e-05_c365_0.000313",
-                                "_a240_0.000763_b240_-0.00152_c240_0.000761_a365_0.000792_b365_-0.00162_c365_0.000835",
+                                "_a240_8.42e-06_b240_6.93e-05_c240_0.000124_a365_1.99e-05_b365_-2.66e-05_c365_0.000313", # IDM: Estimates EXCLUDING the O(1/Lambda_NP^2) curve
+                                "_a240_0.000763_b240_-0.00152_c240_0.000761_a365_0.000792_b365_-0.00162_c365_0.000835", # IDM: Estimates INCLUDING the O(1/Lambda_NP^2) curve
+
+                                "_a240_0.000389_b240_-0.000612_c240_0.000199_a365_0.000401_b365_-0.000835_c365_0.000449", # IDM: Estimates INCLUDING the O(1/Lambda_NP^2) curve --- Rectangular estimates
                             ]
 
-                            for idx, est in enumerate(NP_estimates):
-                                if hepfit_flag == f"use_new_NPs_klam_dependent{est}_" or hepfit_flag == f"use_new_NPs_klam_dependent_est{idx+1}_":
-                                    conf_files[scenario][model_spec].append(f"FCCee_new_NPs_klam_dependent{est}")
+                            NP_estimates_short_labels = [
+                                "est1", # IDM: Estimates EXCLUDING the O(1/Lambda_NP^2) curve
+                                "est2", # IDM: Estimates INCLUDING the O(1/Lambda_NP^2) curve
 
-                                elif hepfit_flag == f"use_new_NPs_BP_dependent{est}_" or hepfit_flag == f"use_new_NPs_BP_dependent_est{idx+1}_":
-                                    conf_files[scenario][model_spec].append(f"FCCee_new_NPs_BP_dependent{est}")
+                                "est2_rect", # IDM: Estimates INCLUDING the O(1/Lambda_NP^2) curve --- Rectangular estimates
+                            ]
+
+                            
+
+                            NP_scaling_factor_strings = [
+                                "_scale1.52", # With 2D scaling
+                                "",           # Without 2D scaling
+                            ]
+
+                            for est, est_label in zip(NP_estimates, NP_estimates_short_labels):
+                                for np_scale_factor in NP_scaling_factor_strings:
+                                    if hepfit_flag == f"use_new_NPs{np_scale_factor}_klam_dependent{est}_" or hepfit_flag == f"use_new_NPs{np_scale_factor}_klam_dependent_{est_label}_":
+                                        conf_files[scenario][model_spec].append(f"FCCee_new_NPs{np_scale_factor}_klam_dependent{est}")
+
+                                    elif hepfit_flag == f"use_new_NPs{np_scale_factor}_BP_dependent{est}_" or hepfit_flag == f"use_new_NPs{np_scale_factor}_BP_dependent_{est_label}_":
+                                        conf_files[scenario][model_spec].append(f"FCCee_new_NPs{np_scale_factor}_BP_dependent{est}")
 
                             model_spec_copy = model_spec_copy.replace(hepfit_flag, "", 1)
                             print(model_spec_copy)
