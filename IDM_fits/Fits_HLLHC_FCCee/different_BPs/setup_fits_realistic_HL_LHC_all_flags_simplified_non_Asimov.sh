@@ -9,6 +9,7 @@ cd $TARGET_PATH
 ASIMOV="false"  # Asimov fits set the central value of pseudo-measurements to corresponding BSM predictions. If set to "false", pseudo-measurements will deviate from predictions according to the projected uncertainty, as a more realistic experiment
 N_EXPS=100  # Number of fits to be performed, each with different sets of pseudo-measurements, which in turn are generated from Gaussian distributions centred at their corresponding BSM predictions, and covariance matrices obtained from projections for future experiments
 RANDOM_SEED=137  # Random seed for generation of pseudo-measurements
+COMPACT="true"  # If set to "true", the contents of all the input configuration files will be merged into the main file, to avoid generating a large number of small files. If set to "false", the input configuration files will be kept separate, and the main file will include them using the "include" command. Only the small_priors conf file is produced.
 
 # BP_Names=("BP_"{0..7})
 # BPO_Names=("BPO_"{0..1})
@@ -53,7 +54,7 @@ no_C_HG="false" # Exclude the C_HG operator from the fit
 no_HLLHC_Higgs="false" # Exclude the HL-LHC Higgs observables from the fit
 LoopH3d6Full="false" # Use the full expansion of the ZH cross-section in terms of C1 and dZH
 
-use_new_NPs="true" # Use newly implementent theory nuisance parameters
+use_new_NPs="false" # Use newly implementent theory nuisance parameters
 UseKlamDependentUncertainties="true" # A boolean flag that is true if using klam-dependent theoretical uncertainties in the ee->Zh cross-section predictions.
 UseBPDependentUncertainties="false" # A boolean flag that is true if using BP-dependent theoretical uncertainties in the ee->Zh cross-section predictions. Different estimates are used for different BPs; however, these are interpreted as constant (klam-independent) in HEPfit 
 
@@ -138,6 +139,55 @@ set_nuisance_parameter() {
     else
         printf "%.20f" "$(echo "$scale * $default" | bc)"
     fi
+}
+
+
+compact_config_file() {
+    local input_file="$1"
+    local input_dir
+    local line
+    local directive
+    local include_file
+    local include_name
+    local extra
+    local known_include
+    local already_recorded
+
+    input_dir=$(dirname "$input_file")
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        read -r directive include_name extra <<< "$line"
+        if [[ "$directive" == "IncludeFile" && -n "$include_name" && -z "$extra" ]]; then
+            # -n: check if string is not empty, -z: check if string is empty
+            
+            include_file="${input_dir}/${include_name}"
+            if [[ ! -f "$include_file" ]]; then
+                echo "Error: IncludeFile target '$include_file' does not exist (included from '$input_file')." >&2
+                return 1
+            fi
+            already_recorded=false
+            for known_include in "${COMPACT_INCLUDED_FILES[@]}"; do
+                if [[ "$known_include" == "$include_file" ]]; then
+                    already_recorded=true
+                    break
+                fi
+            done
+            if [[ "$already_recorded" == "false" ]]; then
+                COMPACT_INCLUDED_FILES+=("$include_file")
+            fi
+
+            printf '\n\n%s\n' "###################################################################################"
+            printf '%s\n'     "###################################################################################"
+            printf '%s\n' "# Begin contents of included file: $include_name"
+            compact_config_file "$include_file" || return 1
+            printf '%s\n' "# End contents of included file: $include_name"
+            printf '%s\n'     "###################################################################################"
+            printf '%s\n\n'   "###################################################################################"
+
+        else
+            printf '%s\n' "$line"
+            # %s : print the string as is.
+        fi
+    done < "$input_file"
 }
 
 
@@ -524,31 +574,31 @@ setup_fits() {
         echo "ModelParameter  theoerr_FCCee365_function_x0_coef        ${theoerr_FCCee365_function_x0_coef}  0.  0." >> $NEW_NP_CONF
         echo "#" >> $NEW_NP_CONF
 
+
+        ################################################################################################
+        ################### SETUP CONFIG FILES FOR NEW NUISANCE PARAMETERS OBSERVABLES #################
+        ################################################################################################
+        HIGGSEW_PAR_CORR_CONF="HiggsEW_Par_Corr"
+        NEW_HIGGSEW_PAR_CORR_CONF="${HIGGSEW_PAR_CORR_CONF}_NPs"
+        cp ${HIGGSEW_PAR_CORR_CONF}.conf ${NEW_HIGGSEW_PAR_CORR_CONF}.conf
+
+        echo "#" >> ${NEW_HIGGSEW_PAR_CORR_CONF}.conf
+        echo "#" >> ${NEW_HIGGSEW_PAR_CORR_CONF}.conf
+        echo "######################################################################" >> ${NEW_HIGGSEW_PAR_CORR_CONF}.conf
+        echo "# New theory nuisance parameters for FCCee Higgs production" >> ${NEW_HIGGSEW_PAR_CORR_CONF}.conf
+        echo "# cross-sections" >> ${NEW_HIGGSEW_PAR_CORR_CONF}.conf
+        echo "######################################################################" >> ${NEW_HIGGSEW_PAR_CORR_CONF}.conf
+        echo "#" >> ${NEW_HIGGSEW_PAR_CORR_CONF}.conf
+        echo "Observable NP_FCCee240_theo_unc   NP_FCCee240_theo_unc   #epsilon_{\text{NPtotal240}}     1. -1. noMCMC noweight" >> ${NEW_HIGGSEW_PAR_CORR_CONF}.conf
+        echo "Observable NP_FCCee365_theo_unc   NP_FCCee365_theo_unc   #epsilon_{\text{NPtotal365}}     1. -1. noMCMC noweight" >> ${NEW_HIGGSEW_PAR_CORR_CONF}.conf
+        echo "#" >> ${NEW_HIGGSEW_PAR_CORR_CONF}.conf
+
+        sed -i "\/IncludeFile ..\/..\/HiggsEW_Par_Corr.*/c\\IncludeFile ..\/..\/${NEW_HIGGSEW_PAR_CORR_CONF}.conf" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
+        sed -i "\/IncludeFile ..\/..\/HiggsEW_Par_Corr.*/c\\IncludeFile ..\/..\/${NEW_HIGGSEW_PAR_CORR_CONF}.conf" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
+        
+        HIGGSEW_PAR_CORR_CONF="$NEW_HIGGSEW_PAR_CORR_CONF"
+
     fi
-
-
-    ################################################################################################
-    ################### SETUP CONFIG FILES FOR NEW NUISANCE PARAMETERS OBSERVABLES #################
-    ################################################################################################
-    HIGGSEW_PAR_CORR_CONF="HiggsEW_Par_Corr"
-    NEW_HIGGSEW_PAR_CORR_CONF="${HIGGSEW_PAR_CORR_CONF}_NPs"
-    cp ${HIGGSEW_PAR_CORR_CONF}.conf ${NEW_HIGGSEW_PAR_CORR_CONF}.conf
-
-    echo "#" >> ${NEW_HIGGSEW_PAR_CORR_CONF}.conf
-    echo "#" >> ${NEW_HIGGSEW_PAR_CORR_CONF}.conf
-    echo "######################################################################" >> ${NEW_HIGGSEW_PAR_CORR_CONF}.conf
-    echo "# New theory nuisance parameters for FCCee Higgs production" >> ${NEW_HIGGSEW_PAR_CORR_CONF}.conf
-    echo "# cross-sections" >> ${NEW_HIGGSEW_PAR_CORR_CONF}.conf
-    echo "######################################################################" >> ${NEW_HIGGSEW_PAR_CORR_CONF}.conf
-    echo "#" >> ${NEW_HIGGSEW_PAR_CORR_CONF}.conf
-    echo "Observable NP_FCCee240_theo_unc   NP_FCCee240_theo_unc   #epsilon_{\text{NPtotal240}}     1. -1. noMCMC noweight" >> ${NEW_HIGGSEW_PAR_CORR_CONF}.conf
-    echo "Observable NP_FCCee365_theo_unc   NP_FCCee365_theo_unc   #epsilon_{\text{NPtotal365}}     1. -1. noMCMC noweight" >> ${NEW_HIGGSEW_PAR_CORR_CONF}.conf
-    echo "#" >> ${NEW_HIGGSEW_PAR_CORR_CONF}.conf
-
-    sed -i "\/IncludeFile ..\/..\/HiggsEW_Par_Corr.*/c\\IncludeFile ..\/..\/${NEW_HIGGSEW_PAR_CORR_CONF}.conf" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
-    sed -i "\/IncludeFile ..\/..\/HiggsEW_Par_Corr.*/c\\IncludeFile ..\/..\/${NEW_HIGGSEW_PAR_CORR_CONF}.conf" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
-    
-    HIGGSEW_PAR_CORR_CONF="$NEW_HIGGSEW_PAR_CORR_CONF"
 
 
     ########################################################
@@ -977,6 +1027,9 @@ setup_fits() {
         sed -i "\/IncludeFile ${VV_OO_CONF_FILE_aTGC_HLLHC}.conf/c\\IncludeFile ${NEW_VV_OO_CONF_FILE_aTGC_HLLHC}.conf" ${NEW_VV_OO_CONF_FILE}.conf
                     
         ASIMOV_FLAG="--not_asimov --fit_idx ${fit_idx} --random_seed ${RANDOM_SEED}"
+        if [[ "$COMPACT" == "true" ]]; then
+            ASIMOV_FLAG="$ASIMOV_FLAG --compact"
+        fi
 
         HIGGS_CONF="${NEW_HIGGS_CONF}"
         HIGGS_HLLHC_CONF="${NEW_HIGGS_HLLHC_CONF}"
@@ -1000,12 +1053,42 @@ setup_fits() {
     fi
 
     cd $TARGET_PATH
-    python scale_observables_kappas.py --scenario ${scenario} --bp ${BP_Name} ${ASIMOV_FLAG}
-    python scale_observables_kappas.py --scenario ${scenario} --bp ${BP_Name} ${ASIMOV_FLAG} --realistic
-    if [ "$updated_lumi" == "true" ]; then python scale_observables_kappas.py --scenario ${scenario} --bp ${BP_Name} ${ASIMOV_FLAG} --realistic --updated_lumi; fi
-    python scale_observables_kappas.py --scenario ${scenario} --bp ${BP_Name} ${ASIMOV_FLAG} --realistic ${HIGGS_PYTHON_ARG} --higgsconf ${HIGGS_CONF} ${EWPO_PYTHON_ARG}
-    # Running the script also without the flag, so that the main fits (i.e. the ones with the flag set to false) are also set up properly
-    # Note: the "updated_lumi" flag, if set to True, is already included in the HIGGS_PYTHON_ARG, so it will be automatically included in the last run of the script
+
+    
+    if [[ "$COMPACT" == "true" && ASIMOV=="false" ]]; then
+
+        # Only setup the fits with full flags 
+        python scale_observables_kappas.py --scenario ${scenario} --bp ${BP_Name} ${ASIMOV_FLAG} --realistic ${HIGGS_PYTHON_ARG} --higgsconf ${HIGGS_CONF} ${EWPO_PYTHON_ARG}
+
+        COMPACT_INCLUDED_FILES=()
+        for compact_model_file in \
+            "${fit_dir}/Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors"; do
+            compact_model_tmp="${compact_model_file}.conf.compact_tmp"
+            if ! compact_config_file "${compact_model_file}.conf" > "$compact_model_tmp"; then
+                rm -f "$compact_model_tmp"
+                return 1
+            fi
+            mv "$compact_model_tmp" "${compact_model_file}_compact.conf"
+
+            rm -f "${fit_dir}/Globalfits/AllOps/${MODEL_CONF_FILE}.conf"
+            rm -f "${fit_dir}/Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf"
+            MODEL_CONF_FILE="${MODEL_CONF_FILE}_small_priors_compact"
+        done
+        for compact_include_file in "${COMPACT_INCLUDED_FILES[@]}"; do
+            if [[ "$compact_include_file" == *"_toyfit${fit_idx}.conf"* ]]; then
+                rm -f "$compact_include_file"
+            fi
+        done
+    
+    else
+        python scale_observables_kappas.py --scenario ${scenario} --bp ${BP_Name} ${ASIMOV_FLAG}
+        python scale_observables_kappas.py --scenario ${scenario} --bp ${BP_Name} ${ASIMOV_FLAG} --realistic
+        if [ "$updated_lumi" == "true" ]; then python scale_observables_kappas.py --scenario ${scenario} --bp ${BP_Name} ${ASIMOV_FLAG} --realistic --updated_lumi; fi
+        python scale_observables_kappas.py --scenario ${scenario} --bp ${BP_Name} ${ASIMOV_FLAG} --realistic ${HIGGS_PYTHON_ARG} --higgsconf ${HIGGS_CONF} ${EWPO_PYTHON_ARG}
+        # Running the script also without the flag, so that the main fits (i.e. the ones with the flag set to false) are also set up properly
+        # Note: the "updated_lumi" flag, if set to True, is already included in the HIGGS_PYTHON_ARG, so it will be automatically included in the last run of the script
+        
+    fi
 
     if [[ "$TEST_FIT" == "true" ]]; then
         analysis ${fit_dir}/Globalfits/AllOps/${MODEL_CONF_FILE}.conf --noMC

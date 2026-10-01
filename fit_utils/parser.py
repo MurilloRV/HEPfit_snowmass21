@@ -815,6 +815,7 @@ def find_configuration_files(
     ]
     priors_flag_list = [
         "_test_small_priors",
+        "_small_priors_compact",
         "_small_priors",
         "",
     ]
@@ -995,9 +996,26 @@ def find_configuration_files(
 
                                                 additional_flag_all = [additional_flag1, additional_flag2, additional_flag3, additional_flag4]
 
+                                                model_conf_file = "model_fits_realistic_HL_LHC_" + \
+                                                    hepfit_flag + \
+                                                    fccee_projections_flag + \
+                                                    loop_order_flag + \
+                                                    exclusive_flag + \
+                                                    additional_flag1 + \
+                                                    additional_flag2 + \
+                                                    additional_flag3 + \
+                                                    additional_flag4 + \
+                                                    toy_fit_flag + \
+                                                    priors_flag
+
                                                 if read_model_parameters:
                                                     if "_no_C_HG" in additional_flag_all:
                                                         conf_files[scenario][model_spec][conf_files[scenario][model_spec].index("d6Ops_corr")] = "d6Ops_corr_no_C_HG"
+
+                                                elif "compact" in model_conf_file:
+                                                    conf_files[scenario][model_spec] = [
+                                                        f"Globalfits/AllOps/{model_conf_file}",
+                                                    ]
 
                                                 else:
                                                     if fccee_projections_flag == "updated_lumi_":

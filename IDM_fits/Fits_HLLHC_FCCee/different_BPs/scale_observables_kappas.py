@@ -23,6 +23,7 @@ parser.add_argument("-b", "--bp", help = "Which benchmark point to use", type=st
 parser.add_argument("--not_asimov", help = "Asimov fits set the central value of pseudo-measurements to corresponding BSM predictions. If set to 'true', pseudo-measurements will deviate from predictions according to the projected uncertainty, as a more realistic experiment", action="store_true")
 parser.add_argument("--fit_idx", help = "Index of the toy fit to be performed, corresponding to a different set of pseudo-measurements", type=int, default=0)
 parser.add_argument("--random_seed", help = "Random seed for generation of pseudo-measurements", type=int, default=137)
+parser.add_argument("--compact", help = "If set to \"true\", the contents of all the input configuration files will be merged into the main file, to avoid generating a large number of small files. If set to \"false\", the input configuration files will be kept separate, and the main file will include them using the \"include\" command.", action="store_true")
 parser.add_argument("--realistic", help = "Use realistic, asymmetric uncertainties for the on-shell kappa_lambda measurement at HL-LHC", action="store_true")
 parser.add_argument("--ewpos_all", help = "Modify also the EWPO central values for current observables", action="store_true")
 parser.add_argument("--with_Af", help = "Use BSM predictions for sin2theta_eff to evaluate A_f and A_FB_f asymmetries and use these in the fit inputs", action="store_true")
@@ -54,6 +55,7 @@ BP                                                  = args.bp
 not_asimov                                          = args.not_asimov
 fit_idx                                             = args.fit_idx
 random_seed                                         = args.random_seed
+compact                                             = args.compact
 realistic_HL_LHC_k_lambda_uncertainties             = args.realistic
 modify_all_ewpos                                    = args.ewpos_all
 with_Af                                             = args.with_Af
@@ -1426,6 +1428,10 @@ for coup, kaps in kappas.items():
              
 
 print(final_text)
+
+# If compact mode is enabled, no additional text is printed to the configuration files
+if compact:
+    final_text = ""
 
 
 if not_asimov:
