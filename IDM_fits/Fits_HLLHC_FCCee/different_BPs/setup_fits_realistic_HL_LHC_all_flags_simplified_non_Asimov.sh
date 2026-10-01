@@ -6,8 +6,8 @@ ORIGINAL_PATH="/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/IDM_fits/Fits_
 TARGET_PATH="/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/IDM_fits/Fits_HLLHC_FCCee/different_BPs"
 cd $TARGET_PATH
 
-ASIMOV="true"  # Asimov fits set the central value of pseudo-measurements to corresponding BSM predictions. If set to "false", pseudo-measurements will deviate from predictions according to the projected uncertainty, as a more realistic experiment
-N_EXPS=1000  # Number of fits to be performed, each with different sets of pseudo-measurements, which in turn are generated from Gaussian distributions centred at their corresponding BSM predictions, and covariance matrices obtained from projections for future experiments
+ASIMOV="false"  # Asimov fits set the central value of pseudo-measurements to corresponding BSM predictions. If set to "false", pseudo-measurements will deviate from predictions according to the projected uncertainty, as a more realistic experiment
+N_EXPS=100  # Number of fits to be performed, each with different sets of pseudo-measurements, which in turn are generated from Gaussian distributions centred at their corresponding BSM predictions, and covariance matrices obtained from projections for future experiments
 RANDOM_SEED=137  # Random seed for generation of pseudo-measurements
 
 # BP_Names=("BP_"{0..7})

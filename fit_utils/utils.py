@@ -1816,7 +1816,11 @@ def calculate_chi_square(
                     results[BP][scenario][model_spec],
                 ):
 
-                    if obs in correlated_observables_full_list:
+                    if obs in correlated_observables_full_list or \
+                        obs == "deltalHHH_HLLHC" and scenario != f"{model}_FCCee240_FCCee365_HLLHClambda" or \
+                        obs in nuisance_parameters or \
+                        obs in new_nuisance_parameters or \
+                        obs in nuisance_parameter_coefficients:
                         continue
 
                     if input_uncertainty == 0:
