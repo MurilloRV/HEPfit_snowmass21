@@ -386,6 +386,11 @@ def generate_klam_comparison_plot(
                         continue
                     else:
                         hist_lmbd_x, hist_lmbd_y = histograms
+                        if hist_lmbd_x is None or hist_lmbd_y is None:
+                            print(f"Skipping {BP}, {scenario}, {model_spec} as histogram data is missing.")
+                            errors[BP] = [[np.nan], [np.nan]]
+                            means[BP] = np.nan
+                            continue
                 
 
                     bin_centers = 0.5 * (hist_lmbd_x[1:] + hist_lmbd_x[:-1])
