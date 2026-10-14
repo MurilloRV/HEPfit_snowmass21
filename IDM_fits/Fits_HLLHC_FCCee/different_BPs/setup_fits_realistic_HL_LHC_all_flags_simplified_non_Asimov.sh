@@ -7,9 +7,9 @@ TARGET_PATH="/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/IDM_fits/Fits_HL
 cd $TARGET_PATH
 
 ASIMOV="false"  # Asimov fits set the central value of pseudo-measurements to corresponding BSM predictions. If set to "false", pseudo-measurements will deviate from predictions according to the projected uncertainty, as a more realistic experiment
-N_EXPS=1  # Number of fits to be performed, each with different sets of pseudo-measurements, which in turn are generated from Gaussian distributions centred at their corresponding BSM predictions, and covariance matrices obtained from projections for future experiments
+N_EXPS=1000  # Number of fits to be performed, each with different sets of pseudo-measurements, which in turn are generated from Gaussian distributions centred at their corresponding BSM predictions, and covariance matrices obtained from projections for future experiments
 RANDOM_SEED=137  # Random seed for generation of pseudo-measurements
-COMPACT="false"  # If set to "true", the contents of all the input configuration files will be merged into the main file, to avoid generating a large number of small files. If set to "false", the input configuration files will be kept separate, and the main file will include them using the "include" command. Only the small_priors conf file is produced.
+COMPACT="true"  # If set to "true", the contents of all the input configuration files will be merged into the main file, to avoid generating a large number of small files. If set to "false", the input configuration files will be kept separate, and the main file will include them using the "include" command. Only the small_priors conf file is produced.
 
 # BP_Names=("BP_"{0..7})
 # BPO_Names=("BPO_"{0..1})

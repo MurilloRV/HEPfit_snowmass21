@@ -483,7 +483,8 @@ def generate_klam_comparison_plot(
 
             ax1.set_ylabel(r'$\kappa_{\lambda}^\mathrm{fit}$', fontsize=15)
             ax1.grid(which='both', linestyle='--', linewidth=0.5)
-            ax1.legend(loc=leg_loc, fontsize=leg_fontsize)
+            if not (group_model_specs and n_specs > 10):
+                ax1.legend(loc=leg_loc, fontsize=leg_fontsize)
 
             x_label = rf'$\kappa_{{\lambda}}^\mathrm{{true}}$ ({model} predictions)'
             if bottom_axes_BP_labels:
@@ -1029,6 +1030,9 @@ def compare_BP_results_uproot(
                 plt.text(0.97, 0.78, x_err_high_text, ha='right', va='top', transform=ax.transAxes, fontsize=10, bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
                 plt.text(0.97, 0.565, x_err_low_text, ha='right', va='top', transform=ax.transAxes, fontsize=10, bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
                 # plt.plot([0.8, 0.8], [0.9, 0.5], transform=plt.gca().transAxes, color='none') # Dummy plot to ensure the text is not obscured by plot legend
+                
+                n_toys_text = rf"$n_{{\mathrm{{toys}}}} = {len(modes[plot_mode_specs])}$"
+                plt.text(0.97, 0.355, n_toys_text, ha='right', va='top', transform=ax.transAxes, fontsize=10, bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
 
                 legend_loc = "upper left"
 
