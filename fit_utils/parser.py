@@ -764,6 +764,7 @@ def find_configuration_files(
         "use_new_NPs_klam_dependent_est2_",
         "use_new_NPs_BP_dependent_est2_",
 
+        "use_new_NPs_scale1.52_klam_dependent_est2_rect_final_",
         "use_new_NPs_scale1.52_klam_dependent_est2_rect_",
 
         "use_new_NPs_scale1.52_theoerr240_0.00107_theoerr365_0.00105_NPmismatch240_0_NPmismatch365_0_",
@@ -927,13 +928,15 @@ def find_configuration_files(
                                 "_a240_0.000763_b240_-0.00152_c240_0.000761_a365_0.000792_b365_-0.00162_c365_0.000835", # IDM: Estimates INCLUDING the O(1/Lambda_NP^2) curve
 
                                 "_a240_0.000389_b240_-0.000612_c240_0.000199_a365_0.000401_b365_-0.000835_c365_0.000449", # IDM: Estimates INCLUDING the O(1/Lambda_NP^2) curve --- Rectangular estimates
+                                "_a240_0.00077_b240_-0.00117_c240_0.000341_a365_0.000756_b365_-0.00147_c365_0.000704",    # IDM: Estimates INCLUDING the O(1/Lambda_NP^2) curve --- Rectangular estimates ---- FIXED
                             ]
 
                             NP_estimates_short_labels = [
                                 "est1", # IDM: Estimates EXCLUDING the O(1/Lambda_NP^2) curve
                                 "est2", # IDM: Estimates INCLUDING the O(1/Lambda_NP^2) curve
 
-                                "est2_rect", # IDM: Estimates INCLUDING the O(1/Lambda_NP^2) curve --- Rectangular estimates
+                                "est2_rect",       # IDM: Estimates INCLUDING the O(1/Lambda_NP^2) curve --- Rectangular estimates
+                                "est2_rect_final", # IDM: Estimates INCLUDING the O(1/Lambda_NP^2) curve --- Rectangular estimates ---- FIXED
                             ]
 
                             

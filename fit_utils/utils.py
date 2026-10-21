@@ -1760,7 +1760,7 @@ def calculate_chi_square(
                     n_obs += len(obs_list)
                     chi_square += chi_square_term
 
-                    if verbose: print(f"Added chi-square contribution for correlated observable set {corr_obs_set['name']}: {chi_square_term}")
+                    if verbose: print(f"Added chi-square contribution for correlated observable set {corr_obs_set['name']} with {n_corr_obs} observables: {chi_square_term}")
 
 
 
