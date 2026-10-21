@@ -1749,40 +1749,47 @@ def read_fit_results(
 
                 file_path = files[BP][scenario][model_spec]
                 print(f"Reading file: {file_path}")
-                with open(file_path, 'r') as file:
-                    lines = file.readlines()
-                    
-                    line_nrs = [np.nan for obs in observables[BP][scenario][model_spec]]
-                    for n, line in enumerate(lines):
-                        columns = line.split()
-                        if len(columns) < 2:
-                            continue
+                try:
+                    with open(file_path, 'r') as file:
+                        lines = file.readlines()
                         
-                        if (columns[1] == "Observable" \
-                            or columns[1] == "AsyGausObservable") \
-                            and columns[2][1:-2] in observables[BP][scenario][model_spec]:
+                        line_nrs = [np.nan for obs in observables[BP][scenario][model_spec]]
+                        for n, line in enumerate(lines):
+                            columns = line.split()
+                            if len(columns) < 2:
+                                continue
+                            
+                            if (columns[1] == "Observable" \
+                                or columns[1] == "AsyGausObservable") \
+                                and columns[2][1:-2] in observables[BP][scenario][model_spec]:
 
-                            observable_index = observables[BP][scenario][model_spec].index(columns[2][1:-2])
-                            line_nrs[observable_index] = n
+                                observable_index = observables[BP][scenario][model_spec].index(columns[2][1:-2])
+                                line_nrs[observable_index] = n
 
-                    # print(f"Line numbers: {line_nrs}")
+                        # print(f"Line numbers: {line_nrs}")
 
-                    if any(np.isnan(line_nrs)):
-                        print(f"Missing observable: {observables[BP][scenario][model_spec][line_nrs.index(np.nan)]}")
-                        raise ValueError(f"Not all observables were found in the file {file_path}!")
+                        if any(np.isnan(line_nrs)):
+                            print(f"Missing observable: {observables[BP][scenario][model_spec][line_nrs.index(np.nan)]}")
+                            raise ValueError(f"Not all observables were found in the file {file_path}!")
 
+                        results[BP][scenario][model_spec] = []
+
+                        for line_nr, obs in zip(line_nrs, observables[BP][scenario][model_spec]):                    
+                            columns = lines[line_nr + 1].split()
+                            if obs == "deltalHHH_HLLHC":
+                                results[BP][scenario][model_spec].append([float(columns[3])+1,  # Mean
+                                                                        float(columns[5]),])  # Uncertainty
+                            else:
+                                results[BP][scenario][model_spec].append([float(columns[3]),    # Mean
+                                                                        float(columns[5]),])  # Uncertainty
+
+                    results[BP][scenario][model_spec] = np.array(results[BP][scenario][model_spec])
+
+                except FileNotFoundError:
+                    print(f"File not found: {file_path}. Skipping this model specification.")
                     results[BP][scenario][model_spec] = []
-
-                    for line_nr, obs in zip(line_nrs, observables[BP][scenario][model_spec]):                    
-                        columns = lines[line_nr + 1].split()
-                        if obs == "deltalHHH_HLLHC":
-                            results[BP][scenario][model_spec].append([float(columns[3])+1,  # Mean
-                                                                      float(columns[5]),])  # Uncertainty
-                        else:
-                            results[BP][scenario][model_spec].append([float(columns[3]),    # Mean
-                                                                      float(columns[5]),])  # Uncertainty
-
-                results[BP][scenario][model_spec] = np.array(results[BP][scenario][model_spec])
+                    for obs in observables[BP][scenario][model_spec]:
+                        results[BP][scenario][model_spec].append([np.nan, np.nan])
 
     return results
 

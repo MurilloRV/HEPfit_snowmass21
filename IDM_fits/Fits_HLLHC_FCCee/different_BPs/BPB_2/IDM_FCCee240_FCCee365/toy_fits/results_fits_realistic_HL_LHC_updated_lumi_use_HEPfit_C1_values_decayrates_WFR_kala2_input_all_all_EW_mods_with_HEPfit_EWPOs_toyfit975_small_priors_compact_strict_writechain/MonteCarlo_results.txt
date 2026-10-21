@@ -1,0 +1,772 @@
+
+ -----------------------------------------------------
+ Summary
+ -----------------------------------------------------
+
+ Model summary
+ =============
+ Model: NPSMEFTd6
+ Number of parameters: 49
+
+ List of parameters and ranges:
+  0) AlsMz          : [0.117, 0.119]
+  1) dAle5Mz        : [0.0274346, 0.0277254]
+  2) mtop           : [173.1, 173.3]
+  3) mHl            : [125.08399, 125.11601]
+  4) Mz             : [91.1732, 91.2032]
+  5) CW             : [-0.2, 0.2]
+  6) CHG            : [-0.08, 0.08]
+  7) CHWB           : [-0.4, 0.4]
+  8) CHWHB_gaga     : [-0.8, 0.8]
+  9) CHWHB_gagaorth : [-0.8, 0.8]
+ 10) CHD            : [-2, 2]
+ 11) CHbox          : [-4, 4]
+ 12) CH             : [-50, 50]
+ 13) CHL1_11        : [-0.2, 0.2]
+ 14) CHL1_22        : [-0.4, 0.4]
+ 15) CHL1_33        : [-0.4, 0.4]
+ 16) CHL3_11        : [-0.2, 0.2]
+ 17) CHL3_22        : [-0.4, 0.4]
+ 18) CHL3_33        : [-0.4, 0.4]
+ 19) CHe_11         : [-0.4, 0.4]
+ 20) CHe_22         : [-0.4, 0.4]
+ 21) CHe_33         : [-0.4, 0.4]
+ 22) CHQ1_11        : [-0.8, 0.8]
+ 23) CHQ1_33        : [-0.4, 0.4]
+ 24) CHQ3_11        : [-0.4, 0.4]
+ 25) CHu_11         : [-0.4, 0.4]
+ 26) CHd_11         : [-0.3, 0.3]
+ 27) CHd_33         : [-0.4, 0.4]
+ 28) CeH_22r        : [-0.04, 0.04]
+ 29) CeH_33r        : [-0.12, 0.12]
+ 30) CuH_22r        : [-0.16, 0.16]
+ 31) CuH_33r        : [-8, 8]
+ 32) CdH_33r        : [-0.2, 0.2]
+ 33) CLL_1221       : [-0.4, 0.4]
+ 34) eHggint        : [-0.05, 0.05]
+ 35) eHggpar        : [-0.025, 0.025]
+ 36) eHWWint        : [-0.015, 0.015]
+ 37) eHWWpar        : [-0.007, 0.007]
+ 38) eHZZint        : [-0.015, 0.015]
+ 39) eHZZpar        : [-0.007, 0.007]
+ 40) eHZgaint       : [-0.05, 0.05]
+ 41) eHZgapar       : [-0.007, 0.007]
+ 42) eHgagaint      : [-0.05, 0.05]
+ 43) eHmumuint      : [-0.005, 0.005]
+ 44) eHtautauint    : [-0.005, 0.005]
+ 45) eHccint        : [-0.01, 0.01]
+ 46) eHccpar        : [-0.0505, 0.0505]
+ 47) eHbbint        : [-0.01, 0.01]
+ 48) eHbbpar        : [-0.0305, 0.0305]
+
+
+ Results of the optimization
+ ===========================
+ Optimization algorithm used: Minuit
+ Best Fit Results
+ ===========================
+ Log of the maximum posterior: 44.153783
+
+ Global mode:
+  0)  Parameter "AlsMz"          : 0.118 +- 0.000197368
+  1)  Parameter "dAle5Mz"        : 0.02757711 +- 2.878451e-05
+  2)  Parameter "mtop"           : 173.2001 +- 0.019866964
+  3)  Parameter "mHl"            : 125.1 +- 0.0031837818
+  4)  Parameter "Mz"             : 91.18826993 +- 9.994057802e-05
+  5)  Parameter "CW"             : 0.002162 +- 0.002641
+  6)  Parameter "CHG"            : -0.001532 +- 0.001081
+  7)  Parameter "CHWB"           : 0.008283 +- 0.003478
+  8)  Parameter "CHWHB_gaga"     : 0.005438 +- 0.002337
+  9)  Parameter "CHWHB_gagaorth" : -0.01067 +- 0.006296
+ 10)  Parameter "CHD"            : -0.02204 +- 0.006162
+ 11)  Parameter "CHbox"          : -0.1069 +- 0.02687
+ 12)  Parameter "CH"             : -2.676 +- 0.6253
+ 13)  Parameter "CHL1_11"        : -0.0003837 +- 0.001021
+ 14)  Parameter "CHL1_22"        : 0.006704 +- 0.002217
+ 15)  Parameter "CHL1_33"        : 0.00369 +- 0.003111
+ 16)  Parameter "CHL3_11"        : -0.001284 +- 0.001014
+ 17)  Parameter "CHL3_22"        : -0.008494 +- 0.001525
+ 18)  Parameter "CHL3_33"        : -0.005377 +- 0.003292
+ 19)  Parameter "CHe_11"         : 0.006564 +- 0.00307
+ 20)  Parameter "CHe_22"         : 0.006507 +- 0.003073
+ 21)  Parameter "CHe_33"         : 0.006602 +- 0.003074
+ 22)  Parameter "CHQ1_11"        : -0.003008 +- 0.001448
+ 23)  Parameter "CHQ1_33"        : -0.006467 +- 0.001872
+ 24)  Parameter "CHQ3_11"        : -0.006999 +- 0.001928
+ 25)  Parameter "CHu_11"         : -0.004154 +- 0.002138
+ 26)  Parameter "CHd_11"         : -0.01939 +- 0.01075
+ 27)  Parameter "CHd_33"         : 9.228e-05 +- 0.002174
+ 28)  Parameter "CeH_22r"        : 0.0001072 +- 0.0003607
+ 29)  Parameter "CeH_33r"        : 0.0003677 +- 0.0007129
+ 30)  Parameter "CuH_22r"        : 0.0003928 +- 0.001094
+ 31)  Parameter "CuH_33r"        : -0.4262 +- 0.3167
+ 32)  Parameter "CdH_33r"        : -0.0005802 +- 0.001897
+ 33)  Parameter "CLL_1221"       : 0.0002824 +- 0.002084
+ 34)  Parameter "eHggint"        : 0.004976 +- 0.008609
+ 35)  Parameter "eHggpar"        : 0.001244 +- 0.004809
+ 36)  Parameter "eHWWint"        : 7.757e-05 +- 0.002928
+ 37)  Parameter "eHWWpar"        : 8.748e-07 +- 0.0003199
+ 38)  Parameter "eHZZint"        : -0.0005501 +- 0.002935
+ 39)  Parameter "eHZZpar"        : -6.259e-06 +- 0.00032
+ 40)  Parameter "eHZgaint"       : 0.0002007 +- 0.009925
+ 41)  Parameter "eHZgapar"       : 2.054e-07 +- 0.00032
+ 42)  Parameter "eHgagaint"      : 8.61e-05 +- 0.009932
+ 43)  Parameter "eHmumuint"      : 6.635e-09 +- 0.0009924
+ 44)  Parameter "eHtautauint"    : 7.745e-09 +- 0.0009933
+ 45)  Parameter "eHccint"        : 1.178e-07 +- 0.001987
+ 46)  Parameter "eHccpar"        : 2.839e-06 +- 0.01003
+ 47)  Parameter "eHbbint"        : 5.492e-07 +- 0.001987
+ 48)  Parameter "eHbbpar"        : 5.152e-06 +- 0.006058
+
+ Marginalization algorithm used: Metropolis
+
+ Results of the marginalization
+ ==============================
+ WARNING: the Markov Chain did not converge!
+ Be cautious using the following results!
+
+ List of variables and properties of the marginalized distributions:
+
+  (0) Parameter "AlsMz" :
+      Mean +- sqrt(Variance):         +0.118008 +- 0.000200885
+      Median +- central 68% interval: +0.118007 + 0.000204588 - 0.000201984
+      (Marginalized) mode:            +0.11801
+       5% quantile:                   +0.117681
+      10% quantile:                   +0.117749
+      16% quantile:                   +0.117805
+      84% quantile:                   +0.118211
+      90% quantile:                   +0.118267
+      95% quantile:                   +0.11834
+      Smallest interval containing 69.7% and local mode:
+      (0.1178, 0.11822) (local mode at 0.11801 with rel. height 1; rel. area 1)
+
+  (1) Parameter "dAle5Mz" :
+      Mean +- sqrt(Variance):         +0.02757624 +- 2.778159e-05
+      Median +- central 68% interval: +0.02757584 + 2.875292e-05 - 2.758667e-05
+      (Marginalized) mode:            +0.02757564
+       5% quantile:                   +0.0275315
+      10% quantile:                   +0.02754077
+      16% quantile:                   +0.02754825
+      84% quantile:                   +0.02760459
+      90% quantile:                   +0.02761279
+      95% quantile:                   +0.0276232
+      Smallest intervals containing 69.7% and local modes:
+      (0.0275451, 0.02760036) (local mode at 0.02757564 with rel. height 1; rel. area 0.9640715)
+      (0.02760326, 0.02760617) (local mode at 0.02760472 with rel. height 0.6169039; rel. area 0.03592848)
+
+  (2) Parameter "mtop" :
+      Mean +- sqrt(Variance):         +173.19948 +- 0.020079855
+      Median +- central 68% interval: +173.19925 + 0.02037745 - 0.019876558
+      (Marginalized) mode:            +173.197
+       5% quantile:                   +173.16679
+      10% quantile:                   +173.17363
+      16% quantile:                   +173.17937
+      84% quantile:                   +173.21962
+      90% quantile:                   +173.22565
+      95% quantile:                   +173.23323
+      Smallest interval containing 70.1% and local mode:
+      (173.178, 173.22) (local mode at 173.197 with rel. height 1; rel. area 1)
+
+  (3) Parameter "mHl" :
+      Mean +- sqrt(Variance):         +125.1 +- 0.0033027905
+      Median +- central 68% interval: +125.1 + 0.0032635927 - 0.0033171592
+      (Marginalized) mode:            +125.09952
+       5% quantile:                   +125.09453
+      10% quantile:                   +125.09577
+      16% quantile:                   +125.09668
+      84% quantile:                   +125.10326
+      90% quantile:                   +125.10425
+      95% quantile:                   +125.10559
+      Smallest interval containing 69.1% and local mode:
+      (125.09648, 125.1032) (local mode at 125.09952 with rel. height 1; rel. area 1)
+
+  (4) Parameter "Mz" :
+      Mean +- sqrt(Variance):         +91.1882679 +- 0.000105604091
+      Median +- central 68% interval: +91.18830255 + 0.0001368665936 - 0.0002068389723
+      (Marginalized) mode:            +91.18835
+       5% quantile:                   +91.18796115
+      10% quantile:                   +91.18802231
+      16% quantile:                   +91.18809571
+      84% quantile:                   +91.18843941
+      90% quantile:                   +91.18846357
+      95% quantile:                   +91.18848369
+      Smallest interval containing 74.5% and local mode:
+      (91.1882, 91.1885) (local mode at 91.18835 with rel. height 1; rel. area 1)
+
+  (5) Parameter "CW" :
+      Mean +- sqrt(Variance):         +0.002309 +- 0.002687
+      Median +- central 68% interval: +0.002256 + 0.00346 - 0.003083
+      (Marginalized) mode:            +0.002
+       5% quantile:                   -0.00313
+      10% quantile:                   -0.002083
+      16% quantile:                   -0.0008269
+      84% quantile:                   +0.005716
+      90% quantile:                   +0.006672
+      95% quantile:                   +0.007469
+      Smallest interval containing 78.4% and local mode:
+      (0, 0.008) (local mode at 0.002 with rel. height 1; rel. area 1)
+
+  (6) Parameter "CHG" :
+      Mean +- sqrt(Variance):         -0.001537 +- 0.001126
+      Median +- central 68% interval: -0.001536 + 0.00127 - 0.00131
+      (Marginalized) mode:            -0.0008
+       5% quantile:                   -0.00364
+      10% quantile:                   -0.003078
+      16% quantile:                   -0.002846
+      84% quantile:                   -0.0002668
+      90% quantile:                   -4.272e-05
+      95% quantile:                   +0.0007207
+      Smallest interval containing 84.3% and local mode:
+      (-0.0032, 0) (local mode at -0.0008 with rel. height 1; rel. area 1)
+
+  (7) Parameter "CHWB" :
+      Mean +- sqrt(Variance):         +0.008704 +- 0.004127
+      Median +- central 68% interval: +0.008976 + 0.005199 - 0.006244
+      (Marginalized) mode:            +0.012
+       5% quantile:                   +0.0006344
+      10% quantile:                   +0.001588
+      16% quantile:                   +0.002733
+      84% quantile:                   +0.01418
+      90% quantile:                   +0.01509
+      95% quantile:                   +0.01586
+      Smallest interval containing 94.3% and local mode:
+      (0, 0.016) (local mode at 0.012 with rel. height 1; rel. area 1)
+
+  (8) Parameter "CHWHB_gaga" :
+      Mean +- sqrt(Variance):         +0.005722 +- 0.002749
+      Median +- central 68% interval: +0.007853 + 0.005541 - 0.005541
+      (Marginalized) mode:            +0.008
+       5% quantile:                   +0.0005197
+      10% quantile:                   +0.001335
+      16% quantile:                   +0.002312
+      84% quantile:                   +0.01339
+      90% quantile:                   +0.01437
+      95% quantile:                   +0.01519
+      Smallest interval containing 98.2% and local mode:
+      (0, 0.016) (local mode at 0.008 with rel. height 1; rel. area 1)
+
+  (9) Parameter "CHWHB_gagaorth" :
+      Mean +- sqrt(Variance):         -0.01149 +- 0.007204
+      Median +- central 68% interval: -0.01047 + 0.007995 - 0.01195
+      (Marginalized) mode:            -0.008
+       5% quantile:                   -0.02916
+      10% quantile:                   -0.0261
+      16% quantile:                   -0.02242
+      84% quantile:                   -0.002474
+      90% quantile:                   -0.001063
+      95% quantile:                   +0.001396
+      Smallest interval containing 68.0% and local mode:
+      (-0.016, 0) (local mode at -0.008 with rel. height 1; rel. area 1)
+
+  (10) Parameter "CHD" :
+      Mean +- sqrt(Variance):         -0.02212 +- 0.007793
+      Median +- central 68% interval: -0.02023 + 0.01381 - 0.01381
+      (Marginalized) mode:            -0.02
+       5% quantile:                   -0.03851
+      10% quantile:                   -0.03648
+      16% quantile:                   -0.03404
+      84% quantile:                   -0.006426
+      90% quantile:                   -0.003989
+      95% quantile:                   -0.001959
+      Smallest interval containing 98.5% and local mode:
+      (-0.04, 0) (local mode at -0.02 with rel. height 1; rel. area 1)
+
+  (11) Parameter "CHbox" :
+      Mean +- sqrt(Variance):         -0.1026 +- 0.03051
+      Median +- central 68% interval: -0.1091 + 0.0533 - 0.03648
+      (Marginalized) mode:            -0.12
+       5% quantile:                   -0.1573
+      10% quantile:                   -0.152
+      16% quantile:                   -0.1455
+      84% quantile:                   -0.05576
+      90% quantile:                   -0.03473
+      95% quantile:                   -0.01721
+      Smallest interval containing 74.6% and local mode:
+      (-0.16, -0.08) (local mode at -0.12 with rel. height 1; rel. area 1)
+
+  (12) Parameter "CH" :
+      Mean +- sqrt(Variance):         -2.6 +- 0.7133
+      Median +- central 68% interval: -2.583 + 0.804 - 0.9023
+      (Marginalized) mode:            -2.5
+       5% quantile:                   -3.906
+      10% quantile:                   -3.715
+      16% quantile:                   -3.485
+      84% quantile:                   -1.779
+      90% quantile:                   -1.464
+      95% quantile:                   -1.201
+      Smallest interval containing 77.3% and local mode:
+      (-4, -2) (local mode at -2.5 with rel. height 1; rel. area 1)
+
+  (13) Parameter "CHL1_11" :
+      Mean +- sqrt(Variance):         -0.0006117 +- 0.001809
+      Median +- central 68% interval: -0.0008853 + 0.003168 - 0.002251
+      (Marginalized) mode:            -0.002
+       5% quantile:                   -0.003865
+      10% quantile:                   -0.003534
+      16% quantile:                   -0.003137
+      84% quantile:                   +0.002283
+      90% quantile:                   +0.002947
+      95% quantile:                   +0.0035
+      Smallest interval containing 96.6% and local mode:
+      (-0.004, 0.004) (local mode at -0.002 with rel. height 1; rel. area 1)
+
+  (14) Parameter "CHL1_22" :
+      Mean +- sqrt(Variance):         +0.007072 +- 0.003201
+      Median +- central 68% interval: +0.006452 + 0.006244 - 0.004501
+      (Marginalized) mode:            +0.004
+       5% quantile:                   +0.0004945
+      10% quantile:                   +0.001156
+      16% quantile:                   +0.001951
+      84% quantile:                   +0.0127
+      90% quantile:                   +0.01396
+      95% quantile:                   +0.01501
+      Smallest interval containing 98.4% and local mode:
+      (0, 0.016) (local mode at 0.004 with rel. height 1; rel. area 1)
+
+  (15) Parameter "CHL1_33" :
+      Mean +- sqrt(Variance):         +0.003598 +- 0.00322
+      Median +- central 68% interval: +0.00378 + 0.003479 - 0.003479
+      (Marginalized) mode:            +0.004
+       5% quantile:                   -0.004944
+      10% quantile:                   -0.001873
+      16% quantile:                   +0.0003017
+      84% quantile:                   +0.007259
+      90% quantile:                   +0.007873
+      95% quantile:                   +0.01143
+      Smallest interval containing 78.2% and local mode:
+      (0, 0.008) (local mode at 0.004 with rel. height 1; rel. area 1)
+
+  (16) Parameter "CHL3_11" :
+      Mean +- sqrt(Variance):         -0.001738 +- 0.002287
+      Median +- central 68% interval: -0.001781 + 0.003003 - 0.002244
+      (Marginalized) mode:            -0.002
+       5% quantile:                   -0.006799
+      10% quantile:                   -0.005538
+      16% quantile:                   -0.004025
+      84% quantile:                   +0.001223
+      90% quantile:                   +0.002302
+      95% quantile:                   +0.003201
+      Smallest interval containing 83.3% and local mode:
+      (-0.004, 0.004) (local mode at -0.002 with rel. height 1; rel. area 1)
+
+  (17) Parameter "CHL3_22" :
+      Mean +- sqrt(Variance):         -0.009547 +- 0.004406
+      Median +- central 68% interval: -0.009918 + 0.006605 - 0.004834
+      (Marginalized) mode:            -0.012
+       5% quantile:                   -0.01848
+      10% quantile:                   -0.0156
+      16% quantile:                   -0.01475
+      84% quantile:                   -0.003313
+      90% quantile:                   -0.001941
+      95% quantile:                   -0.0007985
+      Smallest interval containing 91.3% and local mode:
+      (-0.016, 0) (local mode at -0.012 with rel. height 1; rel. area 1)
+
+  (18) Parameter "CHL3_33" :
+      Mean +- sqrt(Variance):         -0.005958 +- 0.004356
+      Median +- central 68% interval: -0.005556 + 0.004578 - 0.006561
+      (Marginalized) mode:            -0.004
+       5% quantile:                   -0.01497
+      10% quantile:                   -0.01368
+      16% quantile:                   -0.01212
+      84% quantile:                   -0.0009778
+      90% quantile:                   -0.0001698
+      95% quantile:                   +0.003439
+      Smallest interval containing 90.2% and local mode:
+      (-0.016, 0) (local mode at -0.004 with rel. height 1; rel. area 1)
+
+  (19) Parameter "CHe_11" :
+      Mean +- sqrt(Variance):         +0.0066 +- 0.003887
+      Median +- central 68% interval: +0.006047 + 0.006444 - 0.004493
+      (Marginalized) mode:            +0.004
+       5% quantile:                   +0.0001002
+      10% quantile:                   +0.000761
+      16% quantile:                   +0.001554
+      84% quantile:                   +0.01249
+      90% quantile:                   +0.01389
+      95% quantile:                   +0.01506
+      Smallest interval containing 94.8% and local mode:
+      (0, 0.016) (local mode at 0.004 with rel. height 1; rel. area 1)
+
+  (20) Parameter "CHe_22" :
+      Mean +- sqrt(Variance):         +0.00654 +- 0.003894
+      Median +- central 68% interval: +0.005992 + 0.006443 - 0.004468
+      (Marginalized) mode:            +0.004
+       5% quantile:                   +7.884e-05
+      10% quantile:                   +0.0007358
+      16% quantile:                   +0.001524
+      84% quantile:                   +0.01243
+      90% quantile:                   +0.01386
+      95% quantile:                   +0.01504
+      Smallest interval containing 94.6% and local mode:
+      (0, 0.016) (local mode at 0.004 with rel. height 1; rel. area 1)
+
+  (21) Parameter "CHe_33" :
+      Mean +- sqrt(Variance):         +0.006647 +- 0.00389
+      Median +- central 68% interval: +0.006101 + 0.006447 - 0.004523
+      (Marginalized) mode:            +0.004
+       5% quantile:                   +0.0001143
+      10% quantile:                   +0.0007795
+      16% quantile:                   +0.001578
+      84% quantile:                   +0.01255
+      90% quantile:                   +0.01393
+      95% quantile:                   +0.01508
+      Smallest interval containing 94.8% and local mode:
+      (0, 0.016) (local mode at 0.004 with rel. height 1; rel. area 1)
+
+  (22) Parameter "CHQ1_11" :
+      Mean +- sqrt(Variance):         -0.002854 +- 0.001591
+      Median +- central 68% interval: -0.007707 + 0.005639 - 0.005639
+      (Marginalized) mode:            -0.008
+       5% quantile:                   -0.01517
+      10% quantile:                   -0.01434
+      16% quantile:                   -0.01335
+      84% quantile:                   -0.002068
+      90% quantile:                   -0.001073
+      95% quantile:                   -0.0002439
+      Smallest interval containing 96.5% and local mode:
+      (-0.016, 0) (local mode at -0.008 with rel. height 1; rel. area 1)
+
+  (23) Parameter "CHQ1_33" :
+      Mean +- sqrt(Variance):         -0.007182 +- 0.003395
+      Median +- central 68% interval: -0.006721 + 0.00473 - 0.006209
+      (Marginalized) mode:            -0.004
+       5% quantile:                   -0.01512
+      10% quantile:                   -0.01412
+      16% quantile:                   -0.01293
+      84% quantile:                   -0.001991
+      90% quantile:                   -0.001157
+      95% quantile:                   -0.0004611
+      Smallest interval containing 97.8% and local mode:
+      (-0.016, 0) (local mode at -0.004 with rel. height 1; rel. area 1)
+
+  (24) Parameter "CHQ3_11" :
+      Mean +- sqrt(Variance):         -0.007565 +- 0.003575
+      Median +- central 68% interval: -0.007284 + 0.005133 - 0.005981
+      (Marginalized) mode:            -0.004
+       5% quantile:                   -0.01524
+      10% quantile:                   -0.01434
+      16% quantile:                   -0.01326
+      84% quantile:                   -0.002151
+      90% quantile:                   -0.001245
+      95% quantile:                   -0.0004899
+      Smallest interval containing 97.4% and local mode:
+      (-0.016, 0) (local mode at -0.004 with rel. height 1; rel. area 1)
+
+  (25) Parameter "CHu_11" :
+      Mean +- sqrt(Variance):         -0.004172 +- 0.002643
+      Median +- central 68% interval: -0.004097 + 0.003128 - 0.003128
+      (Marginalized) mode:            -0.004
+       5% quantile:                   -0.01072
+      10% quantile:                   -0.007777
+      16% quantile:                   -0.007225
+      84% quantile:                   -0.000969
+      90% quantile:                   -0.000417
+      95% quantile:                   +0.000683
+      Smallest interval containing 87.0% and local mode:
+      (-0.008, 0) (local mode at -0.004 with rel. height 1; rel. area 1)
+
+  (26) Parameter "CHd_11" :
+      Mean +- sqrt(Variance):         -0.01769 +- 0.0159
+      Median +- central 68% interval: -0.01754 + 0.01586 - 0.01617
+      (Marginalized) mode:            -0.015
+       5% quantile:                   -0.04441
+      10% quantile:                   -0.03838
+      16% quantile:                   -0.03371
+      84% quantile:                   -0.001684
+      90% quantile:                   +0.002917
+      95% quantile:                   +0.008711
+      Smallest interval containing 74.4% and local mode:
+      (-0.036, 0) (local mode at -0.015 with rel. height 1; rel. area 1)
+
+  (27) Parameter "CHd_33" :
+      Mean +- sqrt(Variance):         +0.0001403 +- 0.002301
+      Median +- central 68% interval: +0.0003112 + 0.005231 - 0.005645
+      (Marginalized) mode:            +0.004
+       5% quantile:                   -0.007169
+      10% quantile:                   -0.006335
+      16% quantile:                   -0.005334
+      84% quantile:                   +0.005542
+      90% quantile:                   +0.006465
+      95% quantile:                   +0.007235
+      Smallest interval containing 100.0% and local mode:
+      (-0.008, 0.008) (local mode at 0.004 with rel. height 1; rel. area 1)
+
+  (28) Parameter "CeH_22r" :
+      Mean +- sqrt(Variance):         +0.0001081 +- 0.0003572
+      Median +- central 68% interval: +0.0001577 + 0.0004627 - 0.00063
+      (Marginalized) mode:            +0.0004
+       5% quantile:                   -0.0007041
+      10% quantile:                   -0.0005987
+      16% quantile:                   -0.0004723
+      84% quantile:                   +0.0006204
+      90% quantile:                   +0.000702
+      95% quantile:                   +0.0007701
+      Smallest interval containing 96.8% and local mode:
+      (-0.0008, 0.0008) (local mode at 0.0004 with rel. height 1; rel. area 1)
+
+  (29) Parameter "CeH_33r" :
+      Mean +- sqrt(Variance):         +0.0003809 +- 0.0007069
+      Median +- central 68% interval: +0.0006975 + 0.001161 - 0.001799
+      (Marginalized) mode:            +0.0012
+       5% quantile:                   -0.001995
+      10% quantile:                   -0.001589
+      16% quantile:                   -0.001102
+      84% quantile:                   +0.001859
+      90% quantile:                   +0.002063
+      95% quantile:                   +0.002234
+      Smallest interval containing 70.3% and local mode:
+      (0, 0.0024) (local mode at 0.0012 with rel. height 1; rel. area 1)
+
+  (30) Parameter "CuH_22r" :
+      Mean +- sqrt(Variance):         +0.0004182 +- 0.001092
+      Median +- central 68% interval: +0.0007372 + 0.001694 - 0.002486
+      (Marginalized) mode:            +0.0016
+       5% quantile:                   -0.00275
+      10% quantile:                   -0.002295
+      16% quantile:                   -0.001749
+      84% quantile:                   +0.002431
+      90% quantile:                   +0.00273
+      95% quantile:                   +0.002979
+      Smallest interval containing 99.4% and local mode:
+      (-0.0032, 0.0032) (local mode at 0.0016 with rel. height 1; rel. area 1)
+
+  (31) Parameter "CuH_33r" :
+      Mean +- sqrt(Variance):         -0.4185 +- 0.3306
+      Median +- central 68% interval: -0.422 + 0.3408 - 0.3335
+      (Marginalized) mode:            -0.4
+       5% quantile:                   -0.9563
+      10% quantile:                   -0.8494
+      16% quantile:                   -0.7555
+      84% quantile:                   -0.08114
+      90% quantile:                   +0.008119
+      95% quantile:                   +0.1425
+      Smallest interval containing 77.4% and local mode:
+      (-0.8, 0) (local mode at -0.4 with rel. height 1; rel. area 1)
+
+  (32) Parameter "CdH_33r" :
+      Mean +- sqrt(Variance):         -0.0005141 +- 0.001845
+      Median +- central 68% interval: -0.0007834 + 0.003176 - 0.002324
+      (Marginalized) mode:            -0.002
+       5% quantile:                   -0.003859
+      10% quantile:                   -0.003517
+      16% quantile:                   -0.003107
+      84% quantile:                   +0.002393
+      90% quantile:                   +0.00303
+      95% quantile:                   +0.00356
+      Smallest interval containing 96.2% and local mode:
+      (-0.004, 0.004) (local mode at -0.002 with rel. height 1; rel. area 1)
+
+  (33) Parameter "CLL_1221" :
+      Mean +- sqrt(Variance):         +0.000171 +- 0.00219
+      Median +- central 68% interval: +0.0004094 + 0.005162 - 0.005705
+      (Marginalized) mode:            +0.004
+       5% quantile:                   -0.007156
+      10% quantile:                   -0.00631
+      16% quantile:                   -0.005295
+      84% quantile:                   +0.005572
+      90% quantile:                   +0.006483
+      95% quantile:                   +0.007242
+      Smallest interval containing 100.0% and local mode:
+      (-0.008, 0.008) (local mode at 0.004 with rel. height 1; rel. area 1)
+
+  (34) Parameter "eHggint" :
+      Mean +- sqrt(Variance):         +0.006303 +- 0.008612
+      Median +- central 68% interval: +0.006366 + 0.008393 - 0.008648
+      (Marginalized) mode:            +0.0055
+       5% quantile:                   -0.007981
+      10% quantile:                   -0.00486
+      16% quantile:                   -0.002282
+      84% quantile:                   +0.01476
+      90% quantile:                   +0.01722
+      95% quantile:                   +0.02044
+      Smallest interval containing 70.7% and local mode:
+      (-0.003, 0.015) (local mode at 0.0055 with rel. height 1; rel. area 1)
+
+  (35) Parameter "eHggpar" :
+      Mean +- sqrt(Variance):         +0.001134 +- 0.004788
+      Median +- central 68% interval: +0.001121 + 0.004748 - 0.004672
+      (Marginalized) mode:            +0.00125
+       5% quantile:                   -0.006832
+      10% quantile:                   -0.005018
+      16% quantile:                   -0.00355
+      84% quantile:                   +0.005869
+      90% quantile:                   +0.00729
+      95% quantile:                   +0.009066
+      Smallest interval containing 68.4% and local mode:
+      (-0.0035, 0.006) (local mode at 0.00125 with rel. height 1; rel. area 1)
+
+  (36) Parameter "eHWWint" :
+      Mean +- sqrt(Variance):         -9.138e-05 +- 0.002915
+      Median +- central 68% interval: -8.552e-05 + 0.002925 - 0.0029
+      (Marginalized) mode:            -0.00015
+       5% quantile:                   -0.004909
+      10% quantile:                   -0.00382
+      16% quantile:                   -0.002985
+      84% quantile:                   +0.00284
+      90% quantile:                   +0.003656
+      95% quantile:                   +0.004656
+      Smallest interval containing 69.5% and local mode:
+      (-0.003, 0.003) (local mode at -0.00015 with rel. height 1; rel. area 1)
+
+  (37) Parameter "eHWWpar" :
+      Mean +- sqrt(Variance):         +3.621e-08 +- 0.0003174
+      Median +- central 68% interval: +3.618e-06 + 0.0003183 - 0.0003284
+      (Marginalized) mode:            +7e-05
+       5% quantile:                   -0.0005346
+      10% quantile:                   -0.0004131
+      16% quantile:                   -0.0003248
+      84% quantile:                   +0.0003219
+      90% quantile:                   +0.000407
+      95% quantile:                   +0.0005281
+      Smallest interval containing 71.9% and local mode:
+      (-0.00028, 0.00042) (local mode at 7e-05 with rel. height 1; rel. area 1)
+
+  (38) Parameter "eHZZint" :
+      Mean +- sqrt(Variance):         -0.0003886 +- 0.002858
+      Median +- central 68% interval: -0.0003733 + 0.002789 - 0.002851
+      (Marginalized) mode:            -0.00075
+       5% quantile:                   -0.005137
+      10% quantile:                   -0.004096
+      16% quantile:                   -0.003224
+      84% quantile:                   +0.002416
+      90% quantile:                   +0.003254
+      95% quantile:                   +0.004293
+      Smallest interval containing 68.5% and local mode:
+      (-0.0033, 0.0024) (local mode at -0.00075 with rel. height 1; rel. area 1)
+
+  (39) Parameter "eHZZpar" :
+      Mean +- sqrt(Variance):         -1.364e-05 +- 0.0003193
+      Median +- central 68% interval: -1.491e-05 + 0.000323 - 0.0003246
+      (Marginalized) mode:            -7e-05
+       5% quantile:                   -0.0005426
+      10% quantile:                   -0.0004214
+      16% quantile:                   -0.0003395
+      84% quantile:                   +0.0003081
+      90% quantile:                   +0.0003999
+      95% quantile:                   +0.0005239
+      Smallest interval containing 72.1% and local mode:
+      (-0.00042, 0.00028) (local mode at -7e-05 with rel. height 1; rel. area 1)
+
+  (40) Parameter "eHZgaint" :
+      Mean +- sqrt(Variance):         -0.0002666 +- 0.0101
+      Median +- central 68% interval: -0.0004175 + 0.01018 - 0.009931
+      (Marginalized) mode:            +0.0015
+       5% quantile:                   -0.01657
+      10% quantile:                   -0.01313
+      16% quantile:                   -0.01035
+      84% quantile:                   +0.00976
+      90% quantile:                   +0.01292
+      95% quantile:                   +0.01685
+      Smallest interval containing 70.2% and local mode:
+      (-0.011, 0.01) (local mode at 0.0015 with rel. height 1; rel. area 1)
+
+  (41) Parameter "eHZgapar" :
+      Mean +- sqrt(Variance):         -6.442e-06 +- 0.000331
+      Median +- central 68% interval: -7.311e-06 + 0.0003356 - 0.0003344
+      (Marginalized) mode:            -7e-05
+       5% quantile:                   -0.0005515
+      10% quantile:                   -0.0004313
+      16% quantile:                   -0.0003417
+      84% quantile:                   +0.0003283
+      90% quantile:                   +0.000419
+      95% quantile:                   +0.0005444
+      Smallest interval containing 70.3% and local mode:
+      (-0.00042, 0.00028) (local mode at -7e-05 with rel. height 1; rel. area 1)
+
+  (42) Parameter "eHgagaint" :
+      Mean +- sqrt(Variance):         +0.001038 +- 0.01016
+      Median +- central 68% interval: +0.000985 + 0.01035 - 0.01015
+      (Marginalized) mode:            +0.0005
+       5% quantile:                   -0.01563
+      10% quantile:                   -0.01194
+      16% quantile:                   -0.00916
+      84% quantile:                   +0.01134
+      90% quantile:                   +0.01427
+      95% quantile:                   +0.01779
+      Smallest interval containing 69.3% and local mode:
+      (-0.01, 0.011) (local mode at 0.0005 with rel. height 1; rel. area 1)
+
+  (43) Parameter "eHmumuint" :
+      Mean +- sqrt(Variance):         +1.406e-05 +- 0.0009882
+      Median +- central 68% interval: +2.287e-05 + 0.0009682 - 0.001006
+      (Marginalized) mode:            +0.00015
+       5% quantile:                   -0.001619
+      10% quantile:                   -0.001277
+      16% quantile:                   -0.000983
+      84% quantile:                   +0.000991
+      90% quantile:                   +0.001264
+      95% quantile:                   +0.001625
+      Smallest interval containing 68.7% and local mode:
+      (-0.0009, 0.0011) (local mode at 0.00015 with rel. height 1; rel. area 1)
+
+  (44) Parameter "eHtautauint" :
+      Mean +- sqrt(Variance):         +3.853e-05 +- 0.00102
+      Median +- central 68% interval: +4.206e-05 + 0.001 - 0.001
+      (Marginalized) mode:            +5e-05
+       5% quantile:                   -0.001664
+      10% quantile:                   -0.001253
+      16% quantile:                   -0.0009582
+      84% quantile:                   +0.001042
+      90% quantile:                   +0.001349
+      95% quantile:                   +0.001747
+      Smallest interval containing 68.0% and local mode:
+      (-0.001, 0.001) (local mode at 5e-05 with rel. height 1; rel. area 1)
+
+  (45) Parameter "eHccint" :
+      Mean +- sqrt(Variance):         +3.513e-05 +- 0.001998
+      Median +- central 68% interval: +3.438e-05 + 0.001993 - 0.001981
+      (Marginalized) mode:            -0.0003
+       5% quantile:                   -0.003325
+      10% quantile:                   -0.002529
+      16% quantile:                   -0.001947
+      84% quantile:                   +0.002027
+      90% quantile:                   +0.002613
+      95% quantile:                   +0.003333
+      Smallest interval containing 68.3% and local mode:
+      (-0.002, 0.002) (local mode at -0.0003 with rel. height 1; rel. area 1)
+
+  (46) Parameter "eHccpar" :
+      Mean +- sqrt(Variance):         -0.0005129 +- 0.01026
+      Median +- central 68% interval: -0.0005077 + 0.01028 - 0.01021
+      (Marginalized) mode:            -0.000505
+       5% quantile:                   -0.01759
+      10% quantile:                   -0.01373
+      16% quantile:                   -0.01072
+      84% quantile:                   +0.009769
+      90% quantile:                   +0.01269
+      95% quantile:                   +0.01634
+      Smallest interval containing 69.8% and local mode:
+      (-0.01111, 0.0101) (local mode at -0.000505 with rel. height 1; rel. area 1)
+
+  (47) Parameter "eHbbint" :
+      Mean +- sqrt(Variance):         +1.835e-05 +- 0.002009
+      Median +- central 68% interval: -3.548e-05 + 0.002066 - 0.001942
+      (Marginalized) mode:            -0.0001
+       5% quantile:                   -0.003199
+      10% quantile:                   -0.002532
+      16% quantile:                   -0.001977
+      84% quantile:                   +0.00203
+      90% quantile:                   +0.002621
+      95% quantile:                   +0.003366
+      Smallest interval containing 70.3% and local mode:
+      (-0.0022, 0.002) (local mode at -0.0001 with rel. height 1; rel. area 1)
+
+  (48) Parameter "eHbbpar" :
+      Mean +- sqrt(Variance):         +0.0001953 +- 0.005937
+      Median +- central 68% interval: +0.0001612 + 0.00597 - 0.005907
+      (Marginalized) mode:            +0.000305
+       5% quantile:                   -0.00946
+      10% quantile:                   -0.007366
+      16% quantile:                   -0.005746
+      84% quantile:                   +0.006132
+      90% quantile:                   +0.007994
+      95% quantile:                   +0.01018
+      Smallest interval containing 69.4% and local mode:
+      (-0.0061, 0.0061) (local mode at 0.000305 with rel. height 1; rel. area 1)
+
+ Status of the MCMC
+ ==================
+ Convergence reached:                    no
+ Number of chains:                       8
+ Number of iterations per chain:         100000

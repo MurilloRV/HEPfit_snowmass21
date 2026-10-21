@@ -1,12 +1,12 @@
 #!/bin/bash
 
-TEST_FIT="false"  # If set to "true", the script will run the fit with HEPfit for the first scenario/BP, in order to test the setup.
+TEST_FIT="true"  # If set to "true", the script will run the fit with HEPfit for the first scenario/BP, in order to test the setup.
 
 ORIGINAL_PATH="/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/IDM_fits/Fits_HLLHC_FCCee/different_scenario_fits"
 TARGET_PATH="/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/IDM_fits/Fits_HLLHC_FCCee/different_BPs"
 cd $TARGET_PATH
 
-ASIMOV="false"  # Asimov fits set the central value of pseudo-measurements to corresponding BSM predictions. If set to "false", pseudo-measurements will deviate from predictions according to the projected uncertainty, as a more realistic experiment
+ASIMOV="true"  # Asimov fits set the central value of pseudo-measurements to corresponding BSM predictions. If set to "false", pseudo-measurements will deviate from predictions according to the projected uncertainty, as a more realistic experiment
 N_EXPS=1000  # Number of fits to be performed, each with different sets of pseudo-measurements, which in turn are generated from Gaussian distributions centred at their corresponding BSM predictions, and covariance matrices obtained from projections for future experiments
 RANDOM_SEED=137  # Random seed for generation of pseudo-measurements
 COMPACT="true"  # If set to "true", the contents of all the input configuration files will be merged into the main file, to avoid generating a large number of small files. If set to "false", the input configuration files will be kept separate, and the main file will include them using the "include" command. Only the small_priors conf file is produced.
@@ -54,7 +54,7 @@ no_C_HG="false" # Exclude the C_HG operator from the fit
 no_HLLHC_Higgs="false" # Exclude the HL-LHC Higgs observables from the fit
 LoopH3d6Full="false" # Use the full expansion of the ZH cross-section in terms of C1 and dZH
 
-use_new_NPs="false" # Use newly implementent theory nuisance parameters
+use_new_NPs="true" # Use newly implementent theory nuisance parameters
 UseKlamDependentUncertainties="true" # A boolean flag that is true if using klam-dependent theoretical uncertainties in the ee->Zh cross-section predictions.
 UseBPDependentUncertainties="false" # A boolean flag that is true if using BP-dependent theoretical uncertainties in the ee->Zh cross-section predictions. Different estimates are used for different BPs; however, these are interpreted as constant (klam-independent) in HEPfit 
 
@@ -82,42 +82,52 @@ NPmismatch_FCCee365_input="DEFAULT"
 # model_conf_NP_suffix=""  
 
 # Estimates EXCLUDING the O(1/Lambda_NP^2) curve
-# theoerr_FCCee240_function_x2_coef_input="0.00000841930087633563"
-# theoerr_FCCee240_function_x1_coef_input="0.00006932472446483649"
-# theoerr_FCCee240_function_x0_coef_input="0.00012365304251529146"
-# theoerr_FCCee365_function_x2_coef_input="0.00001992550937285446"
-# theoerr_FCCee365_function_x1_coef_input="-0.00002663878133908424"
-# theoerr_FCCee365_function_x0_coef_input="0.00031254668713761978"
+# theoerr_FCCee240_function_x2_coef_input="0.00000841930087633563"  ### OLD/WRONG: kappa_Zh uncertainties, not sigma_Zh
+# theoerr_FCCee240_function_x1_coef_input="0.00006932472446483649"  ### OLD/WRONG: kappa_Zh uncertainties, not sigma_Zh
+# theoerr_FCCee240_function_x0_coef_input="0.00012365304251529146"  ### OLD/WRONG: kappa_Zh uncertainties, not sigma_Zh
+# theoerr_FCCee365_function_x2_coef_input="0.00001992550937285446"  ### OLD/WRONG: kappa_Zh uncertainties, not sigma_Zh
+# theoerr_FCCee365_function_x1_coef_input="-0.00002663878133908424" ### OLD/WRONG: kappa_Zh uncertainties, not sigma_Zh
+# theoerr_FCCee365_function_x0_coef_input="0.00031254668713761978"  ### OLD/WRONG: kappa_Zh uncertainties, not sigma_Zh
 # model_conf_NP_suffix="_est1"
 
 # Estimates EXCLUDING the O(1/Lambda_NP^2) curve --- Rectangular estimates
-# theoerr_FCCee240_function_x2_coef_input="0.00001102207049222145"
-# theoerr_FCCee240_function_x1_coef_input="0.00013946878976348520"
-# theoerr_FCCee240_function_x0_coef_input="-0.00017302383301288777"
-# theoerr_FCCee365_function_x2_coef_input="0.00004775991003145372"
-# theoerr_FCCee365_function_x1_coef_input="-0.00022568420270124457"
-# theoerr_FCCee365_function_x0_coef_input="0.00022748622694841167"
+# theoerr_FCCee240_function_x2_coef_input="0.00001102207049222145"  ### OLD/WRONG: kappa_Zh uncertainties, not sigma_Zh
+# theoerr_FCCee240_function_x1_coef_input="0.00013946878976348520"  ### OLD/WRONG: kappa_Zh uncertainties, not sigma_Zh
+# theoerr_FCCee240_function_x0_coef_input="-0.00017302383301288777" ### OLD/WRONG: kappa_Zh uncertainties, not sigma_Zh
+# theoerr_FCCee365_function_x2_coef_input="0.00004775991003145372"  ### OLD/WRONG: kappa_Zh uncertainties, not sigma_Zh
+# theoerr_FCCee365_function_x1_coef_input="-0.00022568420270124457" ### OLD/WRONG: kappa_Zh uncertainties, not sigma_Zh
+# theoerr_FCCee365_function_x0_coef_input="0.00022748622694841167"  ### OLD/WRONG: kappa_Zh uncertainties, not sigma_Zh
 # model_conf_NP_suffix="_est1_rect"
 # scale_NPs=$(echo "scale=20.0; scl=2.295748928898636; scl=sqrt(scl); scl" | bc)
 
 
 # Estimates INCLUDING the O(1/Lambda_NP^2) curve
-# theoerr_FCCee240_function_x2_coef_input="0.00076325757128542970"
-# theoerr_FCCee240_function_x1_coef_input="-0.00151726083157403824"
-# theoerr_FCCee240_function_x0_coef_input="0.00076121051962415318"
-# theoerr_FCCee365_function_x2_coef_input="0.00079217047454317366"
-# theoerr_FCCee365_function_x1_coef_input="-0.00161839280277012226"
-# theoerr_FCCee365_function_x0_coef_input="0.00083463246355167890"
+# theoerr_FCCee240_function_x2_coef_input="0.00076325757128542970"  ### OLD/WRONG: kappa_Zh uncertainties, not sigma_Zh
+# theoerr_FCCee240_function_x1_coef_input="-0.00151726083157403824" ### OLD/WRONG: kappa_Zh uncertainties, not sigma_Zh
+# theoerr_FCCee240_function_x0_coef_input="0.00076121051962415318"  ### OLD/WRONG: kappa_Zh uncertainties, not sigma_Zh
+# theoerr_FCCee365_function_x2_coef_input="0.00079217047454317366"  ### OLD/WRONG: kappa_Zh uncertainties, not sigma_Zh
+# theoerr_FCCee365_function_x1_coef_input="-0.00161839280277012226" ### OLD/WRONG: kappa_Zh uncertainties, not sigma_Zh
+# theoerr_FCCee365_function_x0_coef_input="0.00083463246355167890"  ### OLD/WRONG: kappa_Zh uncertainties, not sigma_Zh
 # model_conf_NP_suffix="_est2"
 
 # Estimates INCLUDING the O(1/Lambda_NP^2) curve --- Rectangular estimates
-theoerr_FCCee240_function_x2_coef_input="0.00038945092441749021"
-theoerr_FCCee240_function_x1_coef_input="-0.00061161832033136579"
-theoerr_FCCee240_function_x0_coef_input="0.00019892071857990912"
-theoerr_FCCee365_function_x2_coef_input="0.00040114688393913240"
-theoerr_FCCee365_function_x1_coef_input="-0.00083494486102974848"
-theoerr_FCCee365_function_x0_coef_input="0.00044885101735659739"
-model_conf_NP_suffix="_est2_rect"
+# theoerr_FCCee240_function_x2_coef_input="0.00038945092441749021"  ### OLD/WRONG: kappa_Zh uncertainties, not sigma_Zh
+# theoerr_FCCee240_function_x1_coef_input="-0.00061161832033136579" ### OLD/WRONG: kappa_Zh uncertainties, not sigma_Zh
+# theoerr_FCCee240_function_x0_coef_input="0.00019892071857990912"  ### OLD/WRONG: kappa_Zh uncertainties, not sigma_Zh
+# theoerr_FCCee365_function_x2_coef_input="0.00040114688393913240"  ### OLD/WRONG: kappa_Zh uncertainties, not sigma_Zh
+# theoerr_FCCee365_function_x1_coef_input="-0.00083494486102974848" ### OLD/WRONG: kappa_Zh uncertainties, not sigma_Zh
+# theoerr_FCCee365_function_x0_coef_input="0.00044885101735659739"  ### OLD/WRONG: kappa_Zh uncertainties, not sigma_Zh
+# model_conf_NP_suffix="_est2_rect"
+# scale_NPs=$(echo "scale=20.0; scl=2.295748928898636; scl=sqrt(scl); scl" | bc)
+
+# Estimates INCLUDING the O(1/Lambda_NP^2) curve --- Rectangular estimates ---- FIXED
+theoerr_FCCee240_function_x2_coef_input="0.00076959598668704791"
+theoerr_FCCee240_function_x1_coef_input="-0.00117126402074663140"
+theoerr_FCCee240_function_x0_coef_input="0.00034099056507397698"
+theoerr_FCCee365_function_x2_coef_input="0.00075575723786331273"
+theoerr_FCCee365_function_x1_coef_input="-0.00146652370377467066"
+theoerr_FCCee365_function_x0_coef_input="0.00070372712495277634"
+model_conf_NP_suffix="_est2_rect_final"
 scale_NPs=$(echo "scale=20.0; scl=2.295748928898636; scl=sqrt(scl); scl" | bc)
 
 
@@ -1055,7 +1065,7 @@ setup_fits() {
     cd $TARGET_PATH
 
     
-    if [[ "$COMPACT" == "true" && ASIMOV=="false" ]]; then
+    if [[ "$COMPACT" == "true" && "$ASIMOV" == "false" ]]; then
 
         # Only setup the fits with full flags 
         python scale_observables_kappas.py --scenario ${scenario} --bp ${BP_Name} ${ASIMOV_FLAG} --realistic ${HIGGS_PYTHON_ARG} --higgsconf ${HIGGS_CONF} ${EWPO_PYTHON_ARG}

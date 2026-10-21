@@ -941,6 +941,10 @@ def compare_BP_results_uproot(
                 )
                 if hist_lmbd_x is None or hist_lmbd_y is None:
                     print(f"Skipping {BP}, {scenario}, {spec} as histogram data is missing.")
+                    modes.append(np.nan)
+                    std_devs.append(np.nan)
+                    x_err_lows.append(np.nan)
+                    x_err_highs.append(np.nan)
                     continue
 
                 bin_centers = 0.5 * (hist_lmbd_x[1:] + hist_lmbd_x[:-1])
@@ -982,7 +986,7 @@ def compare_BP_results_uproot(
                 modes = np.array(modes)
                 mode_color = plot_mode_histogram.get("color", "tab:blue")
                 mode_color_rgb = matplotlib.colors.to_rgb(mode_color)
-                plot_mode_specs = np.array( plot_mode_histogram.get("toy_specss", [False] + [True] * (len(modes)-1)) , dtype=bool)
+                plot_mode_specs = np.array( plot_mode_histogram.get("toy_specs", [False] + [True] * (len(modes)-1)) , dtype=bool)
                 mode_nbins = plot_mode_histogram.get("n_bins", 6)
                 plot_range = plot_mode_histogram.get("range", plot_range)
                 ax.hist(
@@ -999,13 +1003,13 @@ def compare_BP_results_uproot(
                 )
 
                 std_devs = np.array(std_devs)
-                modes_std_dev = np.std(modes[plot_mode_specs])
+                modes_std_dev = np.std(modes[plot_mode_specs][~np.isnan(modes[plot_mode_specs])])
 
                 x_err_lows = np.array(x_err_lows)
                 x_err_highs = np.array(x_err_highs)
 
-                x_err_low_mean = np.mean(x_err_lows[plot_mode_specs])
-                x_err_high_mean = np.mean(x_err_highs[plot_mode_specs])
+                x_err_low_mean = np.mean(x_err_lows[plot_mode_specs][~np.isnan(x_err_lows[plot_mode_specs])])
+                x_err_high_mean = np.mean(x_err_highs[plot_mode_specs][~np.isnan(x_err_highs[plot_mode_specs])])
 
                 dist_std_dev = std_devs[only_specs][0]
                 dist_x_err_low = x_err_lows[only_specs][0]
@@ -1031,7 +1035,8 @@ def compare_BP_results_uproot(
                 plt.text(0.97, 0.565, x_err_low_text, ha='right', va='top', transform=ax.transAxes, fontsize=10, bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
                 # plt.plot([0.8, 0.8], [0.9, 0.5], transform=plt.gca().transAxes, color='none') # Dummy plot to ensure the text is not obscured by plot legend
                 
-                n_toys_text = rf"$n_{{\mathrm{{toys}}}} = {len(modes[plot_mode_specs])}$"
+                n_toys = (~np.isnan(modes[plot_mode_specs])).sum()
+                n_toys_text = rf"$n_{{\mathrm{{toys}}}} = {n_toys}$"
                 plt.text(0.97, 0.355, n_toys_text, ha='right', va='top', transform=ax.transAxes, fontsize=10, bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
 
                 legend_loc = "upper left"
@@ -1964,6 +1969,7 @@ def plot_p_value_distributions(
     for scenario in scenarios:
         for BP in BPs:
             plt.figure(figsize=fig_size)
+            ax = plt.gca()
             p_values_plot = []
             for spec_idx, model_spec in enumerate(model_specs[scenario]):
                 if (only_specs is not None) and (only_specs[spec_idx] != True):
@@ -1971,11 +1977,19 @@ def plot_p_value_distributions(
                 p_value = p_values[BP][scenario][model_spec]
                 p_values_plot.append(p_value)
 
+            p_values_plot = np.array(p_values_plot)
+            p_values_plot = p_values_plot[~np.isnan(p_values_plot)]
+
             plt.hist(p_values_plot, bins=20, alpha=0.5)
             plt.xlabel("p-value")
             plt.ylabel("Number of toys")
             plt.xlim(0, 1)
             plt.axvline(x=0.05, color='r', linestyle='--', label='Significance level (0.05)')
+
+            n_toys = len(p_values_plot)
+            n_toys_text = rf"$n_{{\mathrm{{toys}}}} = {n_toys}$"
+            plt.text(0.97, 0.85, n_toys_text, ha='right', va='top', transform=ax.transAxes, fontsize=10, bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+            
             plt.legend()
             plt.tight_layout()
             if save_fig: plt.savefig(f"{working_dir}/comparison_plots/results_{results_dir}/{model}_{BP}_{scenario}_p_values{file_suffix}.pdf")
