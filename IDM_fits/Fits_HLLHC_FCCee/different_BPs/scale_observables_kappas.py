@@ -47,6 +47,7 @@ parser.add_argument("--use_HEPfit_C1_values_decayrates_WFR_kala2_input_all", hel
 parser.add_argument("--use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all", help = "Include higher-order contributions to the ZZh vertex, beyond the 1L BSM contribution", action="store_true")
 parser.add_argument("--higgsconf", help = "Name of the ObsevablesHiggs configuration file", type=str, default=None)
 parser.add_argument("--updated_lumi", help = "Use updated luminosity values for the FCC-ee based on the latest projections (DOI:10.17181/n78xk-qcv56)", action="store_true")
+parser.add_argument("--updated_lumi_all", help = " Use updated luminosity values for the FCC-ee based on the latest projections (DOI:10.17181/n78xk-qcv56). Also update diboson observables by scaling uncertainties according to updated luminosities", action="store_true")
 
 
 args = parser.parse_args()
@@ -79,6 +80,7 @@ use_HEPfit_C1_values_decayrates_WFR_kala2_input_all = args.use_HEPfit_C1_values_
 use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all  = args.use_HEPfit_C1_values_decayrates_higher_order_ZZh_WFR_kala2_input_all
 higgsconf                                           = args.higgsconf
 updated_lumi                                        = args.updated_lumi
+updated_lumi_all                                    = args.updated_lumi_all
 
 exclusive_flag_count = sum([
     no_1L_BSM_sqrt_s, 
@@ -1455,7 +1457,7 @@ gaussian_noise_scale = 1.0  # Scale factor for the Gaussian noise. Useful for te
 ###########################################################################################
 
 # Open the FCCee_240 input file in read mode and output file in write mode
-if updated_lumi:
+if updated_lumi or updated_lumi_all:
     input_file_FCCee240  = file_dir + "ObservablesHiggs_FCCee_240_SM_updated_lumi"
     output_file_FCCee240 = file_dir + "ObservablesHiggs_FCCee_240_SM_updated_lumi_kappa_scaled"
 else:
@@ -1573,7 +1575,7 @@ print(f"Modified content saved to {output_file_FCCee240}.")
 if (scenario == "IDM_FCCee240_FCCee365" 
     or scenario == "IDM_FCCee240_FCCee365_HLLHClambda"):
     # Open the FCCee_365 input file in read mode and output file in write mode
-    if updated_lumi:
+    if updated_lumi or updated_lumi_all:
         output_file_FCCee365 = file_dir + "ObservablesHiggs_FCCee_365_updated_lumi_kappa_scaled"
         input_file_FCCee365  = file_dir + "ObservablesHiggs_FCCee_365_updated_lumi"
     else:
@@ -2111,7 +2113,7 @@ def rewrite_observable_line_EWPO(
 input_files =  []
 output_files = []
 
-if updated_lumi:
+if updated_lumi or updated_lumi_all:
     input_files.append(file_dir + "ObservablesEW_FCCee_Zpole_SM_updated_lumi")
     output_files.append(file_dir + "ObservablesEW_FCCee_Zpole_SM_updated_lumi_kappa_scaled")
 else:
@@ -2132,7 +2134,7 @@ if with_Rf:
 input_files.append(file_dir + "ObservablesEW_HLLHC")
 output_files.append(file_dir + "ObservablesEW_HLLHC_kappa_scaled")
 
-if updated_lumi:
+if updated_lumi or updated_lumi_all:
     input_files.append(file_dir + "ObservablesEW_FCCee_WW_SM_updated_lumi")
     output_files.append(file_dir + "ObservablesEW_FCCee_WW_SM_updated_lumi_kappa_scaled")
 else:
@@ -2256,12 +2258,11 @@ if with_HEPfit_EWPOs:
     input_files.append(file_dir + "ObservablesVV_OO_FCCee_365")
     input_files.append(file_dir + "aTGC_observables_Current")
     input_files.append(file_dir + "aTGC_observables_HLLHC_Full")
-    
-    output_files.append(file_dir + "ObservablesVV_OO_FCCee_161_kappa_scaled_with_HEPfit_EWPOs")
-    output_files.append(file_dir + "ObservablesVV_OO_FCCee_240_kappa_scaled_with_HEPfit_EWPOs")
-    output_files.append(file_dir + "ObservablesVV_OO_FCCee_365_kappa_scaled_with_HEPfit_EWPOs")
-    output_files.append(file_dir + "aTGC_observables_Current_kappa_scaled_with_HEPfit_EWPOs")
-    output_files.append(file_dir + "aTGC_observables_HLLHC_Full_kappa_scaled_with_HEPfit_EWPOs")
+
+    if updated_lumi_all:
+        input_files = [input_file + "_updated_lumi" for input_file in input_files]
+
+    output_files = [input_file + "_kappa_scaled_with_HEPfit_EWPOs" for input_file in input_files]
 
 
     for input_file, output_file in zip(input_files, output_files):

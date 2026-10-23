@@ -1,12 +1,12 @@
 #!/bin/bash
 
-TEST_FIT="true"  # If set to "true", the script will run the fit with HEPfit for the first scenario/BP, in order to test the setup.
+TEST_FIT="false"  # If set to "true", the script will run the fit with HEPfit for the first scenario/BP, in order to test the setup.
 
 ORIGINAL_PATH="/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/IDM_fits/Fits_HLLHC_FCCee/different_scenario_fits"
 TARGET_PATH="/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/IDM_fits/Fits_HLLHC_FCCee/different_BPs"
 cd $TARGET_PATH
 
-ASIMOV="false"  # Asimov fits set the central value of pseudo-measurements to corresponding BSM predictions. If set to "false", pseudo-measurements will deviate from predictions according to the projected uncertainty, as a more realistic experiment
+ASIMOV="true"  # Asimov fits set the central value of pseudo-measurements to corresponding BSM predictions. If set to "false", pseudo-measurements will deviate from predictions according to the projected uncertainty, as a more realistic experiment
 N_EXPS=1000  # Number of fits to be performed, each with different sets of pseudo-measurements, which in turn are generated from Gaussian distributions centred at their corresponding BSM predictions, and covariance matrices obtained from projections for future experiments
 RANDOM_SEED=137  # Random seed for generation of pseudo-measurements
 COMPACT="true"  # If set to "true", the contents of all the input configuration files will be merged into the main file, to avoid generating a large number of small files. If set to "false", the input configuration files will be kept separate, and the main file will include them using the "include" command. Only the small_priors conf file is produced.
@@ -21,7 +21,10 @@ BP_others="BP_lambda1"
 
 # Using realistic HL-LHC observables
 
-updated_lumi="true" # Use updated luminosity values for the FCC-ee based on the latest projections (DOI:10.17181/n78xk-qcv56)
+updated_lumi="false" # Use updated luminosity values for the FCC-ee based on the latest projections (DOI:10.17181/n78xk-qcv56)
+updated_lumi_all="true" # Use updated luminosity values for the FCC-ee based on the latest projections (DOI:10.17181/n78xk-qcv56). Also update diboson observables by scaling uncertainties according to updated luminosities
+# N.B.: updated_lumi takes precedence over updated_lumi_all 
+# N.B.2: updated_lumi_all also modifies the inverse covariance matrices for the optimal observables, to ensure they are positive definite
 
 # Default behavior: all flags set to false
 # Exclusive flag
@@ -54,7 +57,7 @@ no_C_HG="false" # Exclude the C_HG operator from the fit
 no_HLLHC_Higgs="false" # Exclude the HL-LHC Higgs observables from the fit
 LoopH3d6Full="false" # Use the full expansion of the ZH cross-section in terms of C1 and dZH
 
-use_new_NPs="true" # Use newly implementent theory nuisance parameters
+use_new_NPs="false" # Use newly implementent theory nuisance parameters
 UseKlamDependentUncertainties="true" # A boolean flag that is true if using klam-dependent theoretical uncertainties in the ee->Zh cross-section predictions.
 UseBPDependentUncertainties="false" # A boolean flag that is true if using BP-dependent theoretical uncertainties in the ee->Zh cross-section predictions. Different estimates are used for different BPs; however, these are interpreted as constant (klam-independent) in HEPfit 
 
@@ -347,6 +350,7 @@ setup_fits() {
     fi
 
     if [ "$updated_lumi" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_updated_lumi"; fi
+    if [ "$updated_lumi_all" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_updated_lumi_all"; fi
 
     if [ "$no_1L_BSM_sqrt_s" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_no_1L_BSM_sqrt_s"; fi
     if [ "$no_1L_BSM" == "true" ]; then MODEL_CONF_FILE="${MODEL_CONF_FILE}_no_1L_BSM"; fi
@@ -630,6 +634,12 @@ setup_fits() {
     HIGGS_365_CONF="ObservablesHiggs_FCCee_365"
     HIGGS_PYTHON_ARG=""
     if [ "$updated_lumi" == "true" ]; then
+        HIGGS_PYTHON_ARG="--updated_lumi"
+    elif [ "$updated_lumi_all" == "true" ]; then
+        HIGGS_PYTHON_ARG="--updated_lumi_all"
+    fi
+
+    if [[ "$updated_lumi" == "true" || "$updated_lumi_all" == "true" ]]; then
         NEW_HIGGS_CONF="${HIGGS_CONF}_updated_lumi"
         cp ${HIGGS_CONF}.conf ${NEW_HIGGS_CONF}.conf
         HIGGS_CONF="${NEW_HIGGS_CONF}"
@@ -650,7 +660,6 @@ setup_fits() {
 
         HIGGS_240_CONF="${NEW_HIGGS_240_CONF}"
         HIGGS_365_CONF="${NEW_HIGGS_365_CONF}"
-        HIGGS_PYTHON_ARG="--updated_lumi"
     fi
     HIGGS_240_CONF="${HIGGS_240_CONF}_kappa_scaled"
     HIGGS_365_CONF="${HIGGS_365_CONF}_kappa_scaled"
@@ -725,7 +734,7 @@ setup_fits() {
     VV_OO_CONF_FILE_aTGC_HLLHC="aTGC_observables_HLLHC_Full"
 
 
-    if [ "$updated_lumi" == "true" ]; then
+    if [[ "$updated_lumi" == "true" || "$updated_lumi_all" == "true" ]]; then
         NEW_EWPO_CONF_FILE="${EWPO_CONF_FILE}_updated_lumi"
         cp ${EWPO_CONF_FILE}.conf ${NEW_EWPO_CONF_FILE}.conf
 
@@ -745,6 +754,40 @@ setup_fits() {
         EWPO_CONF_FILE_FCCee_Zpole="${NEW_EWPO_CONF_FILE_FCCee_Zpole}_kappa_scaled"
         EWPO_CONF_FILE_FCCee_WW="${NEW_EWPO_CONF_FILE_FCCee_WW}_kappa_scaled"
         EWPO_CONF_FILE="${NEW_EWPO_CONF_FILE}"
+    fi
+
+    if [ "$updated_lumi_all" == "true" ]; then
+        NEW_VV_OO_CONF_FILE="${VV_OO_CONF_FILE}_updated_lumi"
+        cp ${VV_OO_CONF_FILE}.conf ${NEW_VV_OO_CONF_FILE}.conf
+
+        NEW_VV_OO_CONF_FILE_FCCee_161="${VV_OO_CONF_FILE_FCCee_161}_updated_lumi"
+        sed -i "\/IncludeFile ${VV_OO_CONF_FILE_FCCee_161}.conf/c\\IncludeFile ${NEW_VV_OO_CONF_FILE_FCCee_161}.conf" ${NEW_VV_OO_CONF_FILE}.conf
+
+        NEW_VV_OO_CONF_FILE_FCCee_240="${VV_OO_CONF_FILE_FCCee_240}_updated_lumi"
+        sed -i "\/IncludeFile ${VV_OO_CONF_FILE_FCCee_240}.conf/c\\IncludeFile ${NEW_VV_OO_CONF_FILE_FCCee_240}.conf" ${NEW_VV_OO_CONF_FILE}.conf
+
+        if [[ "${scenario}" != "IDM_FCCee240" ]]; then
+            NEW_VV_OO_CONF_FILE_FCCee_365="${VV_OO_CONF_FILE_FCCee_365}_updated_lumi"
+            sed -i "\/IncludeFile ${VV_OO_CONF_FILE_FCCee_365}.conf/c\\IncludeFile ${NEW_VV_OO_CONF_FILE_FCCee_365}.conf" ${NEW_VV_OO_CONF_FILE}.conf
+        fi
+
+        NEW_VV_OO_CONF_FILE_aTGC_CURRENT="${VV_OO_CONF_FILE_aTGC_CURRENT}_updated_lumi"
+        sed -i "\/IncludeFile ${VV_OO_CONF_FILE_aTGC_CURRENT}.conf/c\\IncludeFile ${NEW_VV_OO_CONF_FILE_aTGC_CURRENT}.conf" ${NEW_VV_OO_CONF_FILE}.conf
+
+        NEW_VV_OO_CONF_FILE_aTGC_HLLHC="${VV_OO_CONF_FILE_aTGC_HLLHC}_updated_lumi"
+        sed -i "\/IncludeFile ${VV_OO_CONF_FILE_aTGC_HLLHC}.conf/c\\IncludeFile ${NEW_VV_OO_CONF_FILE_aTGC_HLLHC}.conf" ${NEW_VV_OO_CONF_FILE}.conf
+
+
+        NEW_MODEL_VV="IncludeFile ../../${NEW_VV_OO_CONF_FILE}.conf "
+        sed -i "\/IncludeFile ..\/..\/${VV_OO_CONF_FILE}.conf /c\\$NEW_MODEL_VV" Globalfits/AllOps/${MODEL_CONF_FILE}.conf
+        sed -i "\/IncludeFile ..\/..\/${VV_OO_CONF_FILE}.conf /c\\$NEW_MODEL_VV" Globalfits/AllOps/${MODEL_CONF_FILE}_small_priors.conf
+
+        VV_OO_CONF_FILE_FCCee_161="${NEW_VV_OO_CONF_FILE_FCCee_161}"
+        VV_OO_CONF_FILE_FCCee_240="${NEW_VV_OO_CONF_FILE_FCCee_240}"
+        VV_OO_CONF_FILE_FCCee_365="${NEW_VV_OO_CONF_FILE_FCCee_365}"
+        VV_OO_CONF_FILE_aTGC_CURRENT="${NEW_VV_OO_CONF_FILE_aTGC_CURRENT}"
+        VV_OO_CONF_FILE_aTGC_HLLHC="${NEW_VV_OO_CONF_FILE_aTGC_HLLHC}"
+        VV_OO_CONF_FILE="${NEW_VV_OO_CONF_FILE}"
     fi
 
     if [ "$modify_all_ewpos" == "true" ]; then
@@ -798,14 +841,14 @@ setup_fits() {
 
 
         # Diboson observables:
-        NEW_VV_OO_CONF_FILE="ObservablesVV_kappa_scaled_with_HEPfit_EWPOs"
+        NEW_VV_OO_CONF_FILE="${VV_OO_CONF_FILE}_kappa_scaled_with_HEPfit_EWPOs"
         cp ${VV_OO_CONF_FILE}.conf ${NEW_VV_OO_CONF_FILE}.conf
 
-        NEW_VV_OO_CONF_FILE_FCCee_161="ObservablesVV_OO_FCCee_161_kappa_scaled_with_HEPfit_EWPOs"
-        NEW_VV_OO_CONF_FILE_FCCee_240="ObservablesVV_OO_FCCee_240_kappa_scaled_with_HEPfit_EWPOs"
-        NEW_VV_OO_CONF_FILE_FCCee_365="ObservablesVV_OO_FCCee_365_kappa_scaled_with_HEPfit_EWPOs"
-        NEW_VV_OO_CONF_FILE_aTGC_CURRENT="aTGC_observables_Current_kappa_scaled_with_HEPfit_EWPOs"
-        NEW_VV_OO_CONF_FILE_aTGC_HLLHC="aTGC_observables_HLLHC_Full_kappa_scaled_with_HEPfit_EWPOs"
+        NEW_VV_OO_CONF_FILE_FCCee_161="${VV_OO_CONF_FILE_FCCee_161}_kappa_scaled_with_HEPfit_EWPOs"
+        NEW_VV_OO_CONF_FILE_FCCee_240="${VV_OO_CONF_FILE_FCCee_240}_kappa_scaled_with_HEPfit_EWPOs"
+        NEW_VV_OO_CONF_FILE_FCCee_365="${VV_OO_CONF_FILE_FCCee_365}_kappa_scaled_with_HEPfit_EWPOs"
+        NEW_VV_OO_CONF_FILE_aTGC_CURRENT="${VV_OO_CONF_FILE_aTGC_CURRENT}_kappa_scaled_with_HEPfit_EWPOs"
+        NEW_VV_OO_CONF_FILE_aTGC_HLLHC="${VV_OO_CONF_FILE_aTGC_HLLHC}_kappa_scaled_with_HEPfit_EWPOs"
         
         sed -i "\/IncludeFile ${VV_OO_CONF_FILE_FCCee_161}.conf/c\\IncludeFile ${NEW_VV_OO_CONF_FILE_FCCee_161}.conf" ${NEW_VV_OO_CONF_FILE}.conf
         sed -i "\/IncludeFile ${VV_OO_CONF_FILE_FCCee_240}.conf/c\\IncludeFile ${NEW_VV_OO_CONF_FILE_FCCee_240}.conf" ${NEW_VV_OO_CONF_FILE}.conf
@@ -1093,7 +1136,11 @@ setup_fits() {
     else
         python scale_observables_kappas.py --scenario ${scenario} --bp ${BP_Name} ${ASIMOV_FLAG}
         python scale_observables_kappas.py --scenario ${scenario} --bp ${BP_Name} ${ASIMOV_FLAG} --realistic
-        if [ "$updated_lumi" == "true" ]; then python scale_observables_kappas.py --scenario ${scenario} --bp ${BP_Name} ${ASIMOV_FLAG} --realistic --updated_lumi; fi
+        if [[ "$updated_lumi" == "true" ]]; then 
+            python scale_observables_kappas.py --scenario ${scenario} --bp ${BP_Name} ${ASIMOV_FLAG} --realistic --updated_lumi
+        elif [[ "$updated_lumi_all" == "true" ]]; then 
+            python scale_observables_kappas.py --scenario ${scenario} --bp ${BP_Name} ${ASIMOV_FLAG} --realistic --updated_lumi_all
+        fi
         python scale_observables_kappas.py --scenario ${scenario} --bp ${BP_Name} ${ASIMOV_FLAG} --realistic ${HIGGS_PYTHON_ARG} --higgsconf ${HIGGS_CONF} ${EWPO_PYTHON_ARG}
         # Running the script also without the flag, so that the main fits (i.e. the ones with the flag set to false) are also set up properly
         # Note: the "updated_lumi" flag, if set to True, is already included in the HIGGS_PYTHON_ARG, so it will be automatically included in the last run of the script

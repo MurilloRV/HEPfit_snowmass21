@@ -925,87 +925,6 @@ def generate_pull_plots_obs(
     # Create the output directory, if it does not yet exist
     subprocess.run(["mkdir", "-p", f"{working_dir}/comparison_plots/results_{results_dir}"])
 
-    # files = {}
-    # for BP in BPs:
-    #     files[BP] = {}
-    #     for scenario in scenarios:
-    #         files[BP][scenario] = {}
-    #         for model_spec in model_specs[scenario]:
-    #             if "toyfit" in model_spec:
-    #                 files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/toy_fits/results_{model_spec}/Observables/Statistics.txt"
-    #             else:
-    #                 files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/results_{model_spec}/Observables/Statistics.txt"
-
-    # 
-
-
-    # print("\nFinding configuration files for the observables")
-    # conf_files = find_configuration_files(model_specs, model)
-        
-    # print(f"\nReading configuration files for observables")
-    # observables, observables_tex, central_values_obs, input_uncertainties = read_configuration_files(
-    #     working_dir=working_dir,
-    #     BPs=BPs,
-    #     model_specs=model_specs,
-    #     conf_files=conf_files,
-    #     only_obs=only_obs,
-    #     skip_obs=skip_obs,
-    #     only_higgs_fccee_obs=only_higgs_fccee_obs,
-    #     read_model_parameters=False,
-    #     compare_with_SM=compare_with_SM,
-    #     BP_lambdas=BP_lambdas,
-    # )
-
-    # print(f"\nReading fit results")
-    # if WC_list_for_prediction_pulls is not None:
-    #     results = {}
-    #     for BP in BPs:
-    #         results[BP] = {}
-    #         for scenario in scenarios:
-    #             results[BP][scenario] = {}
-    #             for model_spec in model_specs[scenario]:
-    #                 results[BP][scenario][model_spec] = np.zeros((len(list(observables["Config_Files"]["."].values())[0]), 2))
-    #                 results[BP][scenario][model_spec] = np.array( 
-    #                     [
-    #                         list(central_values_obs["Config_Files"]["."].values())[0],
-    #                         list(input_uncertainties["Config_Files"]["."].values())[0],
-    #                     ] 
-    #                 ).T
-    #     WC_labels = [ find_tex_label_par(wc) for wc in WC_list_for_prediction_pulls["WC_list"] ]
-    
-    # elif matched_predictions_vs_BSM or compare_model_spec_predictions:
-    #     results = {}
-    #     for BP in BPs:
-    #         results[BP] = {}
-    #         for scenario in scenarios:
-    #             results[BP][scenario] = {}
-    #             for model_spec in model_specs[scenario]:
-    #                 results[BP][scenario][model_spec] = np.array( 
-    #                     [
-    #                         central_values_obs[BP][scenario][model_spec],
-    #                         input_uncertainties[BP][scenario][model_spec],
-    #                     ] 
-    #                 ).T
-
-    # else:
-    #     results = read_fit_results(
-    #         BPs=BPs,
-    #         model_specs=model_specs,
-    #         observables=observables,
-    #         files=files,
-    #     )
-
-
-    # print(f"\nSorting observables")
-    # aligned_observables, aligned_observables_tex, central_values_obs, input_uncertainties_obs, results = align_observables(
-    #     observable_order_func=observable_order,
-    #     BPs=BPs,
-    #     model_specs=model_specs,
-    #     observables=observables,
-    #     observables_tex=observables_tex,
-    #     central_values_obs=central_values_obs,
-    #     results=results,
-    # )
 
     aligned_observables, aligned_observables_tex, central_values_obs, input_uncertainties_obs, input_correlated_observables, results, n_parameters = read_data_for_pulls(
         BPs,
@@ -1190,13 +1109,15 @@ def generate_pull_plots_obs(
                                 results_means  = np.copy((results[BP][scenario][model_spec][:,0] - central_values_obs[BP][scenario][model_spec]) / results[BP][scenario][model_spec][:,1] )
                                 results_errors = np.copy( results[BP][scenario][model_spec][:,1] / results[BP][scenario][model_spec][:,1] )
                             else:
-                                results_means  = np.copy((central_values_obs[BP][scenario][model_spec]) / results[BP][scenario][model_spec][:,1] )
+                                results_means  = np.copy((central_values_obs[BP][scenario][model_spec]) )
                                 results_errors = np.copy( results[BP][scenario][model_spec][:,1] / results[BP][scenario][model_spec][:,1] )
 
                                 if spec_index == 0:
                                     results_subtract = np.copy(results_means)
 
                                 results_means = np.copy(results_means - results_subtract)
+                                results_means = results_means / results[BP][scenario][model_spec][:,1] 
+                                # Normalization by the uncertainty must be done after the subtraction, otherwise the pulls will be incorrect
 
                             ax.errorbar(results_means[param_breaks[k]:param_breaks[k+1]],
                                         -y+y_shift[spec_index], 

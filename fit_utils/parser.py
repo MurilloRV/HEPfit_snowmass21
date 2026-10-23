@@ -774,6 +774,7 @@ def find_configuration_files(
     ]
 
     fccee_projections_flags = [
+        "updated_lumi_all_",
         "updated_lumi_",
         "",
     ]
@@ -1021,7 +1022,7 @@ def find_configuration_files(
                                                     ]
 
                                                 else:
-                                                    if fccee_projections_flag == "updated_lumi_":
+                                                    if fccee_projections_flag == "updated_lumi_" or fccee_projections_flag == "updated_lumi_all_":
                                                         Higgs_conf1_new = f"{Higgs_conf1}_updated_lumi"
                                                         Higgs_conf2_new = f"ObservablesHiggs_FCCee_240_SM_updated_lumi_kappa_scaled"
                                                         Higgs_conf3_new = f"ObservablesHiggs_FCCee_365_updated_lumi_kappa_scaled"
@@ -1066,7 +1067,7 @@ def find_configuration_files(
                                                     VV_OO_conf5 = "aTGC_observables_Current"
                                                     VV_OO_conf6 = "aTGC_observables_HLLHC_Full"
 
-                                                    if fccee_projections_flag == "updated_lumi_":
+                                                    if fccee_projections_flag == "updated_lumi_" or fccee_projections_flag == "updated_lumi_all_":
                                                         EWPO_conf1_new = "ObservablesEW_updated_lumi"
                                                         EWPO_conf4_new = "ObservablesEW_FCCee_Zpole_SM_updated_lumi_kappa_scaled"
                                                         EWPO_conf5_new = "ObservablesEW_FCCee_WW_SM_updated_lumi_kappa_scaled"
@@ -1076,6 +1077,27 @@ def find_configuration_files(
                                                         EWPO_conf1 = EWPO_conf1_new
                                                         EWPO_conf4 = EWPO_conf4_new
                                                         EWPO_conf5 = EWPO_conf5_new
+
+                                                    if fccee_projections_flag == "updated_lumi_all_":
+                                                        VV_OO_conf1_new = "ObservablesVV_updated_lumi"
+                                                        VV_OO_conf2_new = "ObservablesVV_OO_FCCee_161_updated_lumi"
+                                                        VV_OO_conf3_new = "ObservablesVV_OO_FCCee_240_updated_lumi"
+                                                        VV_OO_conf4_new = "ObservablesVV_OO_FCCee_365_updated_lumi"
+                                                        VV_OO_conf5_new = "aTGC_observables_Current_updated_lumi"
+                                                        VV_OO_conf6_new = "aTGC_observables_HLLHC_Full_updated_lumi"
+                                                        conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(VV_OO_conf1)] = VV_OO_conf1_new
+                                                        conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(VV_OO_conf2)] = VV_OO_conf2_new
+                                                        conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(VV_OO_conf3)] = VV_OO_conf3_new
+                                                        conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(VV_OO_conf4)] = VV_OO_conf4_new
+                                                        conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(VV_OO_conf5)] = VV_OO_conf5_new
+                                                        conf_files[scenario][model_spec][conf_files[scenario][model_spec].index(VV_OO_conf6)] = VV_OO_conf6_new
+                                                        VV_OO_conf1 = VV_OO_conf1_new
+                                                        VV_OO_conf2 = VV_OO_conf2_new
+                                                        VV_OO_conf3 = VV_OO_conf3_new
+                                                        VV_OO_conf4 = VV_OO_conf4_new
+                                                        VV_OO_conf5 = VV_OO_conf5_new
+                                                        VV_OO_conf6 = VV_OO_conf6_new
+
 
                                                     if "_all_EW_mods" in additional_flag_all:
                                                         EWPO_conf1_new = EWPO_conf1 + "_all_mods"
