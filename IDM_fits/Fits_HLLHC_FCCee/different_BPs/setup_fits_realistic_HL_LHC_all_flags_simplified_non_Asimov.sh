@@ -1,12 +1,12 @@
 #!/bin/bash
 
-TEST_FIT="false"  # If set to "true", the script will run the fit with HEPfit for the first scenario/BP, in order to test the setup.
+TEST_FIT="true"  # If set to "true", the script will run the fit with HEPfit for the first scenario/BP, in order to test the setup.
 
 ORIGINAL_PATH="/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/IDM_fits/Fits_HLLHC_FCCee/different_scenario_fits"
 TARGET_PATH="/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/IDM_fits/Fits_HLLHC_FCCee/different_BPs"
 cd $TARGET_PATH
 
-ASIMOV="true"  # Asimov fits set the central value of pseudo-measurements to corresponding BSM predictions. If set to "false", pseudo-measurements will deviate from predictions according to the projected uncertainty, as a more realistic experiment
+ASIMOV="false"  # Asimov fits set the central value of pseudo-measurements to corresponding BSM predictions. If set to "false", pseudo-measurements will deviate from predictions according to the projected uncertainty, as a more realistic experiment
 N_EXPS=1000  # Number of fits to be performed, each with different sets of pseudo-measurements, which in turn are generated from Gaussian distributions centred at their corresponding BSM predictions, and covariance matrices obtained from projections for future experiments
 RANDOM_SEED=137  # Random seed for generation of pseudo-measurements
 COMPACT="true"  # If set to "true", the contents of all the input configuration files will be merged into the main file, to avoid generating a large number of small files. If set to "false", the input configuration files will be kept separate, and the main file will include them using the "include" command. Only the small_priors conf file is produced.
@@ -57,7 +57,7 @@ no_C_HG="false" # Exclude the C_HG operator from the fit
 no_HLLHC_Higgs="false" # Exclude the HL-LHC Higgs observables from the fit
 LoopH3d6Full="false" # Use the full expansion of the ZH cross-section in terms of C1 and dZH
 
-use_new_NPs="false" # Use newly implementent theory nuisance parameters
+use_new_NPs="true" # Use newly implementent theory nuisance parameters
 UseKlamDependentUncertainties="true" # A boolean flag that is true if using klam-dependent theoretical uncertainties in the ee->Zh cross-section predictions.
 UseBPDependentUncertainties="false" # A boolean flag that is true if using BP-dependent theoretical uncertainties in the ee->Zh cross-section predictions. Different estimates are used for different BPs; however, these are interpreted as constant (klam-independent) in HEPfit 
 
