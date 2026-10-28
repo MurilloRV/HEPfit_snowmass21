@@ -1913,8 +1913,11 @@ def plot_p_value_distributions(
     model,
     results_dir,
     BP_lambdas,
+    plot_titles=None,
     chi_square_kwargs={},
-    only_specs=None,
+    hist_indices=None,
+    colors=None,
+    hist_labels=None,
     fig_size=(4, 3.5),
     show_plots=True,
     save_fig=True,
@@ -1940,6 +1943,9 @@ def plot_p_value_distributions(
         The BSM model considered. Currently can be either "IDM", "Z2SSM", "SM", or "SM_updated_lumi".
     BP_lambdas : list of floats
         List of predictions for kappa_lambda for each BP.
+    plot_titles : dict, optional
+        A dictionary in the form plot_titles[BP][scenario] containing the titles for 
+        the plots. If not provided, no title will be displayed
     chi_square_kwargs : dict, optional
         Additional keyword arguments to be passed to the calculate_chi_square function.
     only_specs : list, optional
@@ -1974,28 +1980,82 @@ def plot_p_value_distributions(
         for BP in BPs:
             plt.figure(figsize=fig_size)
             ax = plt.gca()
-            p_values_plot = []
+            p_values_list = []
             for spec_idx, model_spec in enumerate(model_specs[scenario]):
-                if (only_specs is not None) and (only_specs[spec_idx] != True):
-                    continue
                 p_value = p_values[BP][scenario][model_spec]
-                p_values_plot.append(p_value)
+                p_values_list.append(p_value)
 
-            p_values_plot = np.array(p_values_plot)
-            p_values_plot = p_values_plot[~np.isnan(p_values_plot)]
+            p_values_list = np.array(p_values_list)
+            
 
-            plt.hist(p_values_plot, bins=20, alpha=0.5)
+            if plot_titles is not None and BP in plot_titles and scenario in plot_titles[BP]:
+                plt.title(plot_titles[BP][scenario])
+
+            if hist_indices is not None:
+                hist_indices_set = set(hist_indices)
+                hist_indices_set.remove(np.nan)
+
+                for hist_idx in hist_indices_set:
+
+                    if colors is not None and len(colors) > hist_idx:
+                        hist_color = colors[hist_idx]
+                        hist_color_rgb = matplotlib.colors.to_rgb(hist_color)
+                    else:
+                        hist_color_rgb = matplotlib.colors.to_rgb("tab:blue")
+
+                    p_values_plot = p_values_list[ np.array(hist_indices) == hist_idx ]
+                    p_values_plot = p_values_plot[~np.isnan(p_values_plot)]
+
+                    if hist_labels is not None and len(hist_labels) > hist_idx:
+                        label = hist_labels[hist_idx]
+                    else:
+                        label = None
+
+                    plt.hist(
+                        p_values_plot, 
+                        bins=20, 
+                        # alpha=0.5, 
+                        histtype="step", 
+                        linewidth=1.5,
+                        fill=True,
+                        edgecolor=(*hist_color_rgb, 1.0), 
+                        facecolor=(*hist_color_rgb, 0.5), 
+                        label=label,
+                    )
+
+            else:
+                p_values_plot = p_values_list[~np.isnan(p_values_list)]
+
+                if colors is not None and len(colors) > 0:
+                    hist_color = colors[0]
+                    hist_color_rgb = matplotlib.colors.to_rgb(hist_color)
+                else:
+                    hist_color_rgb = matplotlib.colors.to_rgb("tab:blue")
+
+                plt.hist(
+                    p_values_plot, 
+                    bins=20, 
+                    alpha=0.5, 
+                    histtype="step", 
+                    linewidth=1.5,
+                    fill=True,
+                    edgecolor=(*hist_color_rgb, 1.0), 
+                    facecolor=(*hist_color_rgb, 0.5), 
+                )
+
             plt.xlabel("p-value")
-            plt.ylabel("Number of toys")
+            plt.ylabel("Number of toy fits")
             plt.xlim(0, 1)
-            plt.axvline(x=0.05, color='r', linestyle='--', label='Significance level (0.05)')
+            plt.axvline(x=0.05, color='r', linestyle='--', label='Significance level = 0.05')
 
             n_toys = len(p_values_plot)
             n_toys_text = rf"$n_{{\mathrm{{toys}}}} = {n_toys}$"
-            plt.text(0.97, 0.85, n_toys_text, ha='right', va='top', transform=ax.transAxes, fontsize=10, bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+            plt.text(0.97, 0.74, n_toys_text, ha='right', va='top', transform=ax.transAxes, fontsize=8, bbox=dict(boxstyle='round', facecolor='white', edgecolor='lightgrey', alpha=0.8))
             
-            plt.legend()
+            plt.legend(fontsize=8, loc="upper right")
             plt.tight_layout()
-            if save_fig: plt.savefig(f"{working_dir}/comparison_plots/results_{results_dir}/{model}_{BP}_{scenario}_p_values{file_suffix}.pdf")
+            plot_path = f"{working_dir}/comparison_plots/results_{results_dir}/{model}_{BP}_{scenario}_p_values{file_suffix}"
+            if hist_indices is not None: plot_path += "_multiple_hists"
+            if save_fig: plt.savefig(plot_path+".pdf")
             
     if show_plots: plt.show()
