@@ -697,7 +697,7 @@ def generate_pull_plots_pars(
 
     n_model_specs = len(list(model_specs.values())[0])
     w = 1.0
-    dimw = w / 2
+    dimw = w / 4
     if n_model_specs > 1:
         y_shift = np.linspace(+dimw/2, -dimw/2, n_model_specs) 
     else:
@@ -777,12 +777,14 @@ def generate_pull_plots_pars(
 
                 # ax.set_yticks(-y-dimw/2.)
                 ax.set_yticks(-y)
-                y_label_size = min( 250. / (param_breaks[k+1] - param_breaks[k]), 13)
+                # y_label_size = min( 250. / (param_breaks[k+1] - param_breaks[k]), 13)
+                y_label_size = min( 650. / (param_breaks[k+1] - param_breaks[k]), 15)
                 ax.set_yticklabels(labels[param_breaks[k]:param_breaks[k+1]], fontsize=y_label_size)
                 x_limits = [plt.xlim()[0], plt.xlim()[1]]
                 ax.hlines(y=-y, xmin=x_limits[0], xmax=x_limits[1], color="black", linestyle="--", linewidth=0.5)
                 ax.set_xlim(*x_limits)
-                ax.tick_params(axis='x', size=10, labelsize=11)
+                # ax.tick_params(axis='x', size=10, labelsize=11)
+                ax.tick_params(axis='x', size=12, labelsize=13)
                 ax.tick_params(axis='x', which='minor', size=6)
                 if normalize_pulls:
                     x_label = r'Pulls'
@@ -790,9 +792,10 @@ def generate_pull_plots_pars(
                     x_label = r'Wilson coefficients'
                 if true_values is not None and true_values['subtract_true_values'] is True:
                     x_label = x_label + f' (w.r.t. {true_values["label"]})'
-                ax.set_xlabel(x_label, fontsize=11)
+                # ax.set_xlabel(x_label, fontsize=11)
+                ax.set_xlabel(x_label, fontsize=13)
                 ax.legend(loc=legend_loc, fontsize=10)
-                ax.set_title(plot_titles[BP][scenario], fontsize=10)
+                ax.set_title(plot_titles[BP][scenario], fontsize=13)
                 plt.tight_layout()   # Makes sure labels are not cut off
                 if save_fig: plt.savefig(f"{working_dir}/comparison_plots/results_{results_dir}/pull_pars_{BP}_{scenario}_compare_{k}{file_suffix}.pdf")
 

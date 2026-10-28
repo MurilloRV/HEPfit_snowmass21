@@ -820,6 +820,7 @@ def compare_BP_results_uproot(
     legend_fontsize=8.,
     plot_mode_histogram=None,
     only_specs=None,
+    y_axis_scale=1.2,
     save_fig=True,
     file_suffix="",
 ):
@@ -873,6 +874,9 @@ def compare_BP_results_uproot(
         - "range": range for the histogram. Default is the x-axis limits of the plot.
     only_specs : list, optional
         Boolean list indicating which model specifications to include when plotting. Default is all specs.
+    y_axis_scale : float, optional
+        Scale factor for the y-axis limits. If set to 1.0, the y-axis upper limit will be exactly the same 
+        as the maximum value in the data. Default is 1.2.
     save_fig : bool, optional
         Whether to save the figures. Default is True.
     file_suffix : str, optional
@@ -1044,9 +1048,8 @@ def compare_BP_results_uproot(
             else:
                 legend_loc = "best"
 
-            scale = 1.2
             ylow, yhigh = ax.get_ylim()
-            ax.set_ylim(ylow, yhigh + (scale-1)*(yhigh-ylow))
+            ax.set_ylim(ylow, yhigh + (y_axis_scale-1)*(yhigh-ylow))
 
             if observable == 'deltalHHH_HLLHC': plt.axvline(BP_lambda, color="black", linestyle="--", label=rf"{model} {BP_name} ($\kappa_{{\lambda}}$ = {BP_lambda:.2f})")
             plt.legend(fontsize=legend_fontsize, loc=legend_loc)
@@ -1901,8 +1904,6 @@ def calculate_chi_square(
 
     return chi_square_results, p_values
     # TODO: deal with NPs
-
-
 
 
 def plot_p_value_distributions(
