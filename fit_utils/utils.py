@@ -1631,6 +1631,13 @@ def calculate_chi_square(
 
     scenarios = model_specs.keys()
 
+    noMCMC_obs = [
+        "mtop",
+        "mHl",
+        "AlsMz",
+        "dAle5Mz",
+    ]
+
     nuisance_parameters = [
         "eHggint",
         "eHggpar",
@@ -1681,6 +1688,7 @@ def calculate_chi_square(
         # compare_model_spec_predictions=compare_model_spec_predictions,
         BP_lambdas=BP_lambdas,
         read_model_parameters=True,
+        noMCMC_obs=noMCMC_obs,
     )
 
     (
@@ -1723,6 +1731,18 @@ def calculate_chi_square(
             for model_spec in model_specs[scenario]:
                 chi_square = 0
                 n_obs = 0
+
+                n_gaus_pars = 0
+                n_flat_pars = 0
+                for par_idx, par in enumerate(aligned_parameters[BP][scenario]):
+                    gaussian_prior = gaussian_priors[BP][scenario][model_spec][par_idx]
+                    flat_prior = flat_priors[BP][scenario][model_spec][par_idx]
+
+                    if not np.isnan(gaussian_prior) and gaussian_prior != 0 and gaussian_prior != None:
+                        n_gaus_pars += 1
+                    if not np.isnan(flat_prior) and flat_prior != 0 and flat_prior != None:
+                        n_flat_pars += 1
+                n_pars = n_gaus_pars + n_flat_pars
 
                 correlated_observables_full_list = []
                 for corr_obs_set in input_correlated_observables[BP][scenario][model_spec]:
@@ -1827,7 +1847,7 @@ def calculate_chi_square(
                             additional_observables[f"theoerr_FCCee365_function_x0_coef"],
                         ) * additional_observables["theoerr_FCCee365_gaus_prior"]
 
-                    print(f"Additional observables for {BP}, {scenario}, {model_spec}: {additional_observables}")
+                    # print(f"Additional observables for {BP}, {scenario}, {model_spec}: {additional_observables}")
 
                 for obs, prediction, input_uncertainty, fit_results in zip(
                     aligned_observables[BP][scenario],
@@ -1887,7 +1907,31 @@ def calculate_chi_square(
 
                     if verbose: print(f"Added chi-square contribution for observable {obs}: {chi_square_term} (prediction: {prediction}, fit value: {fit_value}, uncertainty: {input_uncertainty})")
 
-                n_pars = n_parameters[BP][scenario][model_spec]
+                for par_idx, par in enumerate(aligned_parameters[BP][scenario]):
+                    if par in nuisance_parameters or par in new_nuisance_parameters or par in nuisance_parameter_coefficients:
+                        continue
+                    else:
+                        input_uncertainty = gaussian_priors[BP][scenario][model_spec][par_idx]
+                        if input_uncertainty != 0:
+
+                            prediction = central_values_pars[BP][scenario][model_spec][par_idx]
+
+                            par_results_idx = aligned_observables[BP][scenario].index(par)
+                            fit_value = results[BP][scenario][model_spec][par_results_idx][0]
+                            chi_square_term = chi_square_formula(
+                                data = fit_value,
+                                model = prediction,
+                                inverse_covariance_matrix = 1/input_uncertainty**2,
+                            )
+                            if np.isnan(chi_square_term):
+                                print(f"Warning: Chi-square term for gaussian parameter {par} is NaN. Skipping this parameter in chi-square calculation.")
+                                continue
+        
+                            n_obs += 1
+                            chi_square += chi_square_term
+        
+                            if verbose: print(f"Added chi-square contribution for gaussian parameter {par}: {chi_square_term} (prediction: {prediction}, fit value: {fit_value}, uncertainty: {input_uncertainty})")
+                        
                 if n_obs <= n_pars:
                     print(f"Warning: Number of observables ({n_obs}) is less than or equal to the number of parameters ({n_pars}) for {BP}, {scenario}, {model_spec}. Chi-square may not be meaningful.")
                 p_value = chi2_prob(chi2 = chi_square, dof = n_obs - n_pars)
@@ -1918,6 +1962,7 @@ def plot_p_value_distributions(
     hist_indices=None,
     colors=None,
     hist_labels=None,
+    normalized=False,
     fig_size=(4, 3.5),
     show_plots=True,
     save_fig=True,
@@ -1976,6 +2021,8 @@ def plot_p_value_distributions(
 
     scenarios = model_specs.keys()
 
+    density = normalized
+
     for scenario in scenarios:
         for BP in BPs:
             plt.figure(figsize=fig_size)
@@ -1993,7 +2040,8 @@ def plot_p_value_distributions(
 
             if hist_indices is not None:
                 hist_indices_set = set(hist_indices)
-                hist_indices_set.remove(np.nan)
+                if np.nan in hist_indices_set:
+                    hist_indices_set.remove(np.nan)
 
                 for hist_idx in hist_indices_set:
 
@@ -2021,6 +2069,8 @@ def plot_p_value_distributions(
                         edgecolor=(*hist_color_rgb, 1.0), 
                         facecolor=(*hist_color_rgb, 0.5), 
                         label=label,
+                        density=density,
+                        range=(0, 1),
                     )
 
             else:
@@ -2041,10 +2091,15 @@ def plot_p_value_distributions(
                     fill=True,
                     edgecolor=(*hist_color_rgb, 1.0), 
                     facecolor=(*hist_color_rgb, 0.5), 
+                    density=density,
+                    range=(0, 1),
                 )
 
             plt.xlabel("p-value")
-            plt.ylabel("Number of toy fits")
+            if normalized:
+                plt.ylabel("Normalized toy fit distribution")
+            else:
+                plt.ylabel("Number of toy fits")
             plt.xlim(0, 1)
             plt.axvline(x=0.05, color='r', linestyle='--', label='Significance level = 0.05')
 
@@ -2056,6 +2111,7 @@ def plot_p_value_distributions(
             plt.tight_layout()
             plot_path = f"{working_dir}/comparison_plots/results_{results_dir}/{model}_{BP}_{scenario}_p_values{file_suffix}"
             if hist_indices is not None: plot_path += "_multiple_hists"
+            if normalized: plot_path += "_normalized"
             if save_fig: plt.savefig(plot_path+".pdf")
             
     if show_plots: plt.show()

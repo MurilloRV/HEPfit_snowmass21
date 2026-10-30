@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TEST_FIT="true"  # If set to "true", the script will run the fit with HEPfit for the first scenario/BP, in order to test the setup.
+TEST_FIT="false"  # If set to "true", the script will run the fit with HEPfit for the first scenario/BP, in order to test the setup.
 
 ORIGINAL_PATH="/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/IDM_fits/Fits_HLLHC_FCCee/different_scenario_fits"
 TARGET_PATH="/cephfs/user/mrebuzzi/phd/HEPfit/HEPfit_snowmass21/IDM_fits/Fits_HLLHC_FCCee/different_BPs"
@@ -57,7 +57,7 @@ no_C_HG="false" # Exclude the C_HG operator from the fit
 no_HLLHC_Higgs="false" # Exclude the HL-LHC Higgs observables from the fit
 LoopH3d6Full="false" # Use the full expansion of the ZH cross-section in terms of C1 and dZH
 
-use_new_NPs="true" # Use newly implementent theory nuisance parameters
+use_new_NPs="false" # Use newly implementent theory nuisance parameters
 UseKlamDependentUncertainties="true" # A boolean flag that is true if using klam-dependent theoretical uncertainties in the ee->Zh cross-section predictions.
 UseBPDependentUncertainties="false" # A boolean flag that is true if using BP-dependent theoretical uncertainties in the ee->Zh cross-section predictions. Different estimates are used for different BPs; however, these are interpreted as constant (klam-independent) in HEPfit 
 
