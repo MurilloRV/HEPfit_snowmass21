@@ -872,6 +872,7 @@ def compare_BP_results_uproot(
         - "toy_specs": boolean list indicating which toy fits to include in the histogram.
         - "n_bins": number of bins for the histogram. Default is 6.
         - "range": range for the histogram. Default is the x-axis limits of the plot.
+        - "no_textbox": if True, no text boxes will be displayed on the plot, apart from number of toys. Default is False.
     only_specs : list, optional
         Boolean list indicating which model specifications to include when plotting. Default is all specs.
     y_axis_scale : float, optional
@@ -993,6 +994,7 @@ def compare_BP_results_uproot(
                 plot_mode_specs = np.array( plot_mode_histogram.get("toy_specs", [False] + [True] * (len(modes)-1)) , dtype=bool)
                 mode_nbins = plot_mode_histogram.get("n_bins", 6)
                 plot_range = plot_mode_histogram.get("range", plot_range)
+                no_textbox = plot_mode_histogram.get("no_textbox", False)
                 ax.hist(
                     modes[plot_mode_specs], 
                     range=plot_range,
@@ -1034,14 +1036,18 @@ def compare_BP_results_uproot(
                 # plot_text = std_dev_text + x_err_low_text + x_err_high_text
                 # plot_text = std_dev_text
                     
-                plt.text(0.97, 0.965, std_dev_text, ha='right', va='top', transform=ax.transAxes, fontsize=10, bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
-                plt.text(0.97, 0.78, x_err_high_text, ha='right', va='top', transform=ax.transAxes, fontsize=10, bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
-                plt.text(0.97, 0.565, x_err_low_text, ha='right', va='top', transform=ax.transAxes, fontsize=10, bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
-                # plt.plot([0.8, 0.8], [0.9, 0.5], transform=plt.gca().transAxes, color='none') # Dummy plot to ensure the text is not obscured by plot legend
-                
                 n_toys = (~np.isnan(modes[plot_mode_specs])).sum()
                 n_toys_text = rf"$n_{{\mathrm{{toys}}}} = {n_toys}$"
-                plt.text(0.97, 0.355, n_toys_text, ha='right', va='top', transform=ax.transAxes, fontsize=10, bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+
+                if not no_textbox:
+                    plt.text(0.97, 0.965, std_dev_text, ha='right', va='top', transform=ax.transAxes, fontsize=10, bbox=dict(boxstyle='round', facecolor='white', edgecolor='lightgrey', alpha=0.8))
+                    plt.text(0.97, 0.78, x_err_high_text, ha='right', va='top', transform=ax.transAxes, fontsize=10, bbox=dict(boxstyle='round', facecolor='white', edgecolor='lightgrey', alpha=0.8))
+                    plt.text(0.97, 0.565, x_err_low_text, ha='right', va='top', transform=ax.transAxes, fontsize=10, bbox=dict(boxstyle='round', facecolor='white', edgecolor='lightgrey', alpha=0.8))
+                    # plt.plot([0.8, 0.8], [0.9, 0.5], transform=plt.gca().transAxes, color='none') # Dummy plot to ensure the text is not obscured by plot legend
+                
+                    plt.text(0.97, 0.355, n_toys_text, ha='right', va='top', transform=ax.transAxes, fontsize=10, bbox=dict(boxstyle='round', facecolor='white', edgecolor='lightgrey', alpha=0.8))
+                else:
+                    plt.text(0.97, 0.965, n_toys_text, ha='right', va='top', transform=ax.transAxes, fontsize=10, bbox=dict(boxstyle='round', facecolor='white', edgecolor='lightgrey', alpha=0.8))
 
                 legend_loc = "upper left"
 
@@ -1061,6 +1067,9 @@ def compare_BP_results_uproot(
             fig_output_path += "_final"
             if plot_mode_histogram is not None:
                 fig_output_path += "_with_modes"
+                no_textbox = plot_mode_histogram.get("no_textbox", False)
+                if no_textbox:
+                    fig_output_path += "_no_textbox"
             if save_fig: plt.savefig(f"{fig_output_path}{file_suffix}.pdf")
 
     if show_plots:
@@ -1632,10 +1641,10 @@ def calculate_chi_square(
     scenarios = model_specs.keys()
 
     noMCMC_obs = [
-        "mtop",
-        "mHl",
-        "AlsMz",
-        "dAle5Mz",
+        # "mtop",
+        # "mHl",
+        # "AlsMz",
+        # "dAle5Mz",
     ]
 
     nuisance_parameters = [
@@ -1704,7 +1713,11 @@ def calculate_chi_square(
         central_values_pars, 
         gaussian_priors, 
         flat_priors,
+        results_pars,
     ) = data
+
+    print("Aligned parameters:", aligned_parameters)
+    # print("Aligned parameters results:", results_pars)
 
     print("Aligned observables:", aligned_observables)
 
@@ -1905,32 +1918,38 @@ def calculate_chi_square(
                     n_obs += 1
                     chi_square += chi_square_term
 
-                    if verbose: print(f"Added chi-square contribution for observable {obs}: {chi_square_term} (prediction: {prediction}, fit value: {fit_value}, uncertainty: {input_uncertainty})")
+                    if verbose: print(f"Added chi-square contribution for observable {obs}: {chi_square_term} (prediction: {prediction}, fit value: {fit_value}, uncertainty: {uncertainty})")
 
                 for par_idx, par in enumerate(aligned_parameters[BP][scenario]):
-                    if par in nuisance_parameters or par in new_nuisance_parameters or par in nuisance_parameter_coefficients:
-                        continue
-                    else:
-                        input_uncertainty = gaussian_priors[BP][scenario][model_spec][par_idx]
-                        if input_uncertainty != 0:
+                    # if par in nuisance_parameters or par in new_nuisance_parameters or par in nuisance_parameter_coefficients:
+                    #     continue
+                    # else:
+                    input_uncertainty = gaussian_priors[BP][scenario][model_spec][par_idx]
+                    if input_uncertainty != 0 and not np.isnan(input_uncertainty):
 
-                            prediction = central_values_pars[BP][scenario][model_spec][par_idx]
+                        prediction = central_values_pars[BP][scenario][model_spec][par_idx]
 
+                        fit_value = np.nan
+                        if par in aligned_observables[BP][scenario]:
                             par_results_idx = aligned_observables[BP][scenario].index(par)
                             fit_value = results[BP][scenario][model_spec][par_results_idx][0]
-                            chi_square_term = chi_square_formula(
-                                data = fit_value,
-                                model = prediction,
-                                inverse_covariance_matrix = 1/input_uncertainty**2,
-                            )
-                            if np.isnan(chi_square_term):
-                                print(f"Warning: Chi-square term for gaussian parameter {par} is NaN. Skipping this parameter in chi-square calculation.")
-                                continue
-        
-                            n_obs += 1
-                            chi_square += chi_square_term
-        
-                            if verbose: print(f"Added chi-square contribution for gaussian parameter {par}: {chi_square_term} (prediction: {prediction}, fit value: {fit_value}, uncertainty: {input_uncertainty})")
+                        elif par in aligned_parameters[BP][scenario]:
+                            par_results_idx = aligned_parameters[BP][scenario].index(par)
+                            fit_value = results_pars[BP][scenario][model_spec][par_results_idx][0]
+                            
+                        chi_square_term = chi_square_formula(
+                            data = fit_value,
+                            model = prediction,
+                            inverse_covariance_matrix = 1/input_uncertainty**2,
+                        )
+                        if np.isnan(chi_square_term):
+                            print(f"Warning: Chi-square term for gaussian parameter {par} is NaN. Skipping this parameter in chi-square calculation.")
+                            continue
+    
+                        n_obs += 1
+                        chi_square += chi_square_term
+    
+                        if verbose: print(f"Added chi-square contribution for gaussian parameter {par}: {chi_square_term} (prediction: {prediction}, fit value: {fit_value}, uncertainty: {input_uncertainty})")
                         
                 if n_obs <= n_pars:
                     print(f"Warning: Number of observables ({n_obs}) is less than or equal to the number of parameters ({n_pars}) for {BP}, {scenario}, {model_spec}. Chi-square may not be meaningful.")
@@ -1947,7 +1966,6 @@ def calculate_chi_square(
     
 
     return chi_square_results, p_values
-    # TODO: deal with NPs
 
 
 def plot_p_value_distributions(
@@ -1963,6 +1981,8 @@ def plot_p_value_distributions(
     colors=None,
     hist_labels=None,
     normalized=False,
+    fit_line=False,
+    y_axis_scale=1.2,
     fig_size=(4, 3.5),
     show_plots=True,
     save_fig=True,
@@ -1993,10 +2013,21 @@ def plot_p_value_distributions(
         the plots. If not provided, no title will be displayed
     chi_square_kwargs : dict, optional
         Additional keyword arguments to be passed to the calculate_chi_square function.
-    only_specs : list, optional
-        Boolean list indicating which model specifications to include when plotting. Default is all specs.
+    hist_indices : list, optional
+        List of indices indicating which model specifications to include in each histogram.
+        If not provided, all model specifications will be included in the same histogram.
+    colors : list, optional
+        List of colors to be used for the histograms. If not provided, the default matplotlib color cycle will be used.
+    hist_labels : list, optional
+        List of labels for the histograms. If not provided, no labels will be displayed.
+    normalized : bool, optional
+        Whether to normalize the histograms or not. Default is False.
+    fit_line : bool, optional
+        Whether to fit a line to the histograms or not. Default is False.
     fig_size : tuple, optional
         The size of the figures to be generated. Default is (4, 3.5).
+    y_axis_scale : float, optional
+        The scale of the y-axis. Default is 1.2.
     show_plots : bool, optional
         Whether to show the plots or not. Default is False.
     save_fig : bool, optional
@@ -2059,19 +2090,55 @@ def plot_p_value_distributions(
                     else:
                         label = None
 
-                    plt.hist(
-                        p_values_plot, 
-                        bins=20, 
-                        # alpha=0.5, 
-                        histtype="step", 
+                    hist_values, bin_edges = np.histogram(
+                        p_values_plot, bins=20, range=(0, 1), density=density
+                    )
+    
+                    plt.stairs(
+                        hist_values,
+                        bin_edges,
+                        baseline=0,
                         linewidth=1.5,
                         fill=True,
-                        edgecolor=(*hist_color_rgb, 1.0), 
-                        facecolor=(*hist_color_rgb, 0.5), 
                         label=label,
-                        density=density,
-                        range=(0, 1),
+                        edgecolor=(*hist_color_rgb, 1.0),
+                        facecolor=(*hist_color_rgb, 0.5),
                     )
+
+                    # plt.hist(
+                    #     p_values_plot, 
+                    #     bins=20, 
+                    #     # alpha=0.5, 
+                    #     histtype="step", 
+                    #     linewidth=1.5,
+                    #     fill=True,
+                    #     edgecolor=(*hist_color_rgb, 1.0), 
+                    #     facecolor=(*hist_color_rgb, 0.5), 
+                    #     label=label,
+                    #     density=density,
+                    #     range=(0, 1),
+                    # )
+
+                    if fit_line and len(p_values_plot) > 1:
+                        hist_values, bin_edges = np.histogram(
+                            p_values_plot, bins=20, range=(0, 1), density=density
+                        )
+                        bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+                        fit_coefficients = np.polyfit(bin_centers, hist_values, 1)
+                        fit_x = np.linspace(0, 1, 200)
+                        fit_label = f"{label} - linear fit" if label is not None else "Linear fit"
+                        plt.plot(
+                            fit_x,
+                            np.polyval(fit_coefficients, fit_x),
+                            linestyle="--",
+                            color=(*hist_color_rgb, 1.0),
+                            label=fit_label,
+                        )
+
+                    ax.set_ylim(0, y_axis_scale * np.max(hist_values))
+
+                
+
 
             else:
                 p_values_plot = p_values_list[~np.isnan(p_values_list)]
@@ -2082,18 +2149,34 @@ def plot_p_value_distributions(
                 else:
                     hist_color_rgb = matplotlib.colors.to_rgb("tab:blue")
 
-                plt.hist(
-                    p_values_plot, 
-                    bins=20, 
-                    alpha=0.5, 
-                    histtype="step", 
+                hist_values, bin_edges = np.histogram(
+                    p_values_plot, bins=20, range=(0, 1), density=density
+                )
+
+                plt.stairs(
+                    hist_values,
+                    bin_edges,
+                    baseline=0,
+                    alpha=0.5,
                     linewidth=1.5,
                     fill=True,
-                    edgecolor=(*hist_color_rgb, 1.0), 
-                    facecolor=(*hist_color_rgb, 0.5), 
-                    density=density,
-                    range=(0, 1),
+                    edgecolor=(*hist_color_rgb, 1.0),
+                    facecolor=(*hist_color_rgb, 0.5),
                 )
+
+                ax.set_ylim(0, y_axis_scale * np.max(hist_values))
+
+                if fit_line and len(p_values_plot) > 1:
+                    bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+                    fit_coefficients = np.polyfit(bin_centers, hist_values, 1)
+                    fit_x = np.linspace(0, 1, 200)
+                    plt.plot(
+                        fit_x,
+                        np.polyval(fit_coefficients, fit_x),
+                        linestyle="--",
+                        color=(*hist_color_rgb, 1.0),
+                        label="Linear fit",
+                    )
 
             plt.xlabel("p-value")
             if normalized:
@@ -2101,13 +2184,13 @@ def plot_p_value_distributions(
             else:
                 plt.ylabel("Number of toy fits")
             plt.xlim(0, 1)
-            plt.axvline(x=0.05, color='r', linestyle='--', label='Significance level = 0.05')
+            plt.axvline(x=0.05, color='r', linestyle='-.', label='Significance level = 0.05')
 
             n_toys = len(p_values_plot)
             n_toys_text = rf"$n_{{\mathrm{{toys}}}} = {n_toys}$"
-            plt.text(0.97, 0.74, n_toys_text, ha='right', va='top', transform=ax.transAxes, fontsize=8, bbox=dict(boxstyle='round', facecolor='white', edgecolor='lightgrey', alpha=0.8))
+            plt.text(0.035, 0.97, n_toys_text, ha='left', va='top', transform=ax.transAxes, fontsize=8, bbox=dict(boxstyle='round', facecolor='white', edgecolor='lightgrey', alpha=0.8))
             
-            plt.legend(fontsize=8, loc="upper right")
+            plt.legend(fontsize=7, loc="upper right")
             plt.tight_layout()
             plot_path = f"{working_dir}/comparison_plots/results_{results_dir}/{model}_{BP}_{scenario}_p_values{file_suffix}"
             if hist_indices is not None: plot_path += "_multiple_hists"

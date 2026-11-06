@@ -956,25 +956,25 @@ def find_configuration_files(
                                         conf_files[scenario][model_spec].append(f"FCCee_new_NPs{np_scale_factor}_BP_dependent{est}")
 
                             model_spec_copy = model_spec_copy.replace(hepfit_flag, "", 1)
-                            print(model_spec_copy)
+                            # print(model_spec_copy)
                             break
 
                     for fccee_projections_flag in fccee_projections_flags:
                         if model_spec_copy.startswith(fccee_projections_flag):
                             model_spec_copy = model_spec_copy.replace(fccee_projections_flag, "", 1)
-                            print(model_spec_copy)
+                            # print(model_spec_copy)
                             break
                     
                     for loop_order_flag in loop_order_flags:
                         if model_spec_copy.startswith(loop_order_flag):
                             model_spec_copy = model_spec_copy.replace(loop_order_flag, "", 1)
-                            print(model_spec_copy)
+                            # print(model_spec_copy)
                             break
 
                     for exclusive_flag in exclusive_flag_list:
                         if model_spec_copy.startswith(exclusive_flag):
                             model_spec_copy = model_spec_copy.replace(exclusive_flag, "", 1)
-                            print(model_spec_copy)
+                            # print(model_spec_copy)
                             break
 
                     for additional_flag1 in additional_flag_list:
@@ -1475,7 +1475,7 @@ def read_configuration_files(
                                 if None not in correlated_obs["observables_list"]:
                                     # print("corr_matrix: " + str(corr_matrix))
                                     # print("std_devs: " + str(std_devs))
-                                    print(correlated_obs["name"])
+                                    # print(correlated_obs["name"])
                                     cov_matrix = corr_matrix * np.outer(std_devs, std_devs)
                                     correlated_obs["cov_matrix"] = cov_matrix
                                     correlated_observables[BP][scenario][model_spec].append(correlated_obs)
@@ -1502,7 +1502,7 @@ def read_configuration_files(
 
                 n_obs = len(observables[BP][scenario][model_spec])
                 print(f"Found {n_obs} observables")
-                print("\n\n")
+                # print("\n")
 
                 if not observables[BP][scenario][model_spec] == observables[BP][scenario][model_specs[scenario][0]]:
                     print(f"Warning: Observable list for {BP} in {scenario} is not the same for all model specifications!")
@@ -1727,6 +1727,8 @@ def read_fit_results(
     model_specs,
     files,
     observables,
+    read_parameters=False,
+    skip_missing_observables=False,
 ):
     """
     Read and store the fit results (central values and errors), given certain benchmark points,
@@ -1747,6 +1749,13 @@ def read_fit_results(
         model specifications, to a list of observables. A list of observables can also be provided;
         in that case, the same list will be used for all benchmark points, scenarios, and 
         model_specs.
+    read_parameters : bool, optional
+        If set to True, the function will read the fit results for the model parameters instead of
+        the observables. In this case, the files to be read should be the MonteCarlo_results.txt files,
+        instead of the Statistics.txt files. Default is False.
+    skip_missing_observables : bool, optional
+        If set to True, the function will skip any observables that are not found in the fit results files, 
+        instead of raising an error. Default is False.
 
     Returns
     -------
@@ -1786,27 +1795,38 @@ def read_fit_results(
                             
                             if (columns[1] == "Observable" \
                                 or columns[1] == "AsyGausObservable") \
+                                and not read_parameters \
                                 and columns[2][1:-2] in observables[BP][scenario][model_spec]:
 
                                 observable_index = observables[BP][scenario][model_spec].index(columns[2][1:-2])
                                 line_nrs[observable_index] = n
 
-                        # print(f"Line numbers: {line_nrs}")
+                            if columns[1] == "Parameter" \
+                                and read_parameters \
+                                and columns[2][1:-1] in observables[BP][scenario][model_spec]:
+
+                                observable_index = observables[BP][scenario][model_spec].index(columns[2][1:-1])
+                                line_nrs[observable_index] = n
 
                         if any(np.isnan(line_nrs)):
                             print(f"Missing observable: {observables[BP][scenario][model_spec][line_nrs.index(np.nan)]}")
-                            raise ValueError(f"Not all observables were found in the file {file_path}!")
+                            if not skip_missing_observables:
+                                raise ValueError(f"Not all observables were found in the file {file_path}!")
 
                         results[BP][scenario][model_spec] = []
 
-                        for line_nr, obs in zip(line_nrs, observables[BP][scenario][model_spec]):                    
+                        for line_nr, obs in zip(line_nrs, observables[BP][scenario][model_spec]):
+                            if np.isnan(line_nr):
+                                results[BP][scenario][model_spec].append([np.nan, np.nan])
+                                continue
+
                             columns = lines[line_nr + 1].split()
                             if obs == "deltalHHH_HLLHC":
                                 results[BP][scenario][model_spec].append([float(columns[3])+1,  # Mean
-                                                                        float(columns[5]),])  # Uncertainty
+                                                                          float(columns[5]),])  # Uncertainty
                             else:
                                 results[BP][scenario][model_spec].append([float(columns[3]),    # Mean
-                                                                        float(columns[5]),])  # Uncertainty
+                                                                          float(columns[5]),])  # Uncertainty
 
                     results[BP][scenario][model_spec] = np.array(results[BP][scenario][model_spec])
 
@@ -2060,7 +2080,7 @@ def align_observables(
         to a list of central values for observables which were found in the configuration files.
     results : dict
         Dictionary mapping benchmark points, scenarios, and model specifications, 
-        to a list of central values for observables which were found in the configuration files.
+        to a list of means and standard deviations for the parameters which were found in the fit results files.
     input_uncertainties_obs : dict
         Dictionary mapping benchmark points, scenarios, and model specifications, 
         to a list of input uncertainties for observables which were found in the configuration files.
@@ -2145,6 +2165,7 @@ def align_parameters(
     central_values_pars,
     gaussian_priors,
     flat_priors,
+    results_pars,
 ):
     """
     Function to sort parameters following a given scheme, defined by the {parameter_order_func} 
@@ -2174,6 +2195,9 @@ def align_parameters(
     flat_priors : dict
         Dictionary mapping benchmark points, scenarios, and model specifications, 
         to a list of flat prior uncertainties for parameters which were found in the configuration files.
+    results_pars : dict
+        Dictionary mapping benchmark points, scenarios, and model specifications, 
+        to a list of means and standard deviations for the parameters which were found in the fit results files.
 
     Returns
     -------
@@ -2187,6 +2211,8 @@ def align_parameters(
         The {gaussian_priors} dictionary, after sorting parameters.
     flat_priors : dict
         The {flat_priors} dictionary, after sorting parameters.
+    results_pars : dict
+        The {results_pars} dictionary, after sorting parameters.
 
 
     """
@@ -2214,6 +2240,7 @@ def align_parameters(
                 aligned_central_values = []
                 aligned_gaussian_priors = []
                 aligned_flat_priors = []
+                aligned_results_pars = []
 
                 for aligned_idx, obs in enumerate(aligned_parameters[BP][scenario]):
                     if obs in parameters[BP][scenario][model_spec]:
@@ -2223,15 +2250,18 @@ def align_parameters(
                         aligned_central_values.append(central_values_pars[BP][scenario][model_spec][idx])
                         aligned_gaussian_priors.append(gaussian_priors[BP][scenario][model_spec][idx])
                         aligned_flat_priors.append(flat_priors[BP][scenario][model_spec][idx])
+                        aligned_results_pars.append(results_pars[BP][scenario][model_spec][idx])
                     else:
                         # Handle missing parameters (e.g., assign NaN)
                         aligned_central_values.append(np.nan)
                         aligned_gaussian_priors.append(np.nan)
                         aligned_flat_priors.append(np.nan)
-                        
+                        aligned_results_pars.append([np.nan, np.nan])
+
                 central_values_pars[BP][scenario][model_spec] = np.array(aligned_central_values)
                 gaussian_priors[BP][scenario][model_spec] = np.array(aligned_gaussian_priors)
                 flat_priors[BP][scenario][model_spec] = np.array(aligned_flat_priors)
+                results_pars[BP][scenario][model_spec] = np.array(aligned_results_pars)
 
             if np.nan in aligned_parameters_tex[BP][scenario]:
                 print(f"Missing parameter LaTeX: {aligned_parameters[BP][scenario][aligned_parameters_tex[BP][scenario].index(np.nan)]}")
@@ -2243,8 +2273,9 @@ def align_parameters(
     print(f"Central values shape: {central_values_pars[BP][scenario][model_spec].shape}")
     print(f"Input uncertainties shape: {gaussian_priors[BP][scenario][model_spec].shape}")
     print(f"Flat priors shape: {flat_priors[BP][scenario][model_spec].shape}")
+    print(f"Results shape: {results_pars[BP][scenario][model_spec].shape}")
 
-    return aligned_parameters, aligned_parameters_tex, central_values_pars, gaussian_priors, flat_priors
+    return aligned_parameters, aligned_parameters_tex, central_values_pars, gaussian_priors, flat_priors, results_pars
 
 
 
@@ -2363,15 +2394,20 @@ def read_data_for_pulls(
         raise ValueError(f"Invalid model specified ({model}). Please choose either 'IDM', 'Z2SSM', 'SM', or 'SM_updated_lumi'.")
 
     files = {}
+    files_pars = {}
     for BP in BPs:
         files[BP] = {}
+        files_pars[BP] = {}
         for scenario in scenarios:
             files[BP][scenario] = {}
+            files_pars[BP][scenario] = {}
             for model_spec in model_specs[scenario]:
                 if "toyfit" in model_spec:
                     files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/toy_fits/results_{model_spec}/Observables/Statistics.txt"
+                    files_pars[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/toy_fits/results_{model_spec}/MonteCarlo_results.txt"
                 else:
                     files[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/results_{model_spec}/Observables/Statistics.txt"
+                    files_pars[BP][scenario][model_spec] = f"{working_dir}/{BP}/{scenario}/results_{model_spec}/MonteCarlo_results.txt"
 
     print("\nFinding configuration files for the observables")
     conf_files = find_configuration_files(model_specs, model)
@@ -2451,8 +2487,21 @@ def read_data_for_pulls(
             conf_files,
         )
 
+        results_pars = read_fit_results(
+            BPs=BPs,
+            model_specs=model_specs,
+            observables=parameters,
+            files=files_pars,
+            read_parameters=True,
+            skip_missing_observables=True,
+        )
+
+        # print("Parameter: ", parameters)
+        # print("Parameter results: ", results_pars)
+
+
         print(f"\nSorting model parameters")
-        aligned_parameters, aligned_parameters_tex, central_values_pars, gaussian_priors, flat_priors = align_parameters(
+        aligned_parameters, aligned_parameters_tex, central_values_pars, gaussian_priors, flat_priors, results_pars = align_parameters(
             parameter_order_func=parameter_order,
             BPs=BPs,
             model_specs=model_specs,
@@ -2461,6 +2510,7 @@ def read_data_for_pulls(
             central_values_pars=central_values_pars,
             gaussian_priors=gaussian_priors,
             flat_priors=flat_priors,
+            results_pars=results_pars,
         )
 
         return ( 
@@ -2476,6 +2526,7 @@ def read_data_for_pulls(
             central_values_pars, 
             gaussian_priors, 
             flat_priors,
+            results_pars,
         )
     
     else:
